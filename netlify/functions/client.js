@@ -29,7 +29,7 @@ exports.handler=async e=>{
     for(const b of pr.blobs||[]){
       const p=await projectsStore.get(b.key,{type:'json'}).catch(()=>null);
       if(!p)continue;
-      const belongs=p.clientId===account.id||p.accountId===account.id||p.email===account.email||p.leadId&&((await s.leads().get(p.leadId,{type:'json'}).catch(()=>null))?.clientId===account.id);
+      const clientIds=[account.id,account.clientId].filter(Boolean);\n      const lead= p.leadId ? await s.leads().get(p.leadId,{type:'json'}).catch(()=>null) : null;\n      const belongs=clientIds.includes(p.clientId)||clientIds.includes(p.accountId)||p.email===account.email||(lead&&clientIds.includes(lead.clientId));
       if(!belongs)continue;
       const payments=await listByProject('payments','payment-',p.id,x=>({amount:x.amount,method:x.method,createdAt:x.createdAt}));
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
@@ -42,6 +42,6 @@ exports.handler=async e=>{
       projects.push({id:p.id,name:p.name,status:p.status,startDate:p.startDate,dueDate:p.dueDate,amount:p.amount,paid,remaining:Math.max(Number(p.amount||0)-paid,0),payments,tasks,invoices,contracts,deliveries,clientResult:approvedResults[0]||null});
     }
     projects.sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
-    return json(200,{client:{id:account.id,name:account.name,email:account.email,whatsapp:account.whatsapp},projects});
+    return json(200,{client:{id:account.id,clientId:account.clientId||account.id,name:account.name,email:account.email,whatsapp:account.whatsapp},projects});
   }catch(err){console.error('client portal error',err);return json(500,{error:'تعذر تحميل مساحة العميل.'});}
 };
