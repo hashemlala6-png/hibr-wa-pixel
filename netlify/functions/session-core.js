@@ -16,7 +16,7 @@ function env(name) {
 function secretFor(role) {
   return role === 'admin'
     ? (env('ADMIN_SESSION_SECRET') || env('ADMIN_PASSWORD'))
-    : (env('CLIENT_SESSION_SECRET') || env('ADMIN_SESSION_SECRET') || env('ADMIN_PASSWORD'));
+    : env('CLIENT_SESSION_SECRET');
 }
 
 function b64(value) { return Buffer.from(value).toString('base64url'); }
