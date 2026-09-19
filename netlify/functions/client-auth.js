@@ -4,6 +4,7 @@ const {getStore}=require('@netlify/blobs');
 const {json,requireAdmin}=require('./auth-utils');
 const {createClientSession,getClientSession,sessionCookie,clearCookie}=require('./client-auth-utils');
 const accounts=()=>getStore({name:'hbpx-client-accounts',consistency:'strong'});
+const leads=()=>getStore({name:'hbpx-leads',consistency:'strong'});
 const rate=()=>getStore({name:'hbpx-client-auth-rate',consistency:'strong'});
 const clean=(v,n=240)=>String(v??'').trim().slice(0,n);
 const emailNorm=v=>clean(v,240).toLowerCase();
@@ -25,10 +26,25 @@ async function limited(e,kind){
 function hashPassword(password,salt){return crypto.scryptSync(password,salt,64).toString('hex');}
 function makePassword(password){const salt=crypto.randomBytes(16).toString('hex');return {salt,hash:hashPassword(password,salt)};}
 function checkPassword(password,a){const h=hashPassword(password,a.salt);return crypto.timingSafeEqual(Buffer.from(h,'hex'),Buffer.from(a.passwordHash,'hex'));}
-function normalizePhone(v){let d=String(v||'').replace(/\D/g,''); if(d.startsWith('964')) return '0'+d.slice(3); if(d.startsWith('00964')) return '0'+d.slice(5); return d.startsWith('0')?d:'0'+d;}
 async function safeActivity(...args){try{const {logActivity}=require('./client-activity'); await logActivity(...args);}catch{}}
 async function safeMetric(...args){try{const {record}=require('./platform-analytics'); await record(...args);}catch{}}
 function hasSessionSecret(){return Boolean(env('CLIENT_SESSION_SECRET') || env('ADMIN_SESSION_SECRET'))}
+function normalizePhone(v){let d=String(v||'').replace(/\D/g,''); if(d.startsWith('964')) return '0'+d.slice(3); if(d.startsWith('00964')) return '0'+d.slice(5); return d.startsWith('0')?d:'0'+d;}
+async function findExistingClientId(email,phone){
+  try{
+    const r=await leads().list({prefix:'lead-',limit:1000});
+    let best=null;
+    for(const item of r.blobs||[]){
+      const l=await leads().get(item.key,{type:'json'}).catch(()=>null); if(!l)continue;
+      const sameEmail=email&&emailNorm(l.email)===email;
+      const samePhone=phone&&normalizePhone(l.whatsapp)===phone;
+      if(sameEmail||samePhone){
+        if(!best||new Date(l.createdAt||0)>new Date(best.createdAt||0))best=l;
+      }
+    }
+    return best?.clientId||null;
+  }catch(err){console.warn('client identity lookup unavailable',err?.message||err);return null}
+}
 exports.handler=async e=>{
   try{
 
@@ -58,7 +74,7 @@ exports.handler=async e=>{
     if(await accounts().get(id,{type:'json'}).catch(()=>null))return json(409,{error:'هذا البريد مسجل مسبقًا. سجّل الدخول.'});
     const name=clean(b.name,120), whatsapp=normalizePhone(b.whatsapp);
     if(!name||whatsapp.length<10)return json(400,{error:'الاسم ورقم واتساب مطلوبان.'});
-    const pw=makePassword(password); const now=new Date().toISOString(); const account={id,name,email,whatsapp,passwordHash:pw.hash,salt:pw.salt,createdAt:now,updatedAt:now,lastLoginAt:null};
+    const pw=makePassword(password); const now=new Date().toISOString(); const clientId=await findExistingClientId(email,whatsapp)||id; const account={id,name,email,whatsapp,clientId,passwordHash:pw.hash,salt:pw.salt,createdAt:now,updatedAt:now,lastLoginAt:null};
     await accounts().setJSON(id,account);
     await safeActivity(id,'client-account','تم إنشاء حساب عميل جديد',{name,email,whatsapp});
     await safeMetric('client-register',{clientId:id});
@@ -68,6 +84,7 @@ exports.handler=async e=>{
   if(action==='login'){
     const a=await accounts().get(id,{type:'json'}).catch(()=>null);
     if(!a||!a.passwordHash||!checkPassword(password,a))return json(401,{error:'البريد أو كلمة المرور غير صحيحة.'});
+    if(!a.clientId){a.clientId=await findExistingClientId(a.email,normalizePhone(a.whatsapp))||a.id;}
     a.lastLoginAt=new Date().toISOString(); a.updatedAt=a.lastLoginAt; await accounts().setJSON(id,a);
     await safeActivity(a.id,'client-login','تم تسجيل دخول عميل',{email:a.email});
     await safeMetric('client-login',{clientId:a.id});
