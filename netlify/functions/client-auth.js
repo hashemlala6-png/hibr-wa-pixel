@@ -29,7 +29,7 @@ function makePassword(password){const salt=crypto.randomBytes(16).toString('hex'
 function checkPassword(password,a){const h=hashPassword(password,a.salt);return crypto.timingSafeEqual(Buffer.from(h,'hex'),Buffer.from(a.passwordHash,'hex'));}
 async function safeActivity(...args){try{const {logActivity}=require('./client-activity'); await logActivity(...args);}catch{}}
 async function safeMetric(...args){try{const {record}=require('./platform-analytics'); await record(...args);}catch{}}
-function hasSessionSecret(){return Boolean(env('CLIENT_SESSION_SECRET') || env('ADMIN_SESSION_SECRET'))}
+function hasSessionSecret(){return Boolean(env('CLIENT_SESSION_SECRET'))}
 function normalizePhone(v){let d=String(v||'').replace(/\D/g,''); if(d.startsWith('964')) return '0'+d.slice(3); if(d.startsWith('00964')) return '0'+d.slice(5); return d.startsWith('0')?d:'0'+d;}
 async function findExistingClientId(email,phone){
   try{
@@ -65,7 +65,7 @@ exports.handler=async e=>{
   }
   if(e.httpMethod==='POST'&&action==='logout') return json(200,{authenticated:false},{'Set-Cookie':clearCookie()});
   if(e.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
-  if((action==='register'||action==='login')&&!hasSessionSecret()) return json(503,{error:'إعداد أمان جلسات العملاء ناقص في Netlify. أضف CLIENT_SESSION_SECRET أو ADMIN_SESSION_SECRET.'});
+  if((action==='register'||action==='login')&&!hasSessionSecret()) return json(503,{error:'إعداد أمان جلسات العملاء ناقص في Netlify. أضف CLIENT_SESSION_SECRET.'});
   if(!(await limited(e,action)))return json(429,{error:'محاولات كثيرة. حاول بعد قليل.'});
   let b;try{b=JSON.parse(e.body||'{}')}catch{return json(400,{error:'بيانات غير صالحة.'})}
   const email=emailNorm(b.email), password=String(b.password||'');
@@ -90,7 +90,7 @@ exports.handler=async e=>{
     await safeActivity(a.clientId||a.id,'client-login','تم تسجيل دخول عميل',{email:a.email});
     await safeMetric('client-login',{clientId:a.id});
     const token=createClientSession(a.id);
-    return json(200,{authenticated:true,client:{id:a.id,name:a.name,email:a.email,whatsapp:a.whatsapp}},{'Set-Cookie':sessionCookie(token)});
+    return json(200,{authenticated:true,client:{id:a.id,clientId:a.clientId||a.id,name:a.name,email:a.email,whatsapp:a.whatsapp}},{'Set-Cookie':sessionCookie(token)});
   }
   return json(400,{error:'إجراء غير معروف.'});
   }catch(err){
