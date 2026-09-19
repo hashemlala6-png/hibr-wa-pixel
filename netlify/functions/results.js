@@ -47,7 +47,6 @@ exports.handler = async event => {
   if (action !== 'generate') return json(400, { error: 'الإجراء غير معروف.' });
 
   const required = ['clientName','business','objective','audience','offer'];
-  if (required.some(k => !clean(b[k]))) return json(400, { error: 'أكمل بيانات العميل والهدف والجمهور والعرض.' });
   const key = env('ANTHROPIC_API_KEY');
   const clientId = clean(b.clientId, 120);
   const clientContext = await getAIContext(clientId);
@@ -65,6 +64,7 @@ exports.handler = async event => {
     b.constraints = clean(b.constraints || memory.constraints,700);
     b.context = clean(b.context || memory.context,900);
   }
+  if (required.some(k => !clean(b[k]))) return json(400, { error: 'أكمل بيانات العميل والهدف والجمهور والعرض.' });
   if (!key) return json(500, { error: 'ANTHROPIC_API_KEY غير مضبوط بإعدادات السيرفر.' });
 
   const system = `أنت Creative Strategist + Senior Art Director + Conversion Copywriter + Client Success Lead لوكالة عربية ممتازة.
