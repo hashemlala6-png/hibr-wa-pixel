@@ -6,6 +6,8 @@ const {createClientSession,getClientSession,sessionCookie,clearCookie}=require('
 const accounts=()=>getStore({name:'hbpx-client-accounts',consistency:'strong'});
 const leads=()=>getStore({name:'hbpx-leads',consistency:'strong'});
 const rate=()=>getStore({name:'hbpx-client-auth-rate',consistency:'strong'});
+const memoryRate = new Map();
+function memoryLimited(e,kind){ const k=kind+'-'+crypto.createHash('sha256').update(ip(e)).digest('hex').slice(0,32), now=Date.now(), win=10*60*1000, max=12; const cur=memoryRate.get(k); if(!cur||now-cur.startedAt>win){memoryRate.set(k,{startedAt:now,count:1});return true;} if(Number(cur.count||0)>=max)return false; cur.count=Number(cur.count||0)+1; return true; }
 const clean=(v,n=240)=>String(v??'').trim().slice(0,n);
 const emailNorm=v=>clean(v,240).toLowerCase();
 const keyForEmail=e=>'email-'+crypto.createHash('sha256').update(emailNorm(e)).digest('hex').slice(0,48);
@@ -18,8 +20,8 @@ async function limited(e,kind){
     if(Number(cur.count||0)>=max)return false;
     await rate().setJSON(k,{...cur,count:Number(cur.count||0)+1});
   }catch(err){
-    console.error('client auth rate-limit unavailable; rejecting request', err?.message||err);
-    return false;
+    console.error('client auth rate-limit unavailable; using instance fallback', err?.message||err);
+    return memoryLimited(e,kind);
   }
   return true;
 }
