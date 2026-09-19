@@ -45,7 +45,7 @@ async function getAIContext(clientId) {
   clientId = clean(clientId, 120);
   if (!clientId) return null;
 
-  const [profile, account, indexedLeads, indexedActivities, indexedResults, indexedAI, dna] = await Promise.all([
+  const [profile, directAccount, indexedLeads, indexedActivities, indexedResults, indexedAI, dna] = await Promise.all([
     stores.clients().get(clientId, { type: 'json' }).catch(() => null),
     stores.accounts().get(clientId, { type: 'json' }).catch(() => null),
     indexedJSON(stores.leadIndex(), `client-${clientId}-`, stores.leads(), 'lead-').catch(()=>[]),
@@ -54,6 +54,15 @@ async function getAIContext(clientId) {
     listJSON(stores.aiHistory(), `ai-client-${clientId}-`).catch(()=>[]),
     listJSON(stores.dna(), `dna-${clientId}-`),
   ]);
+  let account = directAccount;
+  if (!account) {
+    const accountList = await stores.accounts().list({ prefix: 'account-', limit: 1000 }).catch(() => ({ blobs: [] }));
+    for (const b of accountList.blobs || []) {
+      const candidate = await stores.accounts().get(b.key, { type: 'json' }).catch(() => null);
+      if (candidate && candidate.clientId === clientId) { account = candidate; break; }
+    }
+  }
+
   const [leads, activities, results, aiHistory] = await Promise.all([
     indexedLeads.length ? indexedLeads : listJSON(stores.leads(), 'lead-').then(xs=>xs.filter(x=>x.clientId===clientId||x.id===clientId)),
     indexedActivities.length ? indexedActivities : listJSON(stores.activity(), 'activity-').then(xs=>xs.filter(x=>x.clientId===clientId)),
