@@ -5,7 +5,7 @@ const { logActivity } = require('./client-activity');
 
 const store = () => getStore({ name: 'hbpx-leads', consistency: 'strong' });
 const rateStore = () => getStore({ name: 'hbpx-lead-rate', consistency: 'strong' });
-const clientIndex = () => getStore({ name: 'hbpx-lead-index', consistency: 'strong' });
+const clientIndex = () => getStore({ name: 'hbpx-lead-index', consistency: 'strong' });\nconst accountsStore = () => getStore({ name: 'hbpx-client-accounts', consistency: 'strong' });\nfunction normalizeEmail(v){return String(v||'').trim().toLowerCase();}\nfunction normalizePhone(v){return String(v||'').replace(/\\D/g,'').replace(/^0/,'964');}\nasync function findExistingAccountClientId(email,phone){\n  const targetEmail=normalizeEmail(email), targetPhone=normalizePhone(phone);\n  if(!targetEmail&&!targetPhone)return null;\n  const r=await accountsStore().list({prefix:'account-'}).catch(()=>({blobs:[]}));\n  let best=null;\n  for(const b of r.blobs||[]){\n    const a=await accountsStore().get(b.key,{type:'json'}).catch(()=>null);\n    if(!a)continue;\n    const emailMatch=targetEmail&&normalizeEmail(a.email)===targetEmail;\n    const phoneMatch=targetPhone&&normalizePhone(a.whatsapp)===targetPhone;\n    if(emailMatch||phoneMatch){best=a;break;}\n  }\n  return best?.clientId||best?.id||null;\n}
 const requestIp = (event) => String(event.headers?.['x-nf-client-connection-ip'] || event.headers?.['x-forwarded-for'] || 'unknown').split(',')[0].trim().slice(0,120);
 async function rateLimit(ip){
   const key='ip-'+crypto.createHash('sha256').update(ip).digest('hex').slice(0,32);
@@ -38,7 +38,7 @@ exports.handler = async (event) => {
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: 'البريد الإلكتروني غير صحيح.' });
     const id = `lead-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const normalizedPhone = whatsapp.replace(/\D/g,'').replace(/^0/,'964');
-    const clientId = 'client-' + crypto.createHash('sha256').update(normalizedPhone).digest('hex').slice(0,24);
+    const existingAccountClientId = await findExistingAccountClientId(email, whatsapp).catch(err=>{console.error('account identity lookup failed',err?.message||err);return null;});\n    const clientId = existingAccountClientId || ('client-' + crypto.createHash('sha256').update(normalizedPhone).digest('hex').slice(0,24));
     const lead = {
       id, clientId, name, whatsapp,
       email, service, budget, details,
