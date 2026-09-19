@@ -50,7 +50,7 @@ exports.handler=async e=>{
   const service=clean(b.service,160), details=clean(b.details,3000), budget=clean(b.budget,120), timeline=clean(b.timeline,120);
   if(!service||!details)return json(400,{error:'اختاري الخدمة واكتبي تفاصيل الطلب.'});
   const now=new Date().toISOString();
-  const clientId=account.id;
+  const clientId=account.clientId||account.id;
   const orderId=`order-${account.id}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
   const leadId=`lead-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
   const lead={id:leadId,clientId,name:account.name,whatsapp:account.whatsapp,activity:service,message:details,source:'authenticated-order',package:budget,status:'new',timeline,createdAt:now,updatedAt:now};
