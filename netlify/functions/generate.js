@@ -43,6 +43,7 @@ exports.handler = async function (event) {
 
   const { mode, topic, tone, textType, colors, font, slideCount } = payload;
   const clientId = String(payload.clientId || '').trim();
+  if (!clientId) return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: "اختر العميل أولاً." }) };
   const clientContext = await getAIContext(clientId);
   const memory = clientContext?.memory || {};
   const activity = String(payload.activity || clientContext?.client?.activity || '').trim();
