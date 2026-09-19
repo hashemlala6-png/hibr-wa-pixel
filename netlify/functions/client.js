@@ -29,7 +29,9 @@ exports.handler=async e=>{
     for(const b of pr.blobs||[]){
       const p=await projectsStore.get(b.key,{type:'json'}).catch(()=>null);
       if(!p)continue;
-      const clientIds=[account.id,account.clientId].filter(Boolean);\n      const lead= p.leadId ? await s.leads().get(p.leadId,{type:'json'}).catch(()=>null) : null;\n      const belongs=clientIds.includes(p.clientId)||clientIds.includes(p.accountId)||p.email===account.email||(lead&&clientIds.includes(lead.clientId));
+      const clientIds=[account.id,account.clientId].filter(Boolean);
+      const lead= p.leadId ? await s.leads().get(p.leadId,{type:'json'}).catch(()=>null) : null;
+      const belongs=clientIds.includes(p.clientId)||clientIds.includes(p.accountId)||p.email===account.email||(lead&&clientIds.includes(lead.clientId));
       if(!belongs)continue;
       const payments=await listByProject('payments','payment-',p.id,x=>({amount:x.amount,method:x.method,createdAt:x.createdAt}));
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
