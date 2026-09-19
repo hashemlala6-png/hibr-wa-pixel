@@ -5,6 +5,20 @@ const { env } = require('./session-core');
 
 const presenceStore = () => getStore({ name: 'hbpx-presence', consistency: 'strong' });
 const authStore = () => getStore({ name: 'hbpx-auth-rate', consistency: 'strong' });
+const memoryRate = new Map();
+function memoryLimited(ip) {
+  const key = `admin:${ip || 'unknown'}`;
+  const now = Date.now();
+  const win = 15 * 60 * 1000;
+  const row = memoryRate.get(key);
+  if (!row || row.reset <= now) {
+    memoryRate.set(key, { count: 1, reset: now + win });
+    return false;
+  }
+  if (row.count >= 12) return true;
+  row.count += 1;
+  return false;
+}
 
 function hashToken(token) { return crypto.createHash('sha256').update(token).digest('hex'); }
 async function limited(ip) {
