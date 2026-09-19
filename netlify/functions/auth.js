@@ -16,8 +16,8 @@ async function limited(ip) {
     if (row && row.reset > now && row.count >= 12) return true;
     await store.setJSON(key, { count: row && row.reset > now ? row.count + 1 : 1, reset: row && row.reset > now ? row.reset : now + 15 * 60 * 1000 });
   } catch (err) {
-    console.error('admin auth rate-limit unavailable; rejecting request', err?.message || err);
-    return true;
+    console.error('admin auth rate-limit unavailable; using instance fallback', err?.message || err);
+    return memoryLimited(ip);
   }
   return false;
 }
