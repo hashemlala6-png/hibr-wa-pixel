@@ -15,7 +15,10 @@ async function limited(ip) {
     const row = await store.get(key, { type: 'json' });
     if (row && row.reset > now && row.count >= 12) return true;
     await store.setJSON(key, { count: row && row.reset > now ? row.count + 1 : 1, reset: row && row.reset > now ? row.reset : now + 15 * 60 * 1000 });
-  } catch { /* rate limiting must never block authentication */ }
+  } catch (err) {
+    console.error('admin auth rate-limit unavailable; rejecting request', err?.message || err);
+    return true;
+  }
   return false;
 }
 
