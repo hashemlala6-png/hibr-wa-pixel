@@ -14,20 +14,34 @@ const stores = {
   subscriptions:()=>getStore({name:'hbpx-subscriptions',consistency:'strong'}),
   deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'strong'}),
   resultPlans:()=>getStore({name:'hbpx-result-plans',consistency:'strong'}),
-  activity:()=>getStore({name:'hbpx-client-activity',consistency:'strong'})
+  activity:()=>getStore({name:'hbpx-client-activity',consistency:'strong'}),
+  accounts:()=>getStore({name:'hbpx-client-accounts',consistency:'strong'})
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 async function all(name,prefix){const r=await stores[name]().list({prefix});const out=[];for(const b of r.blobs||[]){try{const x=await stores[name]().get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out}
 async function build(){
- const [leads,quotes,projects,payments,tasks,expenses,invoices,contracts,subscriptions,deliveries,resultPlans,activities]=await Promise.all([
+ const [leads,quotes,projects,payments,tasks,expenses,invoices,contracts,subscriptions,deliveries,resultPlans,activities,accounts]=await Promise.all([
   all('leads','lead-'),all('quotes','quote-'),all('projects','project-'),all('payments','payment-'),all('tasks','task-'),all('expenses','expense-'),all('invoices','invoice-'),all('contracts','contract-'),all('subscriptions','subscription-'),all('deliveries','delivery-'),all('resultPlans','result-'),all('activity','activity-')
  ]);
  const saved=await all('clients','client-'); const savedMap=new Map(saved.map(x=>[x.id,x]));
  const groups=new Map();
  leads.forEach(l=>{const cid=l.clientId||l.id;if(!groups.has(cid))groups.set(cid,[]);groups.get(cid).push(l)});
+ const accountMap=new Map(accounts.map(a=>[a.id,a]));
+ for(const a of accounts){
+   if(!groups.has(a.id)) groups.set(a.id,[]);
+ }
  return Array.from(groups.entries()).map(([id,group])=>{
+   const account=accountMap.get(id)||null;
+   if(!group.length && account){
+     const now=account.updatedAt||account.createdAt;
+     return {id,leadIds:[],name:account.name,whatsapp:account.whatsapp,activity:'',source:'account',status:'account',createdAt:account.createdAt,updatedAt:account.updatedAt,
+       email:account.email,lastLoginAt:account.lastLoginAt||null,
+       memory:{objective:'',audience:'',offer:'',problem:'',platform:'Instagram',brand:'',deliverables:'',constraints:'',context:'',notes:'',updatedAt:null},
+       stats:{leads:0,quotes:0,projects:0,payments:0,openTasks:0,totalPaid:0},lastProject:null,lastResult:null,
+       activityTimeline:[],projects:[],accountOnly:true};
+   }
    group.sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt));
-   const l=group[0], leadIds=new Set(group.map(x=>x.id)), profile=savedMap.get(id)||{};
+   const l=group[0], leadIds=new Set(group.map(x=>x.id)), profile=savedMap.get(id)||{}, account=accountMap.get(id)||null;
    const ps=projects.filter(x=>leadIds.has(x.leadId)), q=quotes.filter(x=>leadIds.has(x.leadId)), pids=new Set(ps.map(x=>x.id));
    const ev=(activities.filter(x=>x.clientId===id||leadIds.has(x.clientId)).map(x=>({id:x.id,type:x.type,label:x.label,at:x.createdAt,data:x.details||{}})));
    const add=(arr,type,label,getId)=>arr.forEach(x=>{if(getId(x))ev.push({id:x.id+'-derived',type,label,at:x.updatedAt||x.createdAt||new Date().toISOString(),data:x})});
@@ -39,7 +53,7 @@ async function build(){
    const lastResult=resultPlans.filter(x=>leadIds.has(x.leadId)||x.clientId===id||ps.some(p=>p.id===x.projectId)).sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))[0]||null;
    const lastProject=ps.slice().sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))[0]||null;
    const totalPaid=payments.filter(x=>pids.has(x.projectId)).reduce((a,x)=>a+Number(x.amount||0),0);
-   return {id,leadIds:Array.from(leadIds),name:l.name,whatsapp:l.whatsapp,activity:l.activity||'',source:l.source||'',status:l.status||'new',createdAt:group[group.length-1].createdAt,updatedAt:l.updatedAt,
+   return {id,leadIds:Array.from(leadIds),name:l.name||account?.name||'—',email:account?.email||l.email||'',whatsapp:l.whatsapp||account?.whatsapp||'',activity:l.activity||'',source:l.source||'',status:l.status||'new',createdAt:group[group.length-1].createdAt||account?.createdAt,updatedAt:l.updatedAt||account?.updatedAt,lastLoginAt:account?.lastLoginAt||null,
      memory:{objective:profile.memory?.objective||'',audience:profile.memory?.audience||'',offer:profile.memory?.offer||'',problem:profile.memory?.problem||'',platform:profile.memory?.platform||'Instagram',brand:profile.memory?.brand||'',deliverables:profile.memory?.deliverables||'',constraints:profile.memory?.constraints||'',context:profile.memory?.context||'',notes:profile.memory?.notes||'',updatedAt:profile.memory?.updatedAt||profile.updatedAt||null},
      stats:{leads:group.length,quotes:q.length,projects:ps.length,payments:payments.filter(x=>pids.has(x.projectId)).length,openTasks:tasks.filter(x=>pids.has(x.projectId)&&x.status!=='done').length,totalPaid},
      lastProject,lastResult,activityTimeline:ev.slice(0,120),projects:ps};
