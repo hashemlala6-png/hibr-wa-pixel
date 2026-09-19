@@ -3,12 +3,11 @@ const {getStore}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const store=()=>getStore({name:'hbpx-owner-notifications',consistency:'strong'});
 const stateStore=()=>getStore({name:'hbpx-owner-notification-state',consistency:'strong'});
-const keyOf=x=>String(x||'').slice(0,160);
 async function list(limit=60){
   const out=[]; let cursor;
   do{
     const r=await store().list({prefix:'notification-',cursor,limit:100});
-    for(const x of r.blobs||[]){const item=await store().get(x.key,{type:'json'}).catch(()=>null);if(item)out.push(item);}
+    for(const x of r.blobs||[]){const item=await store().get(x.key,{type:'json'}).catch(()=>null);if(item)out.push({...item,_key:x.key});}
     cursor=r.cursor;
   }while(cursor && out.length<300);
   out.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -34,7 +33,7 @@ exports.handler=async e=>{
       }
       if(b.action==='clear'){
         const items=await list(200);
-        await Promise.all(items.map(x=>store().delete(`notification-${x.id}`).catch(()=>{})));
+        await Promise.all(items.map(x=>store().delete(x._key).catch(()=>{})));
         await stateStore().setJSON('owner',{readAt:now});
         return json(200,{ok:true});
       }
