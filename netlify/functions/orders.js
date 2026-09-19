@@ -52,10 +52,34 @@ exports.handler=async e=>{
   const now=new Date().toISOString();
   const clientId=account.clientId||account.id;
   const orderId=`order-${account.id}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-  const leadId=`lead-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-  const lead={id:leadId,clientId,name:account.name,whatsapp:account.whatsapp,activity:service,message:details,source:'authenticated-order',package:budget,status:'new',timeline,createdAt:now,updatedAt:now};
+  // Reuse an existing open lead for this unified client identity when possible.
+  // This prevents repeated authenticated orders from creating duplicate leads
+  // while preserving a new lead when the previous opportunity is already closed.
+  let leadId=null, lead=null;
+  const indexed=await leadIndex().list({prefix:`client-${clientId}-`,limit:200}).catch(()=>({blobs:[]}));
+  const candidates=[];
+  for(const item of indexed.blobs||[]){
+    const ref=await leadIndex().get(item.key,{type:'json'}).catch(()=>null);
+    if(!ref?.leadId)continue;
+    const existing=await leads().get(ref.leadId,{type:'json'}).catch(()=>null);
+    if(existing && ['new','contacted','proposal'].includes(existing.status)) candidates.push(existing);
+  }
+  candidates.sort((a,b)=>new Date(b.updatedAt||b.createdAt||0)-new Date(a.updatedAt||a.createdAt||0));
+  lead=candidates[0]||null;
+  if(lead){
+    leadId=lead.id;
+    lead.name=account.name; lead.whatsapp=account.whatsapp; lead.activity=service;
+    lead.message=details; lead.package=budget; lead.timeline=timeline;
+    lead.source=lead.source||'authenticated-order'; lead.status='new'; lead.updatedAt=now;
+    await leads().setJSON(leadId,lead);
+  }else{
+    leadId=`lead-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    lead={id:leadId,clientId,name:account.name,whatsapp:account.whatsapp,activity:service,message:details,source:'authenticated-order',package:budget,status:'new',timeline,createdAt:now,updatedAt:now};
+    await leads().setJSON(leadId,lead);
+  }
+  await leadIndex().setJSON(`client-${clientId}-${leadId}`,{leadId,clientId,createdAt:lead.createdAt||now,updatedAt:now});
   const order={id:orderId,clientId,accountId:account.id,name:account.name,email:account.email,whatsapp:account.whatsapp,service,budget,timeline,details,status:'new',createdAt:now,updatedAt:now,leadId};
-  await leads().setJSON(leadId,lead); await leadIndex().setJSON(`client-${clientId}-${leadId}`,{leadId,clientId,createdAt:now}); await orders().setJSON(orderId,order);
+  await orders().setJSON(orderId,order);
   await logActivity(clientId,'order','تم إنشاء طلب جديد من حساب العميل',{orderId,service,budget,timeline});
   return json(201,{ok:true,order});
 };
