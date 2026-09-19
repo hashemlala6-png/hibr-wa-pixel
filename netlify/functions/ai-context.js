@@ -10,6 +10,7 @@ const stores = {
   activityIndex: () => getStore({ name: 'hbpx-client-activity-index', consistency: 'strong' }),
   leadIndex: () => getStore({ name: 'hbpx-lead-index', consistency: 'strong' }),
   resultIndex: () => getStore({ name: 'hbpx-result-client-index', consistency: 'strong' }),
+  accounts: () => getStore({ name: 'hbpx-client-accounts', consistency: 'strong' }),
 };
 
 const clean = (v, n = 5000) => String(v ?? '').trim().slice(0, n);
@@ -44,8 +45,9 @@ async function getAIContext(clientId) {
   clientId = clean(clientId, 120);
   if (!clientId) return null;
 
-  const [profile, indexedLeads, indexedActivities, indexedResults, indexedAI, dna] = await Promise.all([
+  const [profile, account, indexedLeads, indexedActivities, indexedResults, indexedAI, dna] = await Promise.all([
     stores.clients().get(clientId, { type: 'json' }).catch(() => null),
+    stores.accounts().get(clientId, { type: 'json' }).catch(() => null),
     indexedJSON(stores.leadIndex(), `client-${clientId}-`, stores.leads(), 'lead-').catch(()=>[]),
     indexedJSON(stores.activityIndex(), `client-${clientId}-`, stores.activity(), 'activity-').catch(()=>[]),
     indexedJSON(stores.resultIndex(), `client-${clientId}-`, stores.results(), 'result-').catch(()=>[]),
@@ -53,14 +55,14 @@ async function getAIContext(clientId) {
     listJSON(stores.dna(), `dna-${clientId}-`),
   ]);
   const [leads, activities, results, aiHistory] = await Promise.all([
-    indexedLeads.length ? indexedLeads : listJSON(stores.leads(), 'lead-'),
-    indexedActivities.length ? indexedActivities : listJSON(stores.activity(), 'activity-'),
-    indexedResults.length ? indexedResults : listJSON(stores.results(), 'result-'),
-    indexedAI.length ? indexedAI : listJSON(stores.aiHistory(), 'ai-'),
+    indexedLeads.length ? indexedLeads : listJSON(stores.leads(), 'lead-').then(xs=>xs.filter(x=>x.clientId===clientId||x.id===clientId)),
+    indexedActivities.length ? indexedActivities : listJSON(stores.activity(), 'activity-').then(xs=>xs.filter(x=>x.clientId===clientId)),
+    indexedResults.length ? indexedResults : listJSON(stores.results(), 'result-').then(xs=>xs.filter(x=>x.clientId===clientId||x.leadId===clientId)),
+    indexedAI.length ? indexedAI : listJSON(stores.aiHistory(), 'ai-').then(xs=>xs.filter(x=>x.clientId===clientId)),
   ]);
 
   const lead = leads.filter(x => x.id === clientId || x.clientId === clientId).sort((a,b) => new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))[0] || null;
-  const effectiveClient = profile || lead || { id: clientId };
+  const effectiveClient = profile || lead || (account ? {id:account.id,name:account.name,email:account.email,whatsapp:account.whatsapp} : { id: clientId });
 
   const activityItems = activities
     .filter(x => x.clientId === clientId)
