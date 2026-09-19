@@ -1,0 +1,9 @@
+const { env } = require('./env');
+const { getStore } = require('@netlify/blobs');
+const { requireAdmin, json } = require('./auth-utils');
+const { logActivity } = require('./client-activity');
+const crypto = require('crypto');
+const store=()=>getStore({name:'hbpx-creative-dna',consistency:'strong'});
+const clean=(v,n=5000)=>String(v??'').trim().slice(0,n);
+async function list(clientId){const r=await store().list({prefix:`dna-${clientId}-`});const out=[];for(const b of r.blobs||[]){try{const x=await store().get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,50)}
+exports.handler=async e=>{if(e.httpMethod==='OPTIONS')return json(204,{});const auth=requireAdmin(e);if(auth)return auth;if(e.httpMethod!=='POST'&&e.httpMethod!=='GET')return json(405,{error:'Method not allowed'});try{const clientId=clean(e.queryStringParameters?.clientId||'',120);if(e.httpMethod==='GET'){if(!clientId)return json(400,{error:'العميل مطلوب.'});return json(200,{items:await list(clientId)});}let b={};try{b=JSON.parse(e.body||'{}')}catch{return json(400,{error:'بيانات غير صالحة.'})}if(!clean(b.clientId,120))return json(400,{error:'العميل مطلوب.'});const item={id:`dna-${clean(b.clientId,120)}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,clientId:clean(b.clientId,120),action:clean(b.action,40),instruction:clean(b.instruction,2000),whatChanged:clean(b.whatChanged,2000),reason:clean(b.reason,2000),approved:!!b.approved,createdAt:new Date().toISOString()};await store().setJSON(item.id,item);await logActivity(item.clientId,'creative-dna',`DNA — ${item.action}`,{instruction:item.instruction,approved:item.approved,whatChanged:item.whatChanged});return json(200,{item});}catch(err){return json(500,{error:'تعذر حفظ الـCreative DNA.',details:env('NODE_ENV')==='development'?err.message:undefined})}}
