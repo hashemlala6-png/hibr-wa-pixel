@@ -18,7 +18,8 @@ async function limited(e,kind){
     if(Number(cur.count||0)>=max)return false;
     await rate().setJSON(k,{...cur,count:Number(cur.count||0)+1});
   }catch(err){
-    console.warn('client auth rate-limit unavailable; allowing request', err?.message||err);
+    console.error('client auth rate-limit unavailable; rejecting request', err?.message||err);
+    return false;
   }
   return true;
 }
