@@ -49,6 +49,7 @@ exports.handler = async event => {
   const required = ['clientName','business','objective','audience','offer'];
   const key = env('ANTHROPIC_API_KEY');
   const clientId = clean(b.clientId, 120);
+  if (!clientId) return json(400, { error: 'اختر العميل أولاً.' });
   const clientContext = await getAIContext(clientId);
   const memory = clientContext?.memory || {};
   if (clientContext) {
