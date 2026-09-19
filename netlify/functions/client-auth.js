@@ -60,7 +60,7 @@ exports.handler=async e=>{
   if(e.httpMethod==='GET'&&action==='me'){
     const s=getClientSession(e); if(!s)return json(200,{authenticated:false});
     const a=await accounts().get(s.sub,{type:'json'}).catch(()=>null); if(!a)return json(200,{authenticated:false});
-    return json(200,{authenticated:true,client:{id:a.id,name:a.name,email:a.email,whatsapp:a.whatsapp}});
+    return json(200,{authenticated:true,client:{id:a.id,clientId:a.clientId||a.id,name:a.name,email:a.email,whatsapp:a.whatsapp}});
   }
   if(e.httpMethod==='POST'&&action==='logout') return json(200,{authenticated:false},{'Set-Cookie':clearCookie()});
   if(e.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
@@ -76,17 +76,17 @@ exports.handler=async e=>{
     if(!name||whatsapp.length<10)return json(400,{error:'الاسم ورقم واتساب مطلوبان.'});
     const pw=makePassword(password); const now=new Date().toISOString(); const clientId=await findExistingClientId(email,whatsapp)||id; const account={id,name,email,whatsapp,clientId,passwordHash:pw.hash,salt:pw.salt,createdAt:now,updatedAt:now,lastLoginAt:null};
     await accounts().setJSON(id,account);
-    await safeActivity(id,'client-account','تم إنشاء حساب عميل جديد',{name,email,whatsapp});
+    await safeActivity(clientId,'client-account','تم إنشاء حساب عميل جديد',{name,email,whatsapp});
     await safeMetric('client-register',{clientId:id});
     const token=createClientSession(id);
-    return json(201,{authenticated:true,client:{id,name,email,whatsapp}},{'Set-Cookie':sessionCookie(token)});
+    return json(201,{authenticated:true,client:{id,clientId,name,email,whatsapp}},{'Set-Cookie':sessionCookie(token)});
   }
   if(action==='login'){
     const a=await accounts().get(id,{type:'json'}).catch(()=>null);
     if(!a||!a.passwordHash||!checkPassword(password,a))return json(401,{error:'البريد أو كلمة المرور غير صحيحة.'});
     if(!a.clientId){a.clientId=await findExistingClientId(a.email,normalizePhone(a.whatsapp))||a.id;}
     a.lastLoginAt=new Date().toISOString(); a.updatedAt=a.lastLoginAt; await accounts().setJSON(id,a);
-    await safeActivity(a.id,'client-login','تم تسجيل دخول عميل',{email:a.email});
+    await safeActivity(a.clientId||a.id,'client-login','تم تسجيل دخول عميل',{email:a.email});
     await safeMetric('client-login',{clientId:a.id});
     const token=createClientSession(a.id);
     return json(200,{authenticated:true,client:{id:a.id,name:a.name,email:a.email,whatsapp:a.whatsapp}},{'Set-Cookie':sessionCookie(token)});
