@@ -26,9 +26,12 @@ async function build(){
  const saved=await all('clients','client-'); const savedMap=new Map(saved.map(x=>[x.id,x]));
  const groups=new Map();
  leads.forEach(l=>{const cid=l.clientId||l.id;if(!groups.has(cid))groups.set(cid,[]);groups.get(cid).push(l)});
- const accountMap=new Map(accounts.map(a=>[a.id,a]));
+ const accountMap=new Map();
  for(const a of accounts){
-   if(!groups.has(a.id)) groups.set(a.id,[]);
+   accountMap.set(a.id,a);
+   if(a.clientId) accountMap.set(a.clientId,a);
+   const cid=a.clientId||a.id;
+   if(!groups.has(cid)) groups.set(cid,[]);
  }
  return Array.from(groups.entries()).map(([id,group])=>{
    const account=accountMap.get(id)||null;
