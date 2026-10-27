@@ -41,6 +41,66 @@ async function rateLimit(ip){
   if(Number(cur.count||0)>=max)return {ok:false,retryAfter:Math.ceil((windowMs-(now-cur.startedAt))/1000)};
   await rateStore().setJSON(key,{...cur,count:Number(cur.count||0)+1});return {ok:true};
 }
+
+const htmlEscape = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function notifyOwner(lead) {
+  const summary = [
+    'طلب جديد — حبر وبكسل',
+    'الاسم: ' + lead.name,
+    'واتساب: ' + lead.whatsapp,
+    'البريد: ' + (lead.email || 'غير مذكور'),
+    'الخدمة: ' + (lead.service || 'غير محددة'),
+    'الميزانية: ' + (lead.budget || 'غير محددة'),
+    'التفاصيل: ' + (lead.details || '—'),
+    'المصدر: ' + lead.source,
+    'رقم الطلب: ' + lead.id
+  ].join('\n');
+  const results = { email: 'not_configured', whatsapp: 'not_configured' };
+  const emailKey = process.env.RESEND_API_KEY;
+  const to = process.env.LEADS_NOTIFY_EMAIL;
+  const from = process.env.LEADS_FROM_EMAIL;
+  if (emailKey && to && from) {
+    try {
+      const r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + emailKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from, to: [to], subject: 'طلب جديد من ' + lead.name + ' — حبر وبكسل',
+          text: summary,
+          html: '<h2>طلب جديد — حبر وبكسل</h2><pre style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.8">' + htmlEscape(summary) + '</pre>'
+        })
+      });
+      results.email = r.ok ? 'sent' : 'failed';
+      if (!r.ok) console.error('lead email notification failed', r.status, (await r.text()).slice(0,300));
+    } catch (err) { results.email = 'failed'; console.error('lead email notification failed', err?.message || err); }
+  }
+  const waToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const template = process.env.WHATSAPP_TEMPLATE_NAME;
+  const ownerPhone = (process.env.WHATSAPP_OWNER_NUMBER || '9647721971156').replace(/\D/g, '');
+  if (waToken && phoneId && template) {
+    try {
+      const locale = process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'ar';
+      const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + waToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp', recipient_type: 'individual', to: ownerPhone, type: 'template',
+          template: { name: template, language: { code: locale }, components: [{ type: 'body', parameters: [
+            { type: 'text', text: String(lead.name || 'عميل').slice(0, 200) },
+            { type: 'text', text: String(lead.whatsapp || '—').slice(0, 100) },
+            { type: 'text', text: String(lead.service || 'غير محددة').slice(0, 200) },
+            { type: 'text', text: String(lead.budget || 'غير محددة').slice(0, 100) }
+          ] }] }
+        })
+      });
+      results.whatsapp = r.ok ? 'sent' : 'failed';
+      if (!r.ok) console.error('lead WhatsApp notification failed', r.status, (await r.text()).slice(0,300));
+    } catch (err) { results.whatsapp = 'failed'; console.error('lead WhatsApp notification failed', err?.message || err); }
+  }
+  return results;
+}
+
 const allowedStatuses = ['new', 'contacted', 'proposal', 'won', 'active', 'completed', 'lost'];
 
 function clean(v, max = 2000) { return String(v ?? '').trim().slice(0, max); }
@@ -92,7 +152,9 @@ exports.handler = async (event) => {
     catch (err) { console.error('lead index write failed', err?.message || err); }
     try { await logActivity(clientId,'lead','تم إنشاء العميل المحتمل',{source:lead.source,package:lead.package,activity:lead.activity}); }
     catch (err) { console.error('lead activity write failed', err?.message || err); }
-    return json(201, { ok: true, leadId: id });
+    // Notifications are best-effort: email or WhatsApp outages must not undo a saved lead.
+    const notifications = await notifyOwner(lead);
+    return json(201, { ok: true, leadId: id, notifications });
   }
 
   const auth = requireAdmin(event);
