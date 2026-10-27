@@ -1,4 +1,4 @@
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const crypto = require('crypto');
 const { logActivity } = require('./client-activity');
@@ -37,6 +37,9 @@ const allowedStatuses = ['new', 'contacted', 'proposal', 'won', 'active', 'compl
 function clean(v, max = 2000) { return String(v ?? '').trim().slice(0, max); }
 
 exports.handler = async (event) => {
+  // This function uses the Lambda compatibility handler shape; initialize
+  // Netlify Blobs from the Lambda event before any store is accessed.
+  connectLambda(event);
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: {}, body: '' };
 
   if (event.httpMethod === 'POST') {
