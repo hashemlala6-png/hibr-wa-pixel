@@ -1,0 +1,22 @@
+{
+  "id": "/admin.html",
+  "name": "Hibr & Pixel — لوحة الإدارة",
+  "short_name": "Hibr Admin",
+  "description": "لوحة إدارة Hibr & Pixel",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/admin.html",
+  "scope": "/admin.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f9fb",
+  "theme_color": "#f7f9fb",
+  "icons": [
+    {
+      "src": "/admin-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
