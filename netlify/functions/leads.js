@@ -1,4 +1,4 @@
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const crypto = require('crypto');
 const { logActivity } = require('./client-activity');
@@ -8,11 +8,11 @@ const rateStore = () => getStore({ name: 'hbpx-lead-rate', consistency: 'strong'
 const clientIndex = () => getStore({ name: 'hbpx-lead-index', consistency: 'strong' });
 const accountsStore = () => getStore({ name: 'hbpx-client-accounts', consistency: 'strong' });
 function normalizeEmail(v){return String(v||'').trim().toLowerCase();}
-function normalizePhone(v){return String(v||'').replace(/\\D/g,'').replace(/^0/,'964');}
+function normalizePhone(v){return String(v||'').replace(/\D/g,'').replace(/^0/,'964');}
 async function findExistingAccountClientId(email,phone){
   const targetEmail=normalizeEmail(email), targetPhone=normalizePhone(phone);
   if(!targetEmail&&!targetPhone)return null;
-  const r=await accountsStore().list({prefix:'account-'}).catch(()=>({blobs:[]}));
+  const r=await accountsStore().list({prefix:'email-'}).catch(()=>({blobs:[]}));
   let best=null;
   for(const b of r.blobs||[]){
     const a=await accountsStore().get(b.key,{type:'json'}).catch(()=>null);
@@ -37,6 +37,9 @@ const allowedStatuses = ['new', 'contacted', 'proposal', 'won', 'active', 'compl
 function clean(v, max = 2000) { return String(v ?? '').trim().slice(0, max); }
 
 exports.handler = async (event) => {
+  // This function uses the Lambda compatibility handler shape; initialize
+  // Netlify Blobs from the Lambda event before any store is accessed.
+  connectLambda(event);
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: {}, body: '' };
 
   if (event.httpMethod === 'POST') {
