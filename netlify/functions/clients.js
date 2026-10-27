@@ -21,7 +21,7 @@ const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 async function all(name,prefix){const r=await stores[name]().list({prefix});const out=[];for(const b of r.blobs||[]){try{const x=await stores[name]().get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out}
 async function build(){
  const [leads,quotes,projects,payments,tasks,expenses,invoices,contracts,subscriptions,deliveries,resultPlans,activities,accounts]=await Promise.all([
-  all('leads','lead-'),all('quotes','quote-'),all('projects','project-'),all('payments','payment-'),all('tasks','task-'),all('expenses','expense-'),all('invoices','invoice-'),all('contracts','contract-'),all('subscriptions','subscription-'),all('deliveries','delivery-'),all('resultPlans','result-'),all('activity','activity-')
+  all('leads','lead-'),all('quotes','quote-'),all('projects','project-'),all('payments','payment-'),all('tasks','task-'),all('expenses','expense-'),all('invoices','invoice-'),all('contracts','contract-'),all('subscriptions','subscription-'),all('deliveries','delivery-'),all('resultPlans','result-'),all('activity','activity-'),all('accounts','email-')
  ]);
  const saved=await all('clients','client-'); const savedMap=new Map(saved.map(x=>[x.id,x]));
  const groups=new Map();
