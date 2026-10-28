@@ -1,21 +1,22 @@
 const { env } = require('./env');
 const { getStore } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
+const blobOptions = (name) => { const options={name,consistency:'strong'}; const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae'; const token=process.env.NETLIFY_AUTH_TOKEN; if(siteID&&token){options.siteID=siteID;options.token=token;} return options; };
 const stores = {
-  leads:()=>getStore({name:'hbpx-leads',consistency:'strong'}),
-  clients:()=>getStore({name:'hbpx-clients',consistency:'strong'}),
-  quotes:()=>getStore({name:'hbpx-quotes',consistency:'strong'}),
-  projects:()=>getStore({name:'hbpx-projects',consistency:'strong'}),
-  payments:()=>getStore({name:'hbpx-payments',consistency:'strong'}),
-  tasks:()=>getStore({name:'hbpx-tasks',consistency:'strong'}),
-  expenses:()=>getStore({name:'hbpx-expenses',consistency:'strong'}),
-  invoices:()=>getStore({name:'hbpx-invoices',consistency:'strong'}),
-  contracts:()=>getStore({name:'hbpx-contracts',consistency:'strong'}),
-  subscriptions:()=>getStore({name:'hbpx-subscriptions',consistency:'strong'}),
-  deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'strong'}),
-  resultPlans:()=>getStore({name:'hbpx-result-plans',consistency:'strong'}),
-  activity:()=>getStore({name:'hbpx-client-activity',consistency:'strong'}),
-  accounts:()=>getStore({name:'hbpx-client-accounts',consistency:'strong'})
+  leads:()=>getStore(blobOptions('hbpx-leads')),
+  clients:()=>getStore(blobOptions('hbpx-clients')),
+  quotes:()=>getStore(blobOptions('hbpx-quotes')),
+  projects:()=>getStore(blobOptions('hbpx-projects')),
+  payments:()=>getStore(blobOptions('hbpx-payments')),
+  tasks:()=>getStore(blobOptions('hbpx-tasks')),
+  expenses:()=>getStore(blobOptions('hbpx-expenses')),
+  invoices:()=>getStore(blobOptions('hbpx-invoices')),
+  contracts:()=>getStore(blobOptions('hbpx-contracts')),
+  subscriptions:()=>getStore(blobOptions('hbpx-subscriptions')),
+  deliveries:()=>getStore(blobOptions('hbpx-deliveries')),
+  resultPlans:()=>getStore(blobOptions('hbpx-result-plans')),
+  activity:()=>getStore(blobOptions('hbpx-client-activity')),
+  accounts:()=>getStore(blobOptions('hbpx-client-accounts'))
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 async function all(name,prefix){const r=await stores[name]().list({prefix});const out=[];for(const b of r.blobs||[]){try{const x=await stores[name]().get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out}
