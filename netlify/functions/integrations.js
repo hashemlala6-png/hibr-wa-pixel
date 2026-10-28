@@ -4,7 +4,7 @@ const { getStore } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
 
-const store = () => getStore({name:'hbpx-integrations', consistency:'strong'});
+const blobOptions = (name) => { const options={name,consistency:'strong'}; const siteID=env('NETLIFY_SITE_ID')||env('SITE_ID')||'76bd352d-826a-49dc-8f0f-5f576610b1ae'; const token=env('NETLIFY_AUTH_TOKEN'); if(siteID&&token){options.siteID=siteID;options.token=token;} return options; };\nconst store = () => getStore(blobOptions('hbpx-integrations'));
 const MAX = 12000;
 const clean=(v,n=MAX)=>String(v??'').trim().slice(0,n);
 const secretKey=()=>crypto.createHash('sha256').update(env('ADMIN_SESSION_SECRET')||'').digest();
