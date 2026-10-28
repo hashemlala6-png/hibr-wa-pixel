@@ -3,10 +3,11 @@ const {getStore}=require('@netlify/blobs');
 const {json,requireAdmin}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const {logActivity}=require('./client-activity');
-const accounts=()=>getStore({name:'hbpx-client-accounts',consistency:'strong'});
-const orders=()=>getStore({name:'hbpx-orders',consistency:'strong'});
-const leads=()=>getStore({name:'hbpx-leads',consistency:'strong'});
-const leadIndex=()=>getStore({name:'hbpx-lead-index',consistency:'strong'});
+const blobOptions=(name)=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
+const accounts=()=>getStore(blobOptions('hbpx-client-accounts'));
+const orders=()=>getStore(blobOptions('hbpx-orders'));
+const leads=()=>getStore(blobOptions('hbpx-leads'));
+const leadIndex=()=>getStore(blobOptions('hbpx-lead-index'));
 const clean=(v,n=3000)=>String(v??'').trim().slice(0,n);
 exports.handler=async e=>{
   if(e.httpMethod==='OPTIONS')return json(204,{});
