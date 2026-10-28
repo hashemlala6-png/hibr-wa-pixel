@@ -4,15 +4,16 @@ const {getStore}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
 
+const blobOptions=(name)=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const S={
- leads:()=>getStore({name:'hbpx-leads',consistency:'strong'}),
- projects:()=>getStore({name:'hbpx-projects',consistency:'strong'}),
- quotes:()=>getStore({name:'hbpx-quotes',consistency:'strong'}),
- subs:()=>getStore({name:'hbpx-subscriptions',consistency:'strong'}),
- tasks:()=>getStore({name:'hbpx-tasks',consistency:'strong'}),
- plans:()=>getStore({name:'hbpx-execution-plans',consistency:'strong'}),
- autopilot:()=>getStore({name:'hbpx-autopilot',consistency:'strong'}),
- gates:()=>getStore({name:'hbpx-review-gates',consistency:'strong'})
+ leads:()=>getStore(blobOptions('hbpx-leads')),
+ projects:()=>getStore(blobOptions('hbpx-projects')),
+ quotes:()=>getStore(blobOptions('hbpx-quotes')),
+ subs:()=>getStore(blobOptions('hbpx-subscriptions')),
+ tasks:()=>getStore(blobOptions('hbpx-tasks')),
+ plans:()=>getStore(blobOptions('hbpx-execution-plans')),
+ autopilot:()=>getStore(blobOptions('hbpx-autopilot')),
+ gates:()=>getStore(blobOptions('hbpx-review-gates'))
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 const num=v=>{const n=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(n)?n:0};
