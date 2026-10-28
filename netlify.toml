@@ -21,3 +21,13 @@
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive"
 
+
+[[headers]]
+  for = "/ceo-brain.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/company-os.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
