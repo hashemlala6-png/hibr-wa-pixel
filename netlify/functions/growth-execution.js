@@ -6,7 +6,8 @@ const {getAIContext,saveAIHistory}=require('./ai-context');
 const stores={
  projects:()=>getStore({name:'hbpx-projects',consistency:'strong'}),
  tasks:()=>getStore({name:'hbpx-tasks',consistency:'strong'}),
- plans:()=>getStore({name:'hbpx-execution-plans',consistency:'strong'})
+ plans:()=>getStore({name:'hbpx-execution-plans',consistency:'strong'}),
+ gates:()=>getStore({name:'hbpx-review-gates',consistency:'strong'})
 };
 const clean=(v,n=3000)=>String(v??'').trim().slice(0,n);
 const list=async(name,prefix)=>{const st=stores[name](),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt));};
@@ -26,6 +27,8 @@ exports.handler=async e=>{
   let b={};try{b=JSON.parse(e.body||'{}')}catch{return json(400,{error:'بيانات غير صالحة.'})}
   const action=clean(b.action,40),clientId=clean(b.clientId,120);if(!clientId)return json(400,{error:'العميل مطلوب.'});
   if(action==='create_plan'){
+   const reviewGateId=clean(b.reviewGateId,180);if(!reviewGateId)return json(409,{error:'قبل إنشاء خطة التنفيذ، أنشئي مرحلة مراجعة واعتمديها من مركز المراجعة.'});
+   const reviewGate=await stores.gates().get(reviewGateId,{type:'json'});if(!reviewGate||reviewGate.status!=='approved')return json(409,{error:'خطة التنفيذ تحتاج إلى مرحلة مراجعة موجودة ومعتمدة.'});
    const projectId=clean(b.projectId,120);if(!projectId)return json(400,{error:'اختر المشروع.'});
    const project=await stores.projects().get(projectId,{type:'json'});if(!project)return json(404,{error:'المشروع غير موجود.'});
    if(project.leadId!==clientId&&project.clientId!==clientId)return json(403,{error:'المشروع لا يتبع لهذا العميل.'});
@@ -34,7 +37,7 @@ exports.handler=async e=>{
    const rawTasks=Array.isArray(b.tasks)?b.tasks.slice(0,20):[];
    if(!objective||!decision||!rawTasks.length)return json(400,{error:'الهدف والقرار ومهمة واحدة على الأقل مطلوبة.'});
    const now=new Date().toISOString(),planId=uid('execution');
-   const plan={id:planId,clientId,projectId,title,objective,decision,source:clean(b.source,300)||'owner',status:'active',createdAt:now,updatedAt:now,expectedMetric:clean(b.expectedMetric,300),baselineValue:clean(b.baselineValue,120),targetValue:clean(b.targetValue,120)};
+   const plan={id:planId,clientId,projectId,title,objective,decision,source:clean(b.source,300)||'owner',reviewGateId,reviewGateTitle:reviewGate.title,status:'active',createdAt:now,updatedAt:now,expectedMetric:clean(b.expectedMetric,300),baselineValue:clean(b.baselineValue,120),targetValue:clean(b.targetValue,120)};
    await stores.plans().setJSON(planId,plan);
    const created=[];
    for(const t of rawTasks){
@@ -43,7 +46,7 @@ exports.handler=async e=>{
     if(!x.title)continue;await stores.tasks().setJSON(taskId,x);created.push(x);
    }
    await saveAIHistory({clientId,mode:'growth-execution-plan',topic:title,input:JSON.stringify({objective,decision,tasks:created.map(x=>x.title)}),output:JSON.stringify(plan),metadata:{planId,projectId}});
-   await logActivity(clientId,'execution','تم تحويل توصية النمو إلى خطة تنفيذ',{planId,projectId,title,taskCount:created.length});
+   await logActivity(clientId,'execution','تم إنشاء خطة تنفيذ بعد اعتماد مرحلة المراجعة',{planId,projectId,title,taskCount:created.length,reviewGateId});
    return json(201,{plan,tasks:created});
   }
   if(action==='record_result'){
