@@ -11,7 +11,8 @@ const S={
  subs:()=>getStore({name:'hbpx-subscriptions',consistency:'strong'}),
  tasks:()=>getStore({name:'hbpx-tasks',consistency:'strong'}),
  plans:()=>getStore({name:'hbpx-execution-plans',consistency:'strong'}),
- autopilot:()=>getStore({name:'hbpx-autopilot',consistency:'strong'})
+ autopilot:()=>getStore({name:'hbpx-autopilot',consistency:'strong'}),
+ gates:()=>getStore({name:'hbpx-review-gates',consistency:'strong'})
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 const num=v=>{const n=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(n)?n:0};
