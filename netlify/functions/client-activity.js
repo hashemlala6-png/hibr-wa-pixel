@@ -1,8 +1,9 @@
 const crypto=require('crypto');
 const {getStore}=require('@netlify/blobs');
-const store=()=>getStore({name:'hbpx-client-activity',consistency:'strong'});
-const indexStore=()=>getStore({name:'hbpx-client-activity-index',consistency:'strong'});
-const notificationStore=()=>getStore({name:'hbpx-owner-notifications',consistency:'strong'});
+const blobOptions=name=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
+const store=()=>getStore(blobOptions('hbpx-client-activity'));
+const indexStore=()=>getStore(blobOptions('hbpx-client-activity-index'));
+const notificationStore=()=>getStore(blobOptions('hbpx-owner-notifications'));
 const clean=(v,n=1200)=>String(v??'').trim().slice(0,n);
 
 // Activity/notifications are secondary telemetry. They must never make a
