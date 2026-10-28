@@ -26,6 +26,7 @@ async function snapshot(){
  const booked=d.projects.reduce((s,x)=>s+num(x.amount),0);
  const data={
    generatedAt:new Date().toISOString(),
+   projects:d.projects.map(x=>({id:x.id,name:x.name||x.title||x.clientName||x.id,status:x.status||''})),
    counts:{leads:d.leads.length,newLeads:newLeads.length,orders:d.orders.length,openOrders:d.orders.filter(x=>!['completed','cancelled'].includes(x.status)).length,projects:d.projects.length,activeProjects:d.projects.filter(x=>['planned','active','review','in_progress'].includes(x.status)).length,quotes:d.quotes.length,openQuotes:openQuotes.length,tasks:d.tasks.length,openTasks:openTasks.length,overdueTasks:overdue.length,subscriptions:d.subscriptions.length},
    recordedTotals:{paymentsReceived:paid,expensesRecorded:expenses,projectAmountsBooked:booked,arithmeticDifference:paid-expenses},
    evidence:{
