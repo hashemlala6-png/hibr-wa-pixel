@@ -5,7 +5,8 @@ const defs={
  projects:['hbpx-projects','project-'],payments:['hbpx-payments','payment-'],expenses:['hbpx-expenses','expense-'],
  leads:['hbpx-leads','lead-'],tasks:['hbpx-tasks','task-'],subscriptions:['hbpx-subscriptions','subscription-'],
  metrics:['hbpx-platform-analytics','metric-'],funnel:['hbpx-funnel','event-'],
- snapshots:['hbpx-monitor-snapshots','snapshot-'],decisions:['hbpx-monitor-decisions','decision-']
+ snapshots:['hbpx-monitor-snapshots','snapshot-'],decisions:['hbpx-monitor-decisions','decision-'],
+ growthSnapshots:['hbpx-growth-snapshots','snapshot-'],growthBaselines:['hbpx-growth-baselines','baseline-']
 };
 const st=n=>getStore({name:defs[n][0],consistency:'strong'});
 const clean=(v,n=500)=>String(v??'').trim().slice(0,n);
@@ -18,7 +19,7 @@ exports.handler=async e=>{
  const auth=requireAdmin(e);if(auth)return auth;
  try{
   if(e.httpMethod==='GET'){
-   const names=['projects','payments','expenses','leads','tasks','subscriptions','metrics','funnel','snapshots','decisions'];
+   const names=['projects','payments','expenses','leads','tasks','subscriptions','metrics','funnel','snapshots','decisions','growthSnapshots','growthBaselines'];
    const vals=await Promise.all(names.map(all));const d=Object.fromEntries(names.map((n,i)=>[n,vals[i]]));
    const now=Date.now(),days=30,cut=now-days*86400000;
    const recentPayments=d.payments.filter(x=>dateOf(x).getTime()>=cut);
@@ -40,8 +41,20 @@ exports.handler=async e=>{
    if(!d.expenses.length)alerts.push({level:'info',title:'بيانات الصرف غير مكتملة',detail:'لا توجد مصروفات مسجلة؛ لا يمكن حساب ربح صافي موثوق.',source:'hbpx-expenses'});
    if(!d.metrics.length)alerts.push({level:'info',title:'تحليلات الموقع غير متاحة في هذا التقرير',detail:'لم تظهر سجلات في مصدر تحليلات المنصة؛ لا يُعد ذلك إثباتًا أن الزيارات صفر.',source:'hbpx-platform-analytics'});
    const latestByKey={};for(const x of d.snapshots){const k=x.category+'|'+x.metric;if(!latestByKey[k])latestByKey[k]=x}
+   const clientIds=new Set(d.growthSnapshots.map(x=>x.clientId).filter(Boolean));
+   const clientTrends=[];
+   for(const clientId of clientIds){
+    const rows=d.growthSnapshots.filter(x=>x.clientId===clientId).sort((a,b)=>new Date(b.date||b.createdAt||0)-new Date(a.date||a.createdAt||0));
+    if(rows.length<2)continue;
+    const current=rows[0],previous=rows[1],metrics=['followers','engagement','reach','visits','inquiries','sales'];
+    const changes=metrics.map(metric=>{const before=num(previous.metrics?.[metric]),after=num(current.metrics?.[metric]);return {metric,before,after,delta:after-before,pct:before?Math.round((after-before)/before*1000)/10:null}});
+    clientTrends.push({clientId,currentDate:current.date||current.createdAt,previousDate:previous.date||previous.createdAt,changes});
+   }
+   const growthAlerts=[];
+   for(const t of clientTrends){for(const x of t.changes){if(['reach','engagement','inquiries','sales'].includes(x.metric)&&x.pct!==null&&x.pct<=-20)growthAlerts.push({level:'warning',title:'تراجع مؤشر عميل',detail:'العميل '+t.clientId+' — '+x.metric+' انخفض '+Math.abs(x.pct)+'% بين '+t.previousDate+' و'+t.currentDate+'. هذا وصف للتغير وليس إثباتًا لسببه.',source:'قياسات النمو المسجلة'});}}
+   alerts.push(...growthAlerts.slice(0,15));
    const manualMetrics=Object.values(latestByKey).sort((a,b)=>String(a.category).localeCompare(String(b.category)));
-   return json(200,{generatedAt:new Date().toISOString(),coverage:{payments:d.payments.length,expenses:d.expenses.length,projects:d.projects.length,leads:d.leads.length,tasks:d.tasks.length,subscriptions:d.subscriptions.length,platformMetrics:d.metrics.length,funnelEvents:d.funnel.length},kpis:{revenueAll:revenue,expensesAll:spend,netRecorded:revenue-spend,revenue30,expenses30,net30:revenue30-spend30,projects:d.projects.length,activeProjects:activeProjects.length,leads:d.leads.length,openTasks:openTasks.length,lateTasks:lateTasks.length,pendingSubscriptions:pendingSubs.length},alerts,manualMetrics,snapshots:d.snapshots.slice(0,60),decisions:d.decisions.slice(0,80),sourceNotes:['الإيرادات والصرف محسوبة من السجلات الموجودة فقط؛ الربح هنا فرق السجلات المسجلة وليس بيانًا محاسبيًا مدققًا.','بيانات إنستغرام لا تتوفر إلا بعد إدخالها أو ربط مصدر رسمي.','لا تُنفّذ موافقة التوصية إجراءً خارجيًا تلقائيًا؛ إنها تسجل قرار المالكة فقط.']});
+   return json(200,{generatedAt:new Date().toISOString(),coverage:{payments:d.payments.length,expenses:d.expenses.length,projects:d.projects.length,leads:d.leads.length,tasks:d.tasks.length,subscriptions:d.subscriptions.length,platformMetrics:d.metrics.length,funnelEvents:d.funnel.length,growthSnapshots:d.growthSnapshots.length,growthBaselines:d.growthBaselines.length},kpis:{revenueAll:revenue,expensesAll:spend,netRecorded:revenue-spend,revenue30,expenses30,net30:revenue30-spend30,projects:d.projects.length,activeProjects:activeProjects.length,leads:d.leads.length,openTasks:openTasks.length,lateTasks:lateTasks.length,pendingSubscriptions:pendingSubs.length},alerts,manualMetrics,clientTrends,growthSnapshots:d.growthSnapshots.slice(0,100),snapshots:d.snapshots.slice(0,60),decisions:d.decisions.slice(0,80),sourceNotes:['الإيرادات والصرف محسوبة من السجلات الموجودة فقط؛ الربح هنا فرق السجلات المسجلة وليس بيانًا محاسبيًا مدققًا.','قياسات نمو العملاء المعروضة مأخوذة من قياسات growth المسجلة يدويًا؛ لا تعني أنها متصلة مباشرة بإنستغرام.','لا تُنفّذ موافقة التوصية إجراءً خارجيًا تلقائيًا؛ إنها تسجل قرار المالكة فقط.']});
   }
   let b={};try{b=JSON.parse(e.body||'{}')}catch{return json(400,{error:'بيانات غير صالحة.'})}
   const now=new Date().toISOString();
