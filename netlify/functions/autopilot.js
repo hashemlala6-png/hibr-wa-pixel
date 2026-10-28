@@ -94,6 +94,10 @@ exports.handler=async e=>{
     return json(200,{clientId,message:text,requiresOwnerApproval:true});
   }
   if(action==='create_execution'){
+    const reviewGateId=clean(b.reviewGateId,180);
+    if(!reviewGateId)return json(409,{error:'اعتمدي مرحلة المراجعة أولاً قبل إنشاء خطة أو مهمة.'});
+    const reviewGate=await S.gates().get(reviewGateId,{type:'json'});
+    if(!reviewGate||reviewGate.status!=='approved')return json(409,{error:'مرحلة المراجعة غير موجودة أو غير معتمدة.'});
     const clientId=clean(b.clientId,160),projectId=clean(b.projectId,160);
     if(!clientId||!projectId)return json(400,{error:'العميل والمشروع مطلوبان.'});
     const project=projects.find(p=>p.id===projectId && (p.clientId===clientId||p.leadId===clientId));
@@ -102,11 +106,11 @@ exports.handler=async e=>{
     const taskTitle=clean(b.taskTitle,240)||clean(b.actionText,1000);
     if(!taskTitle)return json(400,{error:'وصف التنفيذ مطلوب.'});
     const now=new Date().toISOString(),planId='execution-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex');
-    const plan={id:planId,clientId,projectId,title,objective:clean(b.objective,800),decision:clean(b.actionText,1200),source:'owner-autopilot',status:'active',createdAt:now,updatedAt:now};
+    const plan={id:planId,clientId,projectId,title,objective:clean(b.objective,800),decision:clean(b.actionText,1200),source:'owner-autopilot',reviewGateId,reviewGateTitle:reviewGate.title,status:'active',createdAt:now,updatedAt:now};
     await S.plans().setJSON(planId,plan);
     const task={id:'task-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex'),projectId,title:taskTitle,assignee:clean(b.assignee,100),dueDate:clean(b.dueDate,30),status:'todo',priority:'high',executionPlanId:planId,expectedOutput:clean(b.expectedOutput,600),measurement:clean(b.measurement,600),createdAt:now,updatedAt:now};
     await S.tasks().setJSON(task.id,task);
-    await S.autopilot().setJSON('autopilot-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex'),{status:'executed',executedAt:now,planId,taskId:task.id,clientId,projectId});
+    await S.autopilot().setJSON('autopilot-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex'),{status:'executed',executedAt:now,planId,taskId:task.id,clientId,projectId,reviewGateId});
     await logActivity(clientId,'autopilot','تم تحويل إجراء Autopilot إلى خطة ومهمة',{planId,taskId:task.id});
     return json(201,{plan,task});
   }
