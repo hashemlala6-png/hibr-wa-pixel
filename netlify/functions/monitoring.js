@@ -85,5 +85,5 @@ exports.handler=async e=>{
    await st('decisions').setJSON(id,item);return json(200,{item,notice:status==='approved'?'تم تسجيل موافقة المالكة فقط؛ لم يُنفذ إجراء خارجي.':'تم تحديث قرار التوصية.'});
   }
   return json(405,{error:'Method not allowed'});
- }catch(err){console.error('monitoring error',err);return json(500,{error:'تعذر تحميل مركز المراقبة أو حفظ البيانات.'})}
+ }catch(err){console.error('monitoring error',err);return json(500,{error:'خطأ بمركز المراقبة: '+clean(err&&err.message||'خطأ غير معروف',240)})}
 };
