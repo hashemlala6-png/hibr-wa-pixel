@@ -1,5 +1,5 @@
 const { env } = require('./env');
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const blobOptions = (name) => { const options={name,consistency:'strong'}; const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae'; const token=process.env.NETLIFY_AUTH_TOKEN; if(siteID&&token){options.siteID=siteID;options.token=token;} return options; };
 const stores = {
@@ -22,7 +22,7 @@ const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 async function all(name,prefix){const r=await stores[name]().list({prefix});const out=[];for(const b of r.blobs||[]){try{const x=await stores[name]().get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out}
 async function build(){
  const [leads,quotes,projects,payments,tasks,expenses,invoices,contracts,subscriptions,deliveries,resultPlans,activities,accounts]=await Promise.all([
-  all('leads','lead-'),all('quotes','quote-'),all('projects','project-'),all('payments','payment-'),all('tasks','task-'),all('expenses','expense-'),all('invoices','invoice-'),all('contracts','contract-'),all('subscriptions','subscription-'),all('deliveries','delivery-'),all('resultPlans','result-'),all('activity','activity-')
+  all('leads','lead-'),all('quotes','quote-'),all('projects','project-'),all('payments','payment-'),all('tasks','task-'),all('expenses','expense-'),all('invoices','invoice-'),all('contracts','contract-'),all('subscriptions','subscription-'),all('deliveries','delivery-'),all('resultPlans','result-'),all('activity','activity-'),all('accounts','')
  ]);
  const saved=await all('clients','client-'); const savedMap=new Map(saved.map(x=>[x.id,x]));
  const groups=new Map();
@@ -64,6 +64,7 @@ async function build(){
  });
 }
 exports.handler=async e=>{
+ connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{}); const auth=requireAdmin(e); if(auth)return auth;
  try{
   if(e.httpMethod==='GET'){const clients=await build(); const id=clean(e.queryStringParameters?.id,120); return json(200,{clients:id?clients.filter(x=>x.id===id):clients});}
