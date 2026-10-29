@@ -1,5 +1,5 @@
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const defs={
  projects:['hbpx-projects','project-'],payments:['hbpx-payments','payment-'],expenses:['hbpx-expenses','expense-'],
@@ -16,6 +16,7 @@ async function all(n){const store=st(n),out=[];let cursor;do{const r=await store
 function dateOf(x){return new Date(x.paidAt||x.createdAt||x.date||x.updatedAt||0)}
 function sum(arr,fn){return arr.reduce((s,x)=>s+Math.max(0,num(fn(x))),0)}
 exports.handler=async e=>{
+ connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});
  const auth=requireAdmin(e);if(auth)return auth;
  try{
