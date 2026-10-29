@@ -1,15 +1,15 @@
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const s={
-  leads:()=>getStore({name:'hbpx-leads',consistency:'strong'}),
-  projects:()=>getStore({name:'hbpx-projects',consistency:'strong'}),
-  payments:()=>getStore({name:'hbpx-payments',consistency:'strong'}),
-  tasks:()=>getStore({name:'hbpx-tasks',consistency:'strong'}),
-  resultPlans:()=>getStore({name:'hbpx-result-plans',consistency:'strong'}),
-  invoices:()=>getStore({name:'hbpx-invoices',consistency:'strong'}),
-  contracts:()=>getStore({name:'hbpx-contracts',consistency:'strong'}),
-  deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'strong'})
+  leads:()=>getStore({name:'hbpx-leads',consistency:'eventual'}),
+  projects:()=>getStore({name:'hbpx-projects',consistency:'eventual'}),
+  payments:()=>getStore({name:'hbpx-payments',consistency:'eventual'}),
+  tasks:()=>getStore({name:'hbpx-tasks',consistency:'eventual'}),
+  resultPlans:()=>getStore({name:'hbpx-result-plans',consistency:'eventual'}),
+  invoices:()=>getStore({name:'hbpx-invoices',consistency:'eventual'}),
+  contracts:()=>getStore({name:'hbpx-contracts',consistency:'eventual'}),
+  deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'eventual'})
 };
 async function listByProject(storeName,prefix,projectId,map){
   const st=s[storeName](),r=await st.list({prefix}),out=[];
@@ -17,12 +17,13 @@ async function listByProject(storeName,prefix,projectId,map){
   return out;
 }
 exports.handler=async e=>{
+  connectLambda(e);
   if(e.httpMethod==='OPTIONS')return json(204,{});
   if(e.httpMethod!=='GET')return json(405,{error:'Method not allowed'});
   try{
     const session=getClientSession(e);
     if(!session)return json(401,{error:'يجب تسجيل الدخول أولاً.',code:'LOGIN_REQUIRED'});
-    const account=await getStore({name:'hbpx-client-accounts',consistency:'strong'}).get(session.sub,{type:'json'}).catch(()=>null);
+    const account=await getStore({name:'hbpx-client-accounts',consistency:'eventual'}).get(session.sub,{type:'json'}).catch(()=>null);
     if(!account)return json(401,{error:'انتهت جلسة الحساب. سجّل الدخول من جديد.',code:'LOGIN_REQUIRED'});
     const projectsStore=s.projects();
     const pr=await projectsStore.list({prefix:'project-'}),projects=[];
