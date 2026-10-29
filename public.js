@@ -9,6 +9,7 @@ function trackFunnel(action){const anonId=getAnonId();return fetch('/.netlify/fu
 function presence(){const beat=()=>{try{fetch('/.netlify/functions/presence?action=heartbeat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'visitor',page:location.pathname})}).catch(()=>{})}catch{}};beat();setInterval(beat,60000)}
 function funnel(){trackFunnel('page_view');presence();document.querySelectorAll('[data-funnel]').forEach(x=>x.addEventListener('click',()=>trackFunnel(x.dataset.funnel),{passive:true}))}
 function wireWA(){document.querySelectorAll('[data-wa]').forEach(x=>x.addEventListener('click',()=>{trackFunnel('whatsapp_click');window.location.href=WA}))}
-function init(){nav();clientLink();motion();funnel();wireWA();}
+function contactFooter(){if(document.querySelector('.hp-contact-footer'))return;document.querySelectorAll('.navlinks a[href="contact.html"]').forEach(a=>a.remove());const f=document.createElement('footer');f.className='hp-contact-footer';f.innerHTML='<div class="site"><h2>تواصل ويانه</h2><p>واتساب: <a href="https://wa.me/9647721971156" target="_blank" rel="noopener">+964 772 197 1156</a></p><p>البريد: <a href="mailto:Laylahtm7@gmail.com">Laylahtm7@gmail.com</a></p><p>إنستغرام: <a href="https://www.instagram.com/hibr_pixels/" target="_blank" rel="noopener">@hibr_pixels</a></p><p>حبر وبكسل — Digital Studio · © 2026</p></div>';document.body.appendChild(f)}
+function init(){nav();clientLink();motion();funnel();wireWA();contactFooter();}
 window.hwp={auth,WA,trackFunnel};init();
 })();
