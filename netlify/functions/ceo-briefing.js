@@ -1,4 +1,4 @@
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {env}=require('./env');
 const {requireAdmin,json}=require('./auth-utils');
 const crypto=require('crypto');
@@ -41,6 +41,7 @@ async function snapshot(){
  return data;
 }
 exports.handler=async event=>{
+ connectLambda(event);
  if(event.httpMethod==='OPTIONS')return json(204,{});
  const denied=requireAdmin(event);if(denied)return denied;
  if(event.httpMethod==='GET'){
