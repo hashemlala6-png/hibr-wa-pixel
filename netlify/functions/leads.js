@@ -101,6 +101,26 @@ async function notifyOwner(lead) {
   return results;
 }
 
+async function notifyClientApproval(lead) {
+  const result = { email: 'not_configured', whatsapp: 'not_configured' };
+  const msg = 'مرحباً ' + (lead.name || 'بك') + '، تمت الموافقة على طلبك لدى حبر وبكسل. الخدمة: ' + (lead.service || 'الخدمة المطلوبة') + '. سنتواصل معك لتأكيد الخطوات التالية.';
+  if (process.env.RESEND_API_KEY && (process.env.CLIENT_APPROVAL_FROM_EMAIL || process.env.LEADS_FROM_EMAIL) && lead.email) {
+    try {
+      const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.CLIENT_APPROVAL_FROM_EMAIL || process.env.LEADS_FROM_EMAIL, to: [lead.email], subject: 'تمت الموافقة على طلبك — حبر وبكسل', text: msg }) });
+      result.email = r.ok ? 'sent' : 'failed'; if (!r.ok) console.error('client approval email failed', r.status, (await r.text()).slice(0,300));
+    } catch (e) { result.email = 'failed'; console.error('client approval email failed', e.message || e); }
+  } else if (!lead.email) result.email = 'no_customer_email';
+  const token = process.env.WHATSAPP_ACCESS_TOKEN, phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID, template = process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_NAME;
+  const phone = normalizePhone(lead.whatsapp);
+  if (token && phoneId && template && phone) {
+    try {
+      const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone, type: 'template', template: { name: template, language: { code: process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_LANGUAGE || 'ar' }, components: [{ type: 'body', parameters: [{ type: 'text', text: String(lead.name || 'عميل').slice(0,200) }, { type: 'text', text: String(lead.service || 'الخدمة المطلوبة').slice(0,200) }] }] } }) });
+      result.whatsapp = r.ok ? 'sent' : 'failed'; if (!r.ok) console.error('client approval WhatsApp failed', r.status, (await r.text()).slice(0,300));
+    } catch (e) { result.whatsapp = 'failed'; console.error('client approval WhatsApp failed', e.message || e); }
+  }
+  return result;
+}
+
 const allowedStatuses = ['new', 'contacted', 'proposal', 'approved', 'won', 'active', 'completed', 'lost'];
 
 function clean(v, max = 2000) { return String(v ?? '').trim().slice(0, max); }
@@ -195,7 +215,9 @@ exports.handler = async (event) => {
     current.updatedAt = new Date().toISOString();
     await store().setJSON(b.id, current);
     await logActivity(current.clientId||b.id,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
-    return json(200, { lead: current });
+    let customerNotifications = null;
+    if (current.status === 'approved' && previousStatus !== 'approved') customerNotifications = await notifyClientApproval(current);
+    return json(200, { lead: current, customerNotifications });
   }
 
   return json(405, { error: 'Method not allowed' });
