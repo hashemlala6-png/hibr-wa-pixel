@@ -1,12 +1,12 @@
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const stores={
- accounts:()=>getStore({name:'hbpx-client-accounts',consistency:'strong'}),
- projects:()=>getStore({name:'hbpx-projects',consistency:'strong'}),
- leads:()=>getStore({name:'hbpx-leads',consistency:'strong'}),
- contracts:()=>getStore({name:'hbpx-contracts',consistency:'strong'}),
- subscriptions:()=>getStore({name:'hbpx-subscriptions',consistency:'strong'})
+ accounts:()=>getStore({name:'hbpx-client-accounts',consistency:'eventual'}),
+ projects:()=>getStore({name:'hbpx-projects',consistency:'eventual'}),
+ leads:()=>getStore({name:'hbpx-leads',consistency:'eventual'}),
+ contracts:()=>getStore({name:'hbpx-contracts',consistency:'eventual'}),
+ subscriptions:()=>getStore({name:'hbpx-subscriptions',consistency:'eventual'})
 };
 const clean=(v,n=240)=>String(v??'').trim().slice(0,n);
 async function list(store,prefix){const st=stores[store](),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){const x=await st.get(b.key,{type:'json'}).catch(()=>null);if(x)out.push(x)}return out}
@@ -20,6 +20,7 @@ async function ownedProjects(account){
  return out;
 }
 exports.handler=async e=>{
+ connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});
  const session=getClientSession(e);if(!session)return json(401,{error:'سجّل الدخول أولاً.',code:'LOGIN_REQUIRED'});
  try{
