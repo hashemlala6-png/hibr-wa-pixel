@@ -101,7 +101,7 @@ async function notifyOwner(lead) {
   return results;
 }
 
-const allowedStatuses = ['new', 'contacted', 'proposal', 'won', 'active', 'completed', 'lost'];
+const allowedStatuses = ['new', 'contacted', 'proposal', 'approved', 'won', 'active', 'completed', 'lost'];
 
 function clean(v, max = 2000) { return String(v ?? '').trim().slice(0, max); }
 
