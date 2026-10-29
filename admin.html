@@ -45,6 +45,7 @@
 <div id="aiBusy" class="meta"></div>
 <pre id="aiOutput" style="white-space:pre-wrap;line-height:1.8;font-family:inherit;margin:0"></pre>
 <div id="aiSlides" class="grid three" style="margin-top:14px"></div>
+<div class="actions" style="margin-top:14px"><button id="sendAIReview" class="primary" type="button">إرسال النتيجة إلى مراجعة المالك</button><button id="copyAIOutput" class="ghost" type="button">نسخ النتيجة</button></div><div id="aiReviewStatus" class="meta" style="margin-top:8px" role="status" aria-live="polite"></div>
 </div>
 <div class="panel">
 <h3>تعديل النتيجة الحالية</h3>
@@ -74,6 +75,8 @@ $('#aiClient')?.addEventListener('change',()=>{const id=$('#aiClient').value;$('
 $('#aiGenerate')?.addEventListener('click',()=>runAI($('#aiMode').value));
 $('#resultGenerate')?.addEventListener('click',runResult);
 $('#reviseText')?.addEventListener('click',reviseCurrent);
+$('#copyAIOutput')?.addEventListener('click',async()=>{const text=$('#aiOutput')?.textContent?.trim()||'';const status=$('#aiReviewStatus');if(!text){status.textContent='ولّدي نتيجة أولاً حتى تنسخيها.';return}try{await navigator.clipboard.writeText(text);status.textContent='تم نسخ النتيجة.'}catch{status.textContent='تعذر النسخ التلقائي؛ حددي النص وانسخيه يدوياً.'}});
+$('#sendAIReview')?.addEventListener('click',async()=>{const status=$('#aiReviewStatus');try{const clientId=selectedAIClient();const deliverable=$('#aiOutput')?.textContent?.trim()||'';if(!deliverable)throw Error('ولّدي نتيجة أولاً ثم أرسليها للمراجعة.');const client=CLIENTS.find(x=>(x.clientId||x.id)===clientId);const mode=$('#aiMode')?.value||'writing';const phase=mode==='design'?'مراجعة الجودة':'إنتاج المحتوى';const title=`${({writing:'محتوى',design:'وصف تصميم',carousel:'خطة كاروسيل',analysis:'تحليل محتوى'}[mode]||'مخرج AI')} — ${client?.name||client?.email||clientId}`;const criteria='مراجعة صحة المعلومات، سلامة اللغة العربية، ملاءمة هوية العميل والجمهور، وضوح الهدف والدعوة إلى الإجراء، وعدم وجود ادعاءات أو نتائج غير موثقة. لا نشر أو إرسال خارجي قبل موافقة المالك.';status.textContent='جارٍ إرسال المخرج إلى بوابة المراجعة…';const d=await api('/.netlify/functions/review-gates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phase,title,deliverable,criteria})});status.textContent='تم حفظ المخرج في بوابة مراجعة المالك. لم يتم نشره أو إرساله للعميل.';if(d.item)status.textContent+=` رقم المراجعة: ${d.item.id}`;}catch(e){status.textContent='لم يُرسل للمراجعة: '+e.message}});
 
 function tab(t){$$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));$$('.view').forEach(v=>v.classList.toggle('active',v.id===t));if(t==='incoming-leads')loadIncomingLeads();if(t==='customers')renderCustomers();if(t==='sales')renderSales();if(t==='projects')renderProjects();if(t==='growth')renderGrowth();if(t==='intelligence')renderIntelligence();if(t==='ai-studio')fillAIClients();if(t==='activity')renderActivity();}
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)tab(b.dataset.tab)});$$('[data-go]').forEach(b=>b.addEventListener('click',()=>tab(b.dataset.go)));
