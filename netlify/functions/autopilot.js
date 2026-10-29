@@ -1,6 +1,6 @@
 
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
 
@@ -60,6 +60,7 @@ function makeActions({leads,projects,quotes,subs,tasks}){
    .sort((a,b)=>b.score-a.score).slice(0,30);
 }
 exports.handler=async e=>{
+ connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});
  const a=requireAdmin(e);if(a)return a;
  try{
