@@ -33,6 +33,17 @@ async function safeActivity(...args){try{const {logActivity}=require('./client-a
 async function safeMetric(...args){try{const {record}=require('./platform-analytics'); await record(...args);}catch{}}
 function hasSessionSecret(){return Boolean(env('CLIENT_SESSION_SECRET'))}
 function normalizePhone(v){let d=String(v||'').replace(/\D/g,''); if(d.startsWith('964')) return '0'+d.slice(3); if(d.startsWith('00964')) return '0'+d.slice(5); return d.startsWith('0')?d:'0'+d;}
+async function hasApprovedLead(email,phone){
+  try{
+    const r=await leads().list({prefix:'lead-',limit:1000});
+    for(const item of r.blobs||[]){
+      const l=await leads().get(item.key,{type:'json'}).catch(()=>null);
+      if(!l)continue;
+      if(l.status==='approved' && emailNorm(l.email)===emailNorm(email) && normalizePhone(l.whatsapp)===normalizePhone(phone))return true;
+    }
+    return false;
+  }catch(err){console.error('approved lead lookup unavailable',err?.message||err);throw err;}
+}
 async function findExistingClientId(email,phone){
   try{
     const r=await leads().list({prefix:'lead-',limit:1000});
@@ -77,6 +88,7 @@ exports.handler=async e=>{
     if(await accounts().get(id,{type:'json'}).catch(()=>null))return json(409,{error:'هذا البريد مسجل مسبقًا. سجّل الدخول.'});
     const name=clean(b.name,120), whatsapp=normalizePhone(b.whatsapp);
     if(!name||whatsapp.length<10)return json(400,{error:'الاسم ورقم واتساب مطلوبان.'});
+    if(!await hasApprovedLead(email,whatsapp).catch(()=>null))return json(403,{error:'إنشاء الحساب متاح بعد موافقة حبر وبكسل على طلب مشروعك، وباستخدام نفس البريد ورقم واتساب.'});
     const pw=makePassword(password); const now=new Date().toISOString(); const clientId=await findExistingClientId(email,whatsapp)||id; const account={id,name,email,whatsapp,clientId,passwordHash:pw.hash,salt:pw.salt,createdAt:now,updatedAt:now,lastLoginAt:null};
     await accounts().setJSON(id,account);
     await safeActivity(clientId,'client-account','تم إنشاء حساب عميل جديد',{name,email,whatsapp});
