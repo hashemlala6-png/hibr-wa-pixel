@@ -1,9 +1,9 @@
 const { env } = require('./env');
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {json,requireAdmin}=require('./auth-utils');
 const {createClientSession,getClientSession,sessionCookie,clearCookie}=require('./client-auth-utils');
-const blobOptions=(name)=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID;const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
+const blobOptions=(name)=>{const options={name,consistency:'eventual'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID;const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const accounts=()=>getStore(blobOptions('hbpx-client-accounts'));
 const leads=()=>getStore(blobOptions('hbpx-leads'));
 const rate=()=>getStore(blobOptions('hbpx-client-auth-rate'));
@@ -61,6 +61,7 @@ async function findExistingClientId(email,phone){
   }catch(err){console.warn('client identity lookup unavailable',err?.message||err);return null}
 }
 exports.handler=async e=>{
+  connectLambda(e);
   try{
 
   if(e.httpMethod==='OPTIONS')return json(204,{});
