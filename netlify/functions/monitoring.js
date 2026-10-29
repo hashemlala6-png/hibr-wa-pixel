@@ -8,7 +8,8 @@ const defs={
  snapshots:['hbpx-monitor-snapshots','snapshot-'],decisions:['hbpx-monitor-decisions','decision-'],
  growthSnapshots:['hbpx-growth-snapshots','snapshot-'],growthBaselines:['hbpx-growth-baselines','baseline-']
 };
-const st=n=>getStore({name:defs[n][0],siteID:process.env.NETLIFY_SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae',token:process.env.NETLIFY_AUTH_TOKEN,consistency:'strong'});
+const blobOptions=name=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID;const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
+const st=n=>getStore(blobOptions(defs[n][0]));
 const clean=(v,n=500)=>String(v??'').trim().slice(0,n);
 const num=v=>{const x=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(x)?x:0};
 async function all(n){const store=st(n),out=[];let cursor;do{const r=await store.list({prefix:defs[n][1],limit:100,cursor});for(const b of r.blobs||[]){const x=await store.get(b.key,{type:'json'}).catch(()=>null);if(x)out.push(x)}cursor=r.cursor}while(cursor);return out.sort((a,b)=>new Date(b.createdAt||b.date||0)-new Date(a.createdAt||a.date||0))}
