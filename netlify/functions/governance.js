@@ -1,7 +1,7 @@
 const crypto=require('crypto');
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
-const store=()=>getStore({name:'hbpx-governance',consistency:'strong'});
+const store=()=>getStore({name:'hbpx-governance',consistency:'eventual'});
 const clean=(v,n=1000)=>String(v??'').trim().slice(0,n);
 async function all(){const s=store(),r=await s.list({prefix:'proposal-'}),out=[];for(const b of r.blobs||[]){try{const x=await s.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))}
 exports.handler=async e=>{
