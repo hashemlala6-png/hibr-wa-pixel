@@ -171,12 +171,16 @@ function renderProjects(){if(!SALES)return;const ps=SALES.projects||[];$('#proje
 let OPS=null;function awaitData(k){return OPS?.[k]||[]}
 async function loadOps(){try{OPS=await api('/.netlify/functions/operations')}catch{OPS={tasks:[],expenses:[],resultPlans:[]}}}
 async function projectStatus(id,status){try{await api('/.netlify/functions/sales',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({collection:'projects',id,status})});await loadAll()}catch(e){alert(e.message)}}async function taskStatus(id,status){try{await api('/.netlify/functions/operations',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'task',id,status})});await loadOps();renderProjects()}catch(e){alert(e.message)}}
-let TEAM_EXECUTIONS=[];
-async function loadTeamExecutions(){try{const d=await api('/.netlify/functions/ai-team');TEAM_EXECUTIONS=d.executions||[]}catch{TEAM_EXECUTIONS=[]}}
+let TEAM_EXECUTIONS=[],TEAM_EXECUTIONS_ERROR='';
+async function loadTeamExecutions(){
+ try{const d=await api('/.netlify/functions/ai-team');TEAM_EXECUTIONS=d.executions||[];TEAM_EXECUTIONS_ERROR='';return true}
+ catch(e){TEAM_EXECUTIONS_ERROR=e.message||'تعذر تحميل نتائج الفريق.';return false}
+}
 function renderTeamTasks(){
  const box=$('#teamTaskList');if(!box)return;
  const rows=awaitData('tasks').filter(t=>t.projectId==='internal-hibr');
- box.innerHTML=rows.map(t=>{
+ const errorNote=TEAM_EXECUTIONS_ERROR?'<p class="note" style="color:#a94b4b">تعذر تحميل نتائج الموظفين: '+esc(TEAM_EXECUTIONS_ERROR)+' — تحققي من اتصال الخادم وتهيئة Netlify Blobs ثم اضغطي تحديث المهام.</p>':'';
+ box.innerHTML=errorNote+rows.map(t=>{
   const x=TEAM_EXECUTIONS.find(e=>e.id===t.latestExecutionId)||TEAM_EXECUTIONS.find(e=>e.taskId===t.id);
   const out=x?.result;
   return '<div class="panel"><div class="row"><div><b>'+esc(t.title)+'</b><div class="meta">'+esc(t.assignee||'غير مسند')+' · '+(t.dueDate?esc(t.dueDate):'بلا موعد')+'</div></div><select class="select" data-team-status="'+esc(t.id)+'">'+['todo','doing','review','done'].map(v=>'<option value="'+v+'" '+(v===t.status?'selected':'')+'>'+({todo:'بانتظار البدء',doing:'قيد التنفيذ',review:'مراجعة',done:'مكتملة'}[v])+'</option>').join('')+'</select></div><div class="actions"><button class="primary" type="button" data-team-run="'+esc(t.id)+'">تنفيذ بواسطة '+esc(t.assignee||'الموظف')+'</button></div>'+(out?'<div class="note"><b>نتيجة التنفيذ — '+esc(x.role)+'</b><p>'+esc(out.summary||'')+'</p><div style="white-space:pre-wrap">'+esc(out.deliverable||'')+'</div>'+(out.ownerApproval||[]).map(v=>'<p>موافقة مطلوبة: '+esc(v)+'</p>').join('')+'<small>تم إنشاء مسودة داخلية فقط؛ لم يحدث إرسال أو نشر.</small></div>':'')+'</div>';
