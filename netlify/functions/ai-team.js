@@ -46,8 +46,8 @@ exports.handler=async event=>{
  if(task.status==='done')return json(409,{error:'المهمة مكتملة بالفعل. أنشئي مهمة جديدة إذا أردتِ عملاً إضافياً.'});
  const role=clean(task.assignee,100),guide=roleGuides[role];
  if(!guide)return json(400,{error:'الدور المحدد غير معروف.'});
- const key=env('ANTHROPIC_API_KEY');
- if(!key)return json(503,{error:'مفتاح ANTHROPIC_API_KEY غير متاح في إعدادات Netlify؛ لم يتم تشغيل المهمة.'});
+ const anthropicKey=env('ANTHROPIC_API_KEY'),openaiKey=env('OPENAI_API_KEY');
+ if(!anthropicKey&&!openaiKey)return json(503,{error:'لا يوجد مفتاح AI متاح. أضيفي ANTHROPIC_API_KEY أو OPENAI_API_KEY في إعدادات Netlify.'});
  const prompt=`أنت موظف ذكاء اصطناعي ضمن وكالة حبر وبكسل العراقية. نفّذ المهمة المحددة ضمن حدود دورك.
 الدور: ${role}
 تعليمات الدور: ${guide}
@@ -60,13 +60,25 @@ exports.handler=async event=>{
 ممنوع تنفيذ أي فعل خارجي: لا إرسال رسائل، لا نشر، لا شراء، لا تواصل مع عميل، ولا تغيير بيانات عميل. لا تدّعِ تنفيذ شيء خارج هذا الرد.
 اكتب بالعربية الواضحة، وصحح الإملاء. عند كتابة نص عربي نهائي لا تضع زخارف أو رموزاً غير لازمة.`;
  try{
-  const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:env('ANTHROPIC_MODEL')||'claude-sonnet-4-6',max_tokens:2600,temperature:0.3,system:'أنت تنفذ مهمة داخلية فقط وتلتزم بصلاحيات الدور. أخرج JSON فقط.',messages:[{role:'user',content:prompt}]})});
-  const data=await response.json().catch(()=>({}));
-  if(!response.ok)return json(502,{error:'تعذر تشغيل الموظف الافتراضي: '+clean(data.error?.message||response.statusText,260)});
-  const raw=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n');
+  let raw='',usedModel='',provider='';
+  if(anthropicKey){
+   const model=env('ANTHROPIC_MODEL')||'claude-sonnet-4-6';
+   const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01'},body:JSON.stringify({model,max_tokens:2600,temperature:0.3,system:'أنت تنفذ مهمة داخلية فقط وتلتزم بصلاحيات الدور. أخرج JSON فقط.',messages:[{role:'user',content:prompt}]})});
+   const data=await response.json().catch(()=>({}));
+   if(response.ok){raw=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\\n');usedModel=model;provider='anthropic'}
+   else if(!openaiKey)return json(502,{error:'تعذر تشغيل الموظف عبر Anthropic: '+clean(data.error?.message||response.statusText,260)});
+  }
+  if(!raw&&openaiKey){
+   const model=env('OPENAI_TEAM_MODEL')||'gpt-4.1-mini';
+   const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+openaiKey},body:JSON.stringify({model,input:[{role:'system',content:'أنت تنفذ مهمة داخلية فقط وتلتزم بصلاحيات الدور. أخرج JSON صالحاً فقط.'},{role:'user',content:prompt}],max_output_tokens:2600,temperature:0.3})});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok)return json(502,{error:'تعذر تشغيل الموظف عبر OpenAI: '+clean(data.error?.message||response.statusText,260)});
+   raw=data.output_text||(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\\n');
+   usedModel=model;provider='openai';
+  }
   const result=parseJSON(raw);
   const now=new Date().toISOString(),id='execution-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex');
-  const record={id,taskId,role,taskTitle:task.title,createdAt:now,model:env('ANTHROPIC_MODEL')||'claude-sonnet-4-6',result,policy:{externalActionsExecuted:false,ownerApprovalRequired:true}};
+  const record={id,taskId,role,taskTitle:task.title,createdAt:now,model:usedModel,provider,result,policy:{externalActionsExecuted:false,ownerApprovalRequired:true}};
   await executionsStore().setJSON(id,record);
   task.status='review';task.updatedAt=now;task.latestExecutionId=id;await tasksStore().setJSON(task.id,task);
   return json(200,{execution:record,task});
