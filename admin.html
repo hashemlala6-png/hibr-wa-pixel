@@ -31,6 +31,16 @@
 <div class="actions"><button class="primary" id="teamTaskAdd" type="button">إضافة المهمة</button><button class="ghost" id="teamTaskRefresh" type="button">تحديث المهام</button></div><div id="teamTaskStatus" class="meta" style="margin-top:10px"></div>
 </div>
 <div class="panel"><h3>سير عمل الفريق — مهامك الحالية</h3><div id="teamTaskList"><p class="note">جاري تحميل المهام...</p></div></div>
+<div class="panel"><h3>بوابة فحص جودة التصاميم</h3>
+<p class="note">ارفعي التصميم قبل اعتماده. يفحص النظام الصورة نفسها، ويقارن المقاس الافتراضي لمنشور إنستغرام 1080×1350، ويوقف الاعتماد إذا فشل الفحص أو ظهر اختلاف حرج. هذا فحص ومراجعة فقط؛ لا ينشر تلقائياً.</p>
+<div class="detail">
+<label class="kv"><small>اسم المخرج</small><input id="teamQaName" class="search" value="منشور إنستغرام"></label>
+<label class="kv"><small>الصورة</small><input id="teamQaFile" class="search" type="file" accept="image/png,image/jpeg,image/webp"></label>
+</div>
+<label class="kv"><small>النص والمواصفات المطلوب مطابقتها</small><textarea id="teamQaSpec" class="search" rows="3" placeholder="الصقي النص العربي المطلوب، الألوان، الشعار، وأي تعليمات يجب الحفاظ عليها."></textarea></label>
+<div class="actions"><button class="primary" id="teamQaRun" type="button">فحص الجودة الآن</button></div>
+<div id="teamQaStatus" class="meta" style="margin-top:10px"></div><div id="teamQaResult"></div>
+</div>
 <div class="panel"><h3>صلاحيات المدير</h3><p class="note">الموافقة على الأسعار والتفاوض والشكاوى والتسليم والنشر الحساس تبقى بيدك. فحص الجودة إلزامي: أي تصميم يفشل في الدقة أو القص أو وضوح العربية لا ينتقل للنشر.</p></div>
 </section>
 <section id="sales" class="view"><div class="grid stats" id="salesStats"></div><div class="panel"><h3>الطلبات</h3><div class="table-wrap"><table class="table"><thead><tr><th>العميل</th><th>الخدمة</th><th>الميزانية</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody id="ordersTable"></tbody></table></div></div><div class="panel"><h3>المبيعات والتحصيل</h3><div id="salesData"></div></div></section>
@@ -101,6 +111,24 @@ $('#resultGenerate')?.addEventListener('click',runResult);
 $('#reviseText')?.addEventListener('click',reviseCurrent);
 $('#copyAIOutput')?.addEventListener('click',async()=>{const text=$('#aiOutput')?.textContent?.trim()||'';const status=$('#aiReviewStatus');if(!text){status.textContent='ولّدي نتيجة أولاً حتى تنسخيها.';return}try{await navigator.clipboard.writeText(text);status.textContent='تم نسخ النتيجة.'}catch{status.textContent='تعذر النسخ التلقائي؛ حددي النص وانسخيه يدوياً.'}});
 $('#sendAIReview')?.addEventListener('click',async()=>{const status=$('#aiReviewStatus');try{const clientId=selectedAIClient();const deliverable=$('#aiOutput')?.textContent?.trim()||'';if(!deliverable)throw Error('ولّدي نتيجة أولاً ثم أرسليها للمراجعة.');const client=CLIENTS.find(x=>(x.clientId||x.id)===clientId);const mode=$('#aiMode')?.value||'writing';const phase=mode==='design'?'مراجعة الجودة':'إنتاج المحتوى';const title=`${({writing:'محتوى',design:'وصف تصميم',carousel:'خطة كاروسيل',analysis:'تحليل محتوى'}[mode]||'مخرج AI')} — ${client?.name||client?.email||clientId}`;const criteria='مراجعة صحة المعلومات، سلامة اللغة العربية، ملاءمة هوية العميل والجمهور، وضوح الهدف والدعوة إلى الإجراء، وعدم وجود ادعاءات أو نتائج غير موثقة. لا نشر أو إرسال خارجي قبل موافقة المالك.';status.textContent='جارٍ إرسال المخرج إلى بوابة المراجعة…';const d=await api('/.netlify/functions/review-gates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phase,title,deliverable,criteria})});status.textContent='تم حفظ المخرج في بوابة مراجعة المالك. لم يتم نشره أو إرساله للعميل.';if(d.item)status.textContent+=` رقم المراجعة: ${d.item.id}`;}catch(e){status.textContent='لم يُرسل للمراجعة: '+e.message}});
+
+async function runTeamVisualQA(){
+ const status=$('#teamQaStatus'),resultBox=$('#teamQaResult'),file=$('#teamQaFile')?.files?.[0];
+ resultBox.innerHTML='';
+ try{
+  if(!file)throw Error('اختاري صورة أولاً.');
+  if(file.size>4*1024*1024)throw Error('حجم الصورة أكبر من 4MB.');
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type))throw Error('الصيغة المدعومة PNG أو JPEG أو WebP.');
+  const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>reject(Error('تعذر قراءة الصورة.'));r.readAsDataURL(file)});
+  const dimensions=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve({width:im.naturalWidth,height:im.naturalHeight});im.onerror=()=>reject(Error('الصورة غير قابلة للقراءة.'));im.src=dataUrl});
+  status.textContent='جاري فحص الصورة ومطابقة النص والمقاس…';
+  const d=await api('/.netlify/functions/visual-qa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId:'internal-hibr',name:$('#teamQaName').value.trim()||file.name,spec:$('#teamQaSpec').value.trim(),imageBase64:dataUrl,expectedWidth:1080,expectedHeight:1350,actualWidth:dimensions.width,actualHeight:dimensions.height,fileName:file.name,fileType:file.type,fileSize:file.size})});
+  const x=d.inspection||{},v=x.result||{},checks=Array.isArray(v.checks)?v.checks:[];
+  status.textContent=v.passed?'اجتاز الفحص البصري الأولي — راجعي النتيجة قبل الاعتماد.':'فشل الفحص أو يحتاج إلى تصحيح. لا تعتمدي التصميم.';
+  resultBox.innerHTML='<div class="row"><b>النتيجة</b><b>'+esc(v.passed?'اجتاز':'لم يجتز')+' · '+esc(v.score??0)+'/100</b></div><p class="note">'+esc(v.summary||'')+'</p>'+checks.map(c=>'<div class="row"><div><b>'+esc(c.name||'فحص')+'</b><div class="meta">'+esc(c.evidence||'')+'</div><div class="meta">'+esc(c.action||'')+'</div></div><b>'+esc(c.status||'')+'</b></div>').join('')+(v.must_fix||[]).map(t=>'<div class="row"><span>'+esc(t)+'</span></div>').join('')+'<p class="note">رقم الفحص: '+esc(x.id||'—')+' · الأبعاد: '+dimensions.width+'×'+dimensions.height+'</p>';
+ }catch(e){status.textContent=e.message||'تعذر إجراء الفحص.'}
+}
+$('#teamQaRun')?.addEventListener('click',runTeamVisualQA);
 
 function tab(t){if(t==='ai-team'){loadOps().then(renderTeamTasks)}$$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));$$('.view').forEach(v=>v.classList.toggle('active',v.id===t));if(t==='incoming-leads')loadIncomingLeads();if(t==='customers')renderCustomers();if(t==='sales')renderSales();if(t==='projects')renderProjects();if(t==='growth')renderGrowth();if(t==='intelligence')renderIntelligence();if(t==='ai-studio')fillAIClients();if(t==='activity')renderActivity();}
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)tab(b.dataset.tab)});
