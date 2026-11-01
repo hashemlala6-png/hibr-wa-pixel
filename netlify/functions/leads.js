@@ -141,7 +141,10 @@ exports.handler = async (event) => {
     if(!limit.ok)return json(429,{error:'طلبات كثيرة. حاول لاحقاً.',retryAfter:limit.retryAfter});
     let b;
     try { b = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'بيانات غير صالحة' }); }
-    const name = clean(b.name, 120), whatsapp = clean(b.whatsapp, 40), email = clean(b.email, 254), service = clean(b.service, 120), budget = clean(b.budget, 120), details = clean(b.details, 3000);\n    const discoveryInput = b.discovery && typeof b.discovery === 'object' && !Array.isArray(b.discovery) ? b.discovery : null;\n    const discoveryAudience = ['idea','business','team','institution'].includes(discoveryInput?.audience) ? discoveryInput.audience : '';\n    const discovery = discoveryAudience ? { audience: discoveryAudience, challenge: clean(discoveryInput.challenge, 1200), success: clean(discoveryInput.success, 240) } : null;
+    const name = clean(b.name, 120), whatsapp = clean(b.whatsapp, 40), email = clean(b.email, 254), service = clean(b.service, 120), budget = clean(b.budget, 120), details = clean(b.details, 3000);
+    const discoveryInput = b.discovery && typeof b.discovery === 'object' && !Array.isArray(b.discovery) ? b.discovery : null;
+    const discoveryAudience = ['idea','business','team','institution'].includes(discoveryInput?.audience) ? discoveryInput.audience : '';
+    const discovery = discoveryAudience ? { audience: discoveryAudience, challenge: clean(discoveryInput.challenge, 1200), success: clean(discoveryInput.success, 240) } : null;
     if (String(b.website || '').trim()) return json(400, { error: 'تعذر معالجة الطلب.' });
     if (!name || !whatsapp) return json(400, { error: 'الاسم ورقم واتساب مطلوبان.' });
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: 'البريد الإلكتروني غير صحيح.' });
@@ -153,7 +156,8 @@ exports.handler = async (event) => {
       id, clientId, name, whatsapp,
       email, service, budget, details,
       activity: clean(b.activity || service, 180), message: clean(b.message || details, 3000),
-      source: clean(b.source || 'contact-form', 80),\n      discovery,
+      source: clean(b.source || 'contact-form', 80),
+      discovery,
       package: clean(b.package, 120),
       status: 'new', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
     };
