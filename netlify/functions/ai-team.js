@@ -25,7 +25,7 @@ function parseJSON(raw){
  throw new Error('تعذر قراءة نتيجة الموظف الافتراضي.');
 }
 async function allExecutions(){
- const st=executionsStore(),r=await st.list({prefix:'execution-',limit:100}),out=[];
+ const st=executionsStore(),r=await st.list({prefix:'execution-'}),out=[];
  for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}
  return out.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,50);
 }
