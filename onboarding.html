@@ -62,9 +62,12 @@
 <script>
 (function(){
 const form=document.getElementById('projectWizard'),steps=[...document.querySelectorAll('.journey-step')],$=id=>document.getElementById(id);
-const state={service:new URLSearchParams(location.search).get('service')||'',goal:'',details:'',name:'',phone:'',email:''};
+const params=new URLSearchParams(location.search);
+const state={service:params.get('service')||'',goal:params.get('goal')||'',details:params.get('challenge')||'',name:'',phone:'',email:''};
 const serviceMap={identity:'هوية وحضور بصري',content:'محتوى وتصميم',digital:'تجربة رقمية',growth:'استراتيجية ونمو'};
 if(serviceMap[state.service])state.service=serviceMap[state.service];
+$('projectDetails').value=state.details;
+document.querySelectorAll('[data-goal]').forEach(b=>b.classList.toggle('selected',b.dataset.goal===state.goal));
 let current=0;
 function setMessage(text,error=true){$('journeyMessage').textContent=text;$('journeyMessage').classList.toggle('is-error',!!error)}
 function valid(){
