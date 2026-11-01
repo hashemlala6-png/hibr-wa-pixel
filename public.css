@@ -238,3 +238,26 @@ body.hp44{background:var(--hp-paper);color:var(--hp-ink);font-family:'IBM Plex S
 .hp46-contact-page .intake-form,.hp46-order-page .intake-form{padding:22px 17px;margin-top:18px}
 .hp46-login-page main>.section{padding:45px 0}
 }
+
+/* Client project timeline and handoff */
+.hp46-account-page .hp-project-card{padding:clamp(18px,3vw,28px);margin:0}
+.hp46-account-page .hp-project-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.hp46-account-page .hp-project-top h2{font:800 1.35rem/1.5 Cairo;margin:5px 0}
+.hp46-account-page .hp-project-dates{display:flex;flex-wrap:wrap;gap:10px 22px;color:#718087;font-size:.78rem;margin-top:14px}
+.hp46-account-page .hp-progress-head{display:flex;justify-content:space-between;margin-top:22px;font-size:.8rem;color:#718087}
+.hp46-account-page .hp-progress{height:7px;background:#e8eeeb;margin-top:8px;overflow:hidden}
+.hp46-account-page .hp-progress i{display:block;height:100%;background:#245f83}
+.hp46-account-page .hp-finance{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.hp46-account-page .hp-finance>div{background:#f4f7f5;padding:13px}
+.hp46-account-page .hp-finance small,.hp46-account-page .hp-delivery small{display:block;color:#788681;font-size:.72rem}
+.hp46-account-page .hp-finance b{display:block;margin-top:5px}
+.hp46-account-page .hp-project-section{border-top:1px solid #e5ebe7;margin-top:22px;padding-top:16px}
+.hp46-account-page .hp-project-section h3{font:800 1rem Cairo;margin:0 0 10px}
+.hp46-account-page .hp-project-section h3 small{font:400 .72rem Arial;color:#788681}
+.hp46-account-page .hp-task{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #edf0ee;font-size:.83rem}
+.hp46-account-page .hp-task small{color:#788681;white-space:nowrap}
+.hp46-account-page .hp-delivery{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 0;border-top:1px solid #edf0ee}
+.hp46-account-page .hp-delivery p{margin:5px 0 0;font-size:.8rem;color:#788681}
+.hp46-account-page .hp-delivery a{color:#245f83;text-decoration:none;font-size:.82rem;white-space:nowrap}
+.hp46-account-page .hp-result{background:#f3f7f5;padding:16px}
+@media(max-width:600px){.hp46-account-page .hp-task,.hp46-account-page .hp-delivery{align-items:flex-start;flex-direction:column}.hp46-account-page .hp-finance{gap:8px}}
