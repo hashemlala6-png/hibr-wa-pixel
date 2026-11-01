@@ -63,7 +63,8 @@
 (function(){
 const form=document.getElementById('projectWizard'),steps=[...document.querySelectorAll('.journey-step')],$=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
-let discoverySteps=[];try{const parsed=JSON.parse(params.get('steps')||'[]');if(Array.isArray(parsed))discoverySteps=parsed.slice(0,5).map(x=>String(x).slice(0,240))}catch{}\nconst state={service:params.get('service')||'',goal:params.get('goal')||'',details:params.get('challenge')||'',audience:params.get('audience')||'',success:params.get('success')||'',map:{direction:params.get('direction')||'',role:params.get('role')||'',first:params.get('first')||'',outside:params.get('outside')||'',boundary:params.get('boundary')||'',steps:discoverySteps},name:'',phone:'',email:''};
+let discoverySteps=[];try{const parsed=JSON.parse(params.get('steps')||'[]');if(Array.isArray(parsed))discoverySteps=parsed.slice(0,5).map(x=>String(x).slice(0,240))}catch{}
+const state={service:params.get('service')||'',goal:params.get('goal')||'',details:params.get('challenge')||'',audience:params.get('audience')||'',success:params.get('success')||'',map:{direction:params.get('direction')||'',role:params.get('role')||'',first:params.get('first')||'',outside:params.get('outside')||'',boundary:params.get('boundary')||'',steps:discoverySteps},name:'',phone:'',email:''};
 const serviceMap={identity:'هوية وحضور بصري',content:'محتوى وتصميم',digital:'تجربة رقمية',growth:'استراتيجية ونمو'};
 if(serviceMap[state.service])state.service=serviceMap[state.service];
 $('projectDetails').value=state.details;
