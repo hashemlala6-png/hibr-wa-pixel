@@ -261,3 +261,17 @@ body.hp44{background:var(--hp-paper);color:var(--hp-ink);font-family:'IBM Plex S
 .hp46-account-page .hp-delivery a{color:#245f83;text-decoration:none;font-size:.82rem;white-space:nowrap}
 .hp46-account-page .hp-result{background:#f3f7f5;padding:16px}
 @media(max-width:600px){.hp46-account-page .hp-task,.hp46-account-page .hp-delivery{align-items:flex-start;flex-direction:column}.hp46-account-page .hp-finance{gap:8px}}
+
+
+/* Project communication and approval controls */
+.hp-communication{border-top:1px solid var(--line);margin-top:22px;padding-top:20px}
+.hp-communication .hp-task{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.hp-communication .hp-task p{margin:7px 0;white-space:pre-wrap}
+.hp-approval-actions{display:flex;gap:8px;flex-wrap:wrap}
+.hp-approval-actions button,.hp-message-form button{border:1px solid var(--line);border-radius:10px;padding:9px 13px;background:var(--ink);color:#fff}
+.hp-approval-actions button[data-decision="changes_requested"]{background:#fff;color:var(--ink)}
+.hp-message-form{display:grid;gap:10px;margin-top:16px}
+.hp-message-form textarea{width:100%;min-height:90px;resize:vertical;padding:13px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font:inherit}
+.hp-message-form button{justify-self:start}
+.hp-comm-status{color:var(--muted);min-height:1.3em}
+@media(max-width:600px){.hp-communication .hp-task{display:block}.hp-approval-actions{margin-top:10px}.hp-message-form button{width:100%}}
