@@ -63,7 +63,7 @@
 (function(){
 const form=document.getElementById('projectWizard'),steps=[...document.querySelectorAll('.journey-step')],$=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
-const state={service:params.get('service')||'',goal:params.get('goal')||'',details:params.get('challenge')||'',audience:params.get('audience')||'',success:params.get('success')||'',name:'',phone:'',email:''};
+let discoverySteps=[];try{const parsed=JSON.parse(params.get('steps')||'[]');if(Array.isArray(parsed))discoverySteps=parsed.slice(0,5).map(x=>String(x).slice(0,240))}catch{}\nconst state={service:params.get('service')||'',goal:params.get('goal')||'',details:params.get('challenge')||'',audience:params.get('audience')||'',success:params.get('success')||'',map:{direction:params.get('direction')||'',role:params.get('role')||'',first:params.get('first')||'',outside:params.get('outside')||'',boundary:params.get('boundary')||'',steps:discoverySteps},name:'',phone:'',email:''};
 const serviceMap={identity:'هوية وحضور بصري',content:'محتوى وتصميم',digital:'تجربة رقمية',growth:'استراتيجية ونمو'};
 if(serviceMap[state.service])state.service=serviceMap[state.service];
 $('projectDetails').value=state.details;
@@ -103,7 +103,7 @@ $('backStep').addEventListener('click',()=>{setMessage('',false);current=Math.ma
 form.addEventListener('submit',async e=>{
  e.preventDefault();if(!valid()){setMessage('راجع الموافقة والبيانات المطلوبة.');return}
  const btn=$('submitProject');btn.disabled=true;setMessage('دا نرسل بداية مشروعك…',false);
- const payload={name:state.name,whatsapp:state.phone,email:state.email,service:state.service,budget:'أحتاج توجيه',details:[state.goal,state.details].filter(Boolean).join(' — '),source:state.audience?'guided-solution-discovery':'guided-project-journey',discovery:state.audience?{audience:state.audience,challenge:state.details,success:state.success}:null};
+ const payload={name:state.name,whatsapp:state.phone,email:state.email,service:state.service,budget:'أحتاج توجيه',details:[state.goal,state.details].filter(Boolean).join(' — '),source:state.audience?'guided-solution-discovery':'guided-project-journey',discovery:state.audience?{audience:state.audience,challenge:state.details,success:state.success,map:state.map}:null};
  try{
  const r=await fetch('/.netlify/functions/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
  const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'تعذر إرسال الطلب، حاول مرة ثانية.');
