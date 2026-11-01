@@ -16,9 +16,11 @@ exports.handler=async e=>{
  if(!project)return json(404,{error:'المشروع غير موجود.'});
  if(type==='contract'){
   const title=clean(b.title,180),terms=clean(b.terms,12000),amount=Number(b.amount||0);
-  if(!title||terms.length<30||!Number.isFinite(amount)||amount<0)return json(400,{error:'العنوان وبنود العقد الكاملة والقيمة مطلوبة.'});
+  if(!title||terms.length<30||!Number.isSafeInteger(amount)||amount<=0)return json(400,{error:'العنوان وبنود العقد الكاملة وقيمة صحيحة بالدينار العراقي أكبر من صفر مطلوبة.'});
+  const depositAmount=Math.round(amount*0.10),balanceAmount=amount-depositAmount;
+  const paymentSchedule={currency:'IQD',depositRate:10,balanceRate:90,depositAmount,balanceAmount,depositDue:'عند التعاقد وقبل بدء التنفيذ',balanceDue:'بعد موافقة العميل على المحتوى وقبل التسليم النهائي'};
   const id='contract-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex');
-  const x={id,projectId,title,number:clean(b.number,80)||id.slice(-12).toUpperCase(),service:clean(b.service,180)||project.service||project.name||'',terms,amount,startDate:clean(b.startDate,30),dueDate:clean(b.dueDate,30),status:'pending_signature',createdAt:now,updatedAt:now,createdBy:'owner'};
+  const x={id,projectId,title,number:clean(b.number,80)||id.slice(-12).toUpperCase(),service:clean(b.service,180)||project.service||project.name||'',terms,amount,currency:'IQD',depositAmount,balanceAmount,paymentSchedule,startDate:clean(b.startDate,30),dueDate:clean(b.dueDate,30),status:'pending_signature',createdAt:now,updatedAt:now,createdBy:'owner'};
   await contractsStore().setJSON(id,x);return json(201,{item:x});
  }
  if(type==='subscription'){
