@@ -55,7 +55,7 @@ const p=plans[state.audience],success=document.getElementById('success').value.t
 document.getElementById('resultTitle').textContent=p.title;
 document.getElementById('resultIntro').textContent=p.intro+(success?' النتيجة التي تريد الوصول لها: '+success+'.':'');
 const ul=document.getElementById('resultSteps');ul.replaceChildren();p.steps.forEach(s=>{const li=document.createElement('li');li.textContent=s;ul.appendChild(li)});
-const link=document.getElementById('resultLink');link.href='contact.html?topic='+encodeURIComponent(p.service)+'&challenge='+encodeURIComponent(challenge);
+const link=document.getElementById('resultLink');link.href='contact.html';
 const result=document.getElementById('result');result.classList.add('show');result.scrollIntoView({behavior:'smooth',block:'nearest'});
 });
 })();
