@@ -61,7 +61,7 @@ document.getElementById('mapOutside').textContent=p.outside;
 document.getElementById('mapBoundary').textContent=p.boundary;
 const ul=document.getElementById('resultSteps');ul.replaceChildren();p.steps.forEach(s=>{const li=document.createElement('li');li.textContent=s;ul.appendChild(li)});
 const link=document.getElementById('resultLink');
-link.href='onboarding.html?service='+encodeURIComponent(p.service)+'&audience='+encodeURIComponent(state.audience)+'&challenge='+encodeURIComponent(challenge)+'&goal='+encodeURIComponent(p.first)+'&success='+encodeURIComponent(success);
+link.href='onboarding.html?service='+encodeURIComponent(p.service)+'&audience='+encodeURIComponent(state.audience)+'&challenge='+encodeURIComponent(challenge)+'&goal='+encodeURIComponent(p.first)+'&success='+encodeURIComponent(success)+'&direction='+encodeURIComponent(p.direction)+'&role='+encodeURIComponent(p.role)+'&first='+encodeURIComponent(p.first)+'&outside='+encodeURIComponent(p.outside)+'&boundary='+encodeURIComponent(p.boundary)+'&steps='+encodeURIComponent(JSON.stringify(p.steps));
 const result=document.getElementById('result');result.classList.add('show');result.scrollIntoView({behavior:'smooth',block:'nearest'});
 });
 })();
