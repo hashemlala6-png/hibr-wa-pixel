@@ -198,3 +198,43 @@ body.hp44{background:var(--hp-paper);color:var(--hp-ink);font-family:'IBM Plex S
 .hp46-concepts{padding:40px 0}.hp46-concept{grid-template-columns:1fr;gap:25px;padding:20px 0 45px;margin-bottom:20px}.hp46-concept:nth-child(even) .hp46-concept-visual{order:0}.hp46-concept-visual{height:310px}.hp46-concept-copy h2{font-size:2.5rem}
 }
 @media(prefers-reduced-motion:reduce){.hp46 *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Unified customer pages — H&P idea-to-impact system */
+.hp46 .nav{height:82px;border-color:#dce3e2}
+.hp46 .nav .logo{font-size:1.2rem}.hp46 .nav .logo span{color:#efbd4c;margin-inline-start:5px}
+.hp46 .nav .solid-btn{border-radius:2px;background:#1d3038;border-color:#1d3038}
+.hp46 .navlinks a{font-size:.84rem}
+.hp46 .menu{border-radius:2px}
+.hp46-contact-page,.hp46-login-page,.hp46-account-page,.hp46-order-page{background:#f7f8f6}
+.hp46-contact-page .intake,.hp46-order-page .intake{max-width:1120px;padding:85px 0 100px}
+.hp46-contact-page .intake-head,.hp46-order-page .intake-head{padding:42px;background:#e9efec;display:grid;grid-template-columns:1fr .8fr;gap:40px;align-items:end}
+.hp46-contact-page .intake-title,.hp46-order-page .intake-title{font:900 clamp(3rem,7vw,6rem)/1.12 Cairo;margin:20px 0;letter-spacing:-.07em}
+.hp46-contact-page .intake-title em,.hp46-order-page .intake-title em{color:#245f83;font-style:normal}
+.hp46-contact-page .intake-lead,.hp46-order-page .intake-lead{color:#65747a;line-height:2;max-width:420px}
+.hp46-contact-page .intake-form,.hp46-order-page .intake-form{max-width:760px;margin:35px auto 0;padding:35px;background:#fff;border:1px solid #dce3df}
+.hp46-contact-page .intake-row,.hp46-order-page .intake-row{border-bottom:1px solid #e3e9e5;padding:13px 0}
+.hp46-contact-page .intake-control,.hp46-order-page .intake-control{border:0;background:#f7f8f6;border-radius:0;padding:14px;outline:0}
+.hp46-contact-page .intake-control:focus,.hp46-order-page .intake-control:focus{box-shadow:inset 0 0 0 1px #245f83}
+.hp46-contact-page .intake-actions,.hp46-order-page .intake-actions{margin-top:25px}
+.hp46-contact-page .intake-actions .solid-btn,.hp46-order-page .intake-actions .solid-btn{background:#1d3038;border-color:#1d3038;border-radius:2px;padding:14px 25px}
+.hp46-contact-page .footer{padding:25px 0;color:#7b8987;font-size:.8rem}
+.hp46-login-page main>.section{min-height:calc(100vh - 82px);padding:75px 0}
+.hp46-login-page main>.section>.site{max-width:580px!important}
+.hp46-login-page .account-box{background:#fff;border:1px solid #dce3df;border-radius:0;padding:clamp(22px,5vw,40px);box-shadow:none}
+.hp46-login-page main h1{font-family:Cairo!important;letter-spacing:-.07em!important}
+.hp46-login-page .field input{width:100%;padding:14px;border:1px solid #dce3df;background:#f7f8f6;border-radius:0;outline:0}
+.hp46-login-page .field input:focus{border-color:#245f83}
+.hp46-login-page #lt,.hp46-login-page #rt{border-radius:0}
+.hp46-login-page #lb,.hp46-login-page #rf button{border-radius:0;background:#1d3038;border-color:#1d3038}
+.hp46-account-page .account-shell{max-width:1000px}
+.hp46-account-page .account-box,.hp46-account-page .order-item{background:#fff;border:1px solid #dce3df;border-radius:0;box-shadow:none}
+.hp46-account-page .account-box h2,.hp46-account-page .account-box h3{font-family:Cairo}
+.hp46-account-page .account-shell>.kicker{margin-top:12px}
+.hp46-order-page .intake{padding-top:55px}
+@media(max-width:760px){
+.hp46 .nav{height:70px}.hp46 .navlinks{display:none;position:absolute;top:70px;right:0;left:0;background:#fff;padding:18px 22px;flex-direction:column;gap:14px;border:1px solid #dce3e2}.hp46 .navlinks.open{display:flex}.hp46 .nav-actions{gap:8px}.hp46 .nav-actions .solid-btn{padding:9px 11px;font-size:.74rem}
+.hp46-contact-page .intake,.hp46-order-page .intake{padding:40px 0 65px}
+.hp46-contact-page .intake-head,.hp46-order-page .intake-head{grid-template-columns:1fr;padding:25px;gap:10px}
+.hp46-contact-page .intake-form,.hp46-order-page .intake-form{padding:22px 17px;margin-top:18px}
+.hp46-login-page main>.section{padding:45px 0}
+}
