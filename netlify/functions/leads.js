@@ -210,18 +210,35 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'PATCH') {
     let b;
     try { b = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'بيانات غير صالحة' }); }
-    if (!b.id || !allowedStatuses.includes(b.status)) return json(400, { error: 'العميل أو الحالة غير صحيحة.' });
-    const current = await store().get(b.id, { type: 'json' });
+    if (!b.id || (b.status !== undefined && !allowedStatuses.includes(b.status))) return json(400, { error: 'معرّف العميل أو الحالة غير صحيحة.' });
+    const current = await store().get(clean(b.id, 200), { type: 'json' });
     if (!current) return json(404, { error: 'العميل غير موجود.' });
-    const previousStatus = current.status;
-    current.status = b.status;
-    if (b.status === 'lost') current.lossReason = clean(b.lossReason, 160);
-    else if (b.lossReason !== undefined) current.lossReason = clean(b.lossReason, 160);
+    let customerNotifications = null;
+    if (b.status !== undefined) {
+      const previousStatus = current.status;
+      current.status = b.status;
+      if (b.status === 'lost') current.lossReason = clean(b.lossReason, 160);
+      else if (b.lossReason !== undefined) current.lossReason = clean(b.lossReason, 160);
+      if (current.status === 'approved' && previousStatus !== 'approved') customerNotifications = await notifyClientApproval(current);
+      await logActivity(current.clientId||b.id,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
+    }
+    if (b.proposalDraft !== undefined) {
+      const p = b.proposalDraft && typeof b.proposalDraft === 'object' && !Array.isArray(b.proposalDraft) ? b.proposalDraft : {};
+      const list = v => Array.isArray(v) ? v.slice(0, 12).map(x=>clean(x,240)).filter(Boolean) : [];
+      current.proposalDraft = {
+        summary: clean(p.summary, 1200),
+        scope: clean(p.scope, 1600),
+        deliverables: list(p.deliverables),
+        milestones: list(p.milestones),
+        estimate: clean(p.estimate, 300),
+        priceNotes: clean(p.priceNotes, 500),
+        status: 'internal_review',
+        updatedAt: new Date().toISOString()
+      };
+      await logActivity(current.clientId||b.id,'proposal_draft','تم إعداد مسودة تصور مشروع للمراجعة الداخلية',{leadId:b.id});
+    }
     current.updatedAt = new Date().toISOString();
     await store().setJSON(b.id, current);
-    await logActivity(current.clientId||b.id,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
-    let customerNotifications = null;
-    if (current.status === 'approved' && previousStatus !== 'approved') customerNotifications = await notifyClientApproval(current);
     return json(200, { lead: current, customerNotifications });
   }
 
