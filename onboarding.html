@@ -63,7 +63,7 @@
 (function(){
 const form=document.getElementById('projectWizard'),steps=[...document.querySelectorAll('.journey-step')],$=id=>document.getElementById(id);
 const params=new URLSearchParams(location.search);
-const state={service:params.get('service')||'',goal:params.get('goal')||'',details:params.get('challenge')||'',name:'',phone:'',email:''};
+const state={service:params.get('service')||'',goal:params.get('goal')||'',details:params.get('challenge')||'',audience:params.get('audience')||'',success:params.get('success')||'',name:'',phone:'',email:''};
 const serviceMap={identity:'هوية وحضور بصري',content:'محتوى وتصميم',digital:'تجربة رقمية',growth:'استراتيجية ونمو'};
 if(serviceMap[state.service])state.service=serviceMap[state.service];
 $('projectDetails').value=state.details;
@@ -91,7 +91,7 @@ function render(){
 function summary(){
  $('journeySummary').innerHTML='';
  const rows=[['الخدمة',state.service],['الهدف',state.goal],['التفاصيل',state.details||'ماكو تفاصيل إضافية'],['الاسم',state.name],['واتساب',state.phone],['البريد',state.email||'غير مضاف']];
- rows.forEach(([k,v])=>{const row=document.createElement('div');row.className='summary-row';const key=document.createElement('span');key.textContent=k;const val=document.createElement('strong');val.textContent=v;$('journeySummary').append(row,key,val)});
+ rows.forEach(([k,v])=>{const row=document.createElement('div');row.className='summary-row';const key=document.createElement('span');key.textContent=k;const val=document.createElement('strong');val.textContent=v;row.append(key,val);$('journeySummary').append(row)});
 }
 document.querySelectorAll('[data-service]').forEach(b=>{b.addEventListener('click',()=>{state.service=b.dataset.service;document.querySelectorAll('[data-service]').forEach(x=>x.classList.toggle('selected',x===b));render()});if(b.dataset.service===state.service)b.classList.add('selected')});
 document.querySelectorAll('[data-goal]').forEach(b=>b.addEventListener('click',()=>{state.goal=b.dataset.goal;document.querySelectorAll('[data-goal]').forEach(x=>x.classList.toggle('selected',x===b));render()}));
@@ -103,7 +103,7 @@ $('backStep').addEventListener('click',()=>{setMessage('',false);current=Math.ma
 form.addEventListener('submit',async e=>{
  e.preventDefault();if(!valid()){setMessage('راجع الموافقة والبيانات المطلوبة.');return}
  const btn=$('submitProject');btn.disabled=true;setMessage('دا نرسل بداية مشروعك…',false);
- const payload={name:state.name,whatsapp:state.phone,email:state.email,service:state.service,budget:'أحتاج توجيه',details:[state.goal,state.details].filter(Boolean).join(' — '),source:'guided-project-journey'};
+ const payload={name:state.name,whatsapp:state.phone,email:state.email,service:state.service,budget:'أحتاج توجيه',details:[state.goal,state.details].filter(Boolean).join(' — '),source:state.audience?'guided-solution-discovery':'guided-project-journey',discovery:state.audience?{audience:state.audience,challenge:state.details,success:state.success}:null};
  try{
  const r=await fetch('/.netlify/functions/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
  const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'تعذر إرسال الطلب، حاول مرة ثانية.');
