@@ -42,12 +42,9 @@ exports.handler=async e=>{
       const projectAmount=Number(p.amount||0);
       const fullyPaid=projectAmount>0&&paid>=projectAmount;
       const deliveries=await listByProject('deliveries','delivery-',p.id,x=>{
-        const status=String(x.status||'').toLowerCase();
-        const accessLevel=String(x.accessLevel||x.access_level||'').toLowerCase();
-        const isPreview=accessLevel==='preview'||['preview','watermarked','protected_preview'].includes(status);
-        const isFinal=accessLevel==='final'||['delivered','released'].includes(status);
-        const canOpen=Boolean(x.url)&&(isPreview||(fullyPaid&&isFinal));
-        return {title:x.title,url:canOpen?x.url:'',note:x.note,status:x.status,accessLevel:isPreview?'preview':(isFinal?'final':'pending'),createdAt:x.createdAt};
+        const accessLevel=String(x.accessLevel||'').toLowerCase();
+        const canDownload=Boolean(x.fileKey)&&(accessLevel==='preview'||(fullyPaid&&accessLevel==='final'));
+        return {id:x.id,title:x.title,url:'',downloadUrl:canDownload?'/.netlify/functions/deliveries?deliveryId='+encodeURIComponent(x.id):'',note:x.note,status:x.status,accessLevel:accessLevel||'pending',createdAt:x.createdAt};
       });
       const rr=await listByProject('resultPlans','result-',p.id,x=>({promise:x.promise||x.plan?.promise||'',deliverables:x.plan?.deliverables||[],handoffMessage:x.plan?.handoff_message||x.plan?.handoffMessage||'',status:x.status}));
       const approvedResults=rr.filter(x=>['approved','delivered'].includes(x.status));
