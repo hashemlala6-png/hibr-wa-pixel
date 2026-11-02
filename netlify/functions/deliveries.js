@@ -1,6 +1,7 @@
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
+const {countReceivedPayments}=require('./contract-policy');
 const MAX_BYTES=4*1024*1024;
 const blobOptions=(name)=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const stores={
@@ -16,7 +17,7 @@ async function list(store,prefix){const st=store(),r=await st.list({prefix}),out
 async function getProject(projectId){return stores.projects().get(projectId,{type:'json'}).catch(()=>null)}
 async function isFullyPaid(project){
   const payments=await list(stores.payments,'payment-');
-  const paid=payments.filter(x=>x.projectId===project.id&&['received','paid','confirmed'].includes(String(x.status||'received').toLowerCase())).reduce((n,x)=>n+Math.max(0,Number(x.amount)||0),0);
+  const paid=countReceivedPayments(payments,project.id);
   const total=Number(project.amount)||0;
   return total>0&&paid>=total;
 }
