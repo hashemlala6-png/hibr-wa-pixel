@@ -32,7 +32,7 @@ exports.handler=async e=>{
       if(!p)continue;
       const clientIds=[account.id,account.clientId].filter(Boolean);
       const lead= p.leadId ? await s.leads().get(p.leadId,{type:'json'}).catch(()=>null) : null;
-      const belongs=clientIds.includes(p.clientId)||clientIds.includes(p.accountId)||p.email===account.email||(lead&&clientIds.includes(lead.clientId));
+      const email=String(account.email||'').toLowerCase();const belongs=clientIds.includes(p.clientId)||clientIds.includes(p.accountId)||email===String(p.email||p.clientEmail||'').toLowerCase()||(lead&&(clientIds.includes(lead.clientId)||email===String(lead.email||'').toLowerCase()));
       if(!belongs)continue;
       const payments=await listByProject('payments','payment-',p.id,x=>({amount:x.amount,method:x.method,status:x.status||'received',createdAt:x.createdAt}));
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
