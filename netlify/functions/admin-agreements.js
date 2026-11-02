@@ -1,5 +1,5 @@
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const { calculatePaymentSchedule } = require('./contract-policy');
 const clean=(v,n=5000)=>String(v??'').trim().slice(0,n);
@@ -7,6 +7,7 @@ const projectsStore=()=>getStore({name:'hbpx-projects',consistency:'strong'});
 const contractsStore=()=>getStore({name:'hbpx-contracts',consistency:'strong'});
 const subscriptionsStore=()=>getStore({name:'hbpx-subscriptions',consistency:'strong'});
 exports.handler=async e=>{
+  connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});
  const auth=requireAdmin(e);if(auth)return auth;
  if(e.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
