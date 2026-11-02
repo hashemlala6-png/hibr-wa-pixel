@@ -34,9 +34,15 @@ exports.handler=async e=>{
         await logActivity(x.clientId,'order','تم تحديث حالة الطلب من لوحة المالك',{orderId:x.id,from:previous,to:x.status});
         return json(200,{order:x});
       }
-      await orders().delete(id);
-      await logActivity(x.clientId,'order','تم حذف الطلب من لوحة المالك',{orderId:x.id});
-      return json(200,{ok:true,id});
+      // Preserve the order history: DELETE is a soft archive, never a destructive removal.
+      if(x.status==='archived')return json(200,{ok:true,id,archived:true});
+      x.status='archived';
+      x.archivedAt=new Date().toISOString();
+      x.archivedBy='owner';
+      x.updatedAt=x.archivedAt;
+      await orders().setJSON(id,x);
+      await logActivity(x.clientId,'order','تمت أرشفة الطلب من لوحة المالك',{orderId:x.id});
+      return json(200,{ok:true,id,archived:true});
     }catch(err){return json(500,{error:'تعذر تنفيذ عملية الطلب.'});}
   }
   // Client operations require an authenticated client session.
