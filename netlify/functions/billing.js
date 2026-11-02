@@ -1,6 +1,6 @@
 const { env } = require('./env');
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
 const projectStore=()=>getStore({name:'hbpx-projects',consistency:'strong'});
@@ -25,6 +25,7 @@ async function all(name,prefix){const st=stores[name](),r=await st.list({prefix}
 function renewalDate(start,cycle){const d=new Date(start+'T12:00:00');if(cycle==='yearly')d.setFullYear(d.getFullYear()+1);else if(cycle==='quarterly')d.setMonth(d.getMonth()+3);else d.setMonth(d.getMonth()+1);return d.toISOString().slice(0,10)}
 function num(prefix){return `${prefix}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`}
 exports.handler=async e=>{
+  connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});const a=requireAdmin(e);if(a)return a;
  try{
   if(e.httpMethod==='GET')return json(200,{invoices:await all('invoices','invoice-'),contracts:await all('contracts','contract-'),deliveries:await all('deliveries','delivery-'),subscriptions:await all('subscriptions','subscription-')});
