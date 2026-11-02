@@ -23,7 +23,7 @@ async function isFullyPaid(project){
 async function ownedByClient(project,account){
   const ids=[account.id,account.clientId].filter(Boolean);
   if(ids.includes(project.clientId)||ids.includes(project.accountId))return true;
-  if(account.email&&project.email&&String(account.email).toLowerCase()===String(project.email).toLowerCase())return true;
+  if(account.email&&String(account.email).toLowerCase()===String(project.email||project.clientEmail||'').toLowerCase())return true;
   if(project.leadId){const lead=await stores.leads().get(project.leadId,{type:'json'}).catch(()=>null);if(lead&&(ids.includes(lead.clientId)||(account.email&&String(lead.email||'').toLowerCase()===String(account.email).toLowerCase())))return true;}
   return false;
 }
