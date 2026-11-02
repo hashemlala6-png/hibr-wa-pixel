@@ -41,6 +41,13 @@ exports.handler=async event=>{
       const raw=String(b.dataBase64||'').replace(/^data:[^,]+,/, '');
       if(!/^[A-Za-z0-9+/]*={0,2}$/.test(raw)||raw.length>Math.ceil(MAX_BYTES*4/3)+8)return json(413,{error:'الملف أكبر من الحد المسموح (4 ميغابايت) أو بياناته غير صالحة.'});
       const bytes=Buffer.from(raw,'base64');if(!bytes.length||bytes.length>MAX_BYTES)return json(413,{error:'حجم الملف غير مقبول. الحد الأقصى 4 ميغابايت.'});
+      const signatures={
+        'application/pdf':bytes=>bytes.subarray(0,5).toString()==='%PDF-',
+        'image/png':bytes=>bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])),
+        'image/jpeg':bytes=>bytes.length>3&&bytes[0]===255&&bytes[1]===216&&bytes[2]===255,
+        'image/webp':bytes=>bytes.length>12&&bytes.subarray(0,4).toString()==='RIFF'&&bytes.subarray(8,12).toString()==='WEBP'
+      };
+      if(!signatures[contentType](bytes))return json(400,{error:'محتوى الملف لا يطابق نوعه المعلن.'});
       const id='delivery-'+Date.now()+'-'+require('crypto').randomBytes(4).toString('hex');
       const fileKey='private-'+id;
       await stores.files().set(fileKey,bytes,{metadata:{contentType,filename}});
