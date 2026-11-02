@@ -44,6 +44,21 @@ test('allows activation only after the full deposit is recorded', () => {
   assert.equal(activationBlockReason('p1', contracts, payments), null);
 });
 
+test('does not count pending or rejected payments toward the deposit', () => {
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000 }];
+  const payments = [
+    { projectId: 'p1', amount: 10000, status: 'pending' },
+    { projectId: 'p1', amount: 10000, status: 'rejected' }
+  ];
+  assert.match(activationBlockReason('p1', contracts, payments), /العربون كاملاً/);
+});
+
+test('counts explicitly received payments', () => {
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000 }];
+  const payments = [{ projectId: 'p1', amount: 10000, status: 'received' }];
+  assert.equal(activationBlockReason('p1', contracts, payments), null);
+});
+
 test('ignores payments belonging to other projects', () => {
   const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000 }];
   const payments = [{ projectId: 'p2', amount: 10000 }];
