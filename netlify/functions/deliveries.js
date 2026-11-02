@@ -33,10 +33,10 @@ exports.handler=async event=>{
     if(event.httpMethod==='POST'){
       const denied=requireAdmin(event);if(denied)return denied;
       let b;try{b=JSON.parse(event.body||'{}')}catch{return json(400,{error:'بيانات الرفع غير صالحة.'})}
-      const projectId=clean(b.projectId,140),title=clean(b.title,160),filename=clean(b.filename,180).replace(/[\\/\\\\]/g,'_');
+      const projectId=clean(b.projectId,140),title=clean(b.title,160),filename=clean(b.filename,180).replaceAll('/','_').replaceAll(String.fromCharCode(92),'_');
       const accessLevel=['preview','final'].includes(b.accessLevel)?b.accessLevel:'';
       const contentType=clean(b.contentType,100).toLowerCase();
-      if(!projectId||!title||!filename||!accessLevel||!/^application\\/pdf$|^image\\/(png|jpeg|webp)$/.test(contentType))return json(400,{error:'اختاري مشروعاً واسماً ونوع ملف صحيحاً (PDF أو صورة).'});
+      if(!projectId||!title||!filename||!accessLevel||!['application/pdf','image/png','image/jpeg','image/webp'].includes(contentType))return json(400,{error:'اختاري مشروعاً واسماً ونوع ملف صحيحاً (PDF أو صورة).'});
       const project=await getProject(projectId);if(!project)return json(404,{error:'المشروع غير موجود.'});
       const raw=String(b.dataBase64||'').replace(/^data:[^,]+,/, '');
       if(!/^[A-Za-z0-9+/]*={0,2}$/.test(raw)||raw.length>Math.ceil(MAX_BYTES*4/3)+8)return json(413,{error:'الملف أكبر من الحد المسموح (4 ميغابايت) أو بياناته غير صالحة.'});
