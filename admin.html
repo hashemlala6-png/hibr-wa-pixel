@@ -116,7 +116,7 @@ async function draftLeadProposal(id){
 
 async function loadOrders(){const d=await api('/.netlify/functions/orders');ORDERS=d.orders||[]}
 async function loadSales(){SALES=await api('/.netlify/functions/sales');renderSales()}
-async function loadGrowth(){try{GROWTH=await api('/.netlify/functions/growth?action=overview')}catch{GROWTH=null}renderGrowth()}
+async function loadGrowth(){GROWTH=await api('/.netlify/functions/growth?action=overview');renderGrowth()}
 async function loadPresence(){try{const d=await api('/.netlify/functions/presence?action=active');$('#liveNow').textContent=`${d.counts?.total||0} مستخدم حي`;$('#presence').innerHTML=(d.sessions||[]).length?(d.sessions||[]).slice(0,30).map(x=>`<div class="row"><div><b>${x.kind==='visitor'?'👀 زائر':x.kind==='client'?'👤 عميل':'👑 مالك'}</b><div class="meta">${esc(x.page||'/')} · ${esc(x.device||'—')}</div></div><div class="meta">${esc([x.geo?.city,x.geo?.country].filter(Boolean).join('، ')||'موقع غير متاح')}<br>${dt(x.updatedAt)}</div></div>`).join(''):'<p class="note">لا توجد جلسات نشطة.</p>'}catch{}}
 async function loadNotifications(){try{const d=await api('/.netlify/functions/notifications?limit=60');NOTIFS=d.items||[]}catch{}}
 async function loadPricing(){try{const d=await api('/.netlify/functions/settings');for(const k of ['single','basic','comprehensive','extended'])$('#p-'+k).value=d.pricing?.[k]||''}catch{}}
