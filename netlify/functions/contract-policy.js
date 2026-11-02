@@ -22,8 +22,10 @@ function activationBlockReason(projectId, contracts, payments) {
   const schedule = calculatePaymentSchedule(Number(signed.amount));
   const deposit = Number.isSafeInteger(signed.depositAmount) && signed.depositAmount >= 0
     ? signed.depositAmount : schedule.depositAmount;
+  // Old payment rows were created only through the owner-authenticated manual recording endpoint.
+  // New rows must explicitly carry the received state; pending/rejected rows never count.
   const paid = payments
-    .filter(p => p.projectId === projectId)
+    .filter(p => p.projectId === projectId && (!p.status || p.status === 'received'))
     .reduce((sum, p) => sum + (Number.isFinite(Number(p.amount)) ? Number(p.amount) : 0), 0);
   if (paid < deposit) return 'تم توقيع العقد، لكن لم يُسجّل استلام العربون كاملاً بعد. لا يمكن بدء التنفيذ.';
   return null;
