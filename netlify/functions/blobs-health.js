@@ -34,7 +34,7 @@ exports.handler = async event => {
   const key = 'probe-' + Date.now() + '-' + crypto.randomBytes(5).toString('hex');
   try {
     await probe.set(key, 'ok');
-    const value = await probe.get(key);
+    const value = await probe.get(key, { type: 'text' });
     if (value !== 'ok') throw new Error('لم تتطابق قراءة اختبار الكتابة');
     await probe.delete(key);
     writeTest = { ok: true, write: true, read: true, delete: true };
