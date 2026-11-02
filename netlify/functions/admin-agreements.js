@@ -19,13 +19,13 @@ exports.handler=async e=>{
   if(!title||terms.length<30||!Number.isSafeInteger(amount)||amount<=0)return json(400,{error:'العنوان وبنود العقد الكاملة وقيمة صحيحة بالدينار العراقي أكبر من صفر مطلوبة.'});
   const depositAmount=Math.round(amount*0.10),balanceAmount=amount-depositAmount;
   const paymentSchedule={currency:'IQD',depositRate:10,balanceRate:90,depositAmount,balanceAmount,depositDue:'عند التعاقد وقبل بدء التنفيذ',balanceDue:'بعد موافقة العميل على المحتوى وقبل التسليم النهائي'};
-  const completeTerms=terms+'
+  const completeTerms=`${terms}
 
 آلية الدفع والتسليم المالي
-القيمة الإجمالية: '+amount.toLocaleString('en-US')+' دينار عراقي.
-دفعة التعاقد (10%): '+depositAmount.toLocaleString('en-US')+' دينار عراقي، عند التعاقد وقبل بدء التنفيذ.
-المتبقي (90%): '+balanceAmount.toLocaleString('en-US')+' دينار عراقي، بعد موافقة العميل على المحتوى وقبل التسليم النهائي.
-لا تُسلّم الملفات الأصلية كاملة الجودة دون علامة مائية، ولا تنتقل حقوق الاستخدام الكامل، إلا بعد سداد كامل المبلغ المتفق عليه.';
+القيمة الإجمالية: ${amount.toLocaleString('en-US')} دينار عراقي.
+دفعة التعاقد (10%): ${depositAmount.toLocaleString('en-US')} دينار عراقي، عند التعاقد وقبل بدء التنفيذ.
+المتبقي (90%): ${balanceAmount.toLocaleString('en-US')} دينار عراقي، بعد موافقة العميل على المحتوى وقبل التسليم النهائي.
+لا تُسلّم الملفات الأصلية كاملة الجودة دون علامة مائية، ولا تنتقل حقوق الاستخدام الكامل، إلا بعد سداد كامل المبلغ المتفق عليه.`;
   const id='contract-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex');
   const x={id,projectId,title,number:clean(b.number,80)||id.slice(-12).toUpperCase(),service:clean(b.service,180)||project.service||project.name||'',terms:completeTerms,amount,currency:'IQD',depositAmount,balanceAmount,paymentSchedule,startDate:clean(b.startDate,30),dueDate:clean(b.dueDate,30),status:'pending_signature',createdAt:now,updatedAt:now,createdBy:'owner'};
   await contractsStore().setJSON(id,x);return json(201,{item:x});
