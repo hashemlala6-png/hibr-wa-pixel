@@ -35,7 +35,7 @@ exports.handler=async e=>{
       const lead= p.leadId ? await s.leads().get(p.leadId,{type:'json'}).catch(()=>null) : null;
       const email=String(account.email||'').toLowerCase();const belongs=clientIds.includes(p.clientId)||clientIds.includes(p.accountId)||email===String(p.email||p.clientEmail||'').toLowerCase()||(lead&&(clientIds.includes(lead.clientId)||email===String(lead.email||'').toLowerCase()));
       if(!belongs)continue;
-      const payments=await listByProject('payments','payment-',p.id,x=>({amount:x.amount,method:x.method,status:x.status||'received',createdAt:x.createdAt}));
+      const payments=await listByProject('payments','payment-',p.id,x=>({projectId:x.projectId,amount:x.amount,method:x.method,status:x.status||'received',createdAt:x.createdAt}));
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
       const invoices=await listByProject('invoices','invoice-',p.id,x=>({number:x.number,total:x.total,dueDate:x.dueDate,status:x.status,createdAt:x.createdAt}));
       const contracts=await listByProject('contracts','contract-',p.id,x=>({number:x.number,amount:x.amount,status:x.status,startDate:x.startDate,dueDate:x.dueDate}));
@@ -43,9 +43,18 @@ exports.handler=async e=>{
       const projectAmount=Number(p.amount||0);
       const fullyPaid=projectAmount>0&&paid>=projectAmount;
       const deliveries=await listByProject('deliveries','delivery-',p.id,x=>{
-        const accessLevel=String(x.accessLevel||'').toLowerCase();
-        const canDownload=Boolean(x.fileKey)&&canDownloadDelivery(accessLevel,fullyPaid);
-        return {id:x.id,title:x.title,url:'',downloadUrl:canDownload?'/.netlify/functions/deliveries?deliveryId='+encodeURIComponent(x.id):'',note:x.note,status:x.status,accessLevel:accessLevel||'pending',createdAt:x.createdAt};
+        const hasPrivateFile=Boolean(x.fileKey);
+        const accessLevel=String(x.accessLevel||(x.url?'final':'')).toLowerCase();
+        const canDownloadPrivate=hasPrivateFile&&canDownloadDelivery(accessLevel,fullyPaid);
+        let externalUrl='';
+        if(!hasPrivateFile&&x.url&&accessLevel==='final'&&fullyPaid){
+          try{
+            const parsed=new URL(String(x.url));
+            if(parsed.protocol==='https:')externalUrl=parsed.href;
+          }catch{}
+        }
+        const downloadUrl=canDownloadPrivate?'/.netlify/functions/deliveries?deliveryId='+encodeURIComponent(x.id):externalUrl;
+        return {id:x.id,title:x.title,url:'',downloadUrl,note:x.note,status:x.status,accessLevel:accessLevel||'pending',createdAt:x.createdAt};
       });
       const rr=await listByProject('resultPlans','result-',p.id,x=>({promise:x.promise||x.plan?.promise||'',deliverables:x.plan?.deliverables||[],handoffMessage:x.plan?.handoff_message||x.plan?.handoffMessage||'',status:x.status}));
       const approvedResults=rr.filter(x=>['approved','delivered'].includes(x.status));
