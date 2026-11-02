@@ -1,6 +1,7 @@
 const crypto=require('crypto');
 const {getStore}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
+const { calculatePaymentSchedule } = require('./contract-policy');
 const clean=(v,n=5000)=>String(v??'').trim().slice(0,n);
 const projectsStore=()=>getStore({name:'hbpx-projects',consistency:'strong'});
 const contractsStore=()=>getStore({name:'hbpx-contracts',consistency:'strong'});
@@ -17,8 +18,8 @@ exports.handler=async e=>{
  if(type==='contract'){
   const title=clean(b.title,180),terms=clean(b.terms,12000),amount=Number(b.amount||0);
   if(!title||terms.length<30||!Number.isSafeInteger(amount)||amount<=0)return json(400,{error:'العنوان وبنود العقد الكاملة وقيمة صحيحة بالدينار العراقي أكبر من صفر مطلوبة.'});
-  const depositAmount=Math.round(amount*0.10),balanceAmount=amount-depositAmount;
-  const paymentSchedule={currency:'IQD',depositRate:10,balanceRate:90,depositAmount,balanceAmount,depositDue:'عند التعاقد وقبل بدء التنفيذ',balanceDue:'بعد موافقة العميل على المحتوى وقبل التسليم النهائي'};
+  const paymentSchedule=calculatePaymentSchedule(amount);
+  const {depositAmount,balanceAmount}=paymentSchedule;
   const completeTerms=`${terms}
 
 آلية الدفع والتسليم المالي
