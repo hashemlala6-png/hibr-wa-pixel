@@ -16,19 +16,24 @@ function calculatePaymentSchedule(amount) {
   };
 }
 
+function countReceivedPayments(payments, projectId) {
+  return payments
+    .filter(p => p.projectId === projectId && ['received', 'paid', 'confirmed'].includes(String(p.status || 'received').toLowerCase()))
+    .reduce((sum, p) => {
+      const amount = Number(p.amount);
+      return sum + (Number.isFinite(amount) && amount > 0 ? amount : 0);
+    }, 0);
+}
+
 function activationBlockReason(projectId, contracts, payments) {
   const signed = contracts.find(c => c.projectId === projectId && c.status === 'signed' && c.signedAt);
   if (!signed) return 'لا يمكن بدء المشروع قبل توقيع عقده من العميل.';
   const schedule = calculatePaymentSchedule(Number(signed.amount));
   const deposit = Number.isSafeInteger(signed.depositAmount) && signed.depositAmount >= 0
     ? signed.depositAmount : schedule.depositAmount;
-  // Old payment rows were created only through the owner-authenticated manual recording endpoint.
-  // New rows must explicitly carry the received state; pending/rejected rows never count.
-  const paid = payments
-    .filter(p => p.projectId === projectId && (!p.status || p.status === 'received'))
-    .reduce((sum, p) => sum + (Number.isFinite(Number(p.amount)) ? Number(p.amount) : 0), 0);
+  const paid = countReceivedPayments(payments, projectId);
   if (paid < deposit) return 'تم توقيع العقد، لكن لم يُسجّل استلام العربون كاملاً بعد. لا يمكن بدء التنفيذ.';
   return null;
 }
 
-module.exports = { calculatePaymentSchedule, activationBlockReason };
+module.exports = { calculatePaymentSchedule, countReceivedPayments, activationBlockReason };
