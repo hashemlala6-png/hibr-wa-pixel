@@ -10,7 +10,7 @@ const s={
   resultPlans:()=>getStore({name:'hbpx-result-plans',consistency:'eventual'}),
   invoices:()=>getStore({name:'hbpx-invoices',consistency:'eventual'}),
   contracts:()=>getStore({name:'hbpx-contracts',consistency:'eventual'}),
-  deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'eventual'})
+  deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'strong'})
 };
 async function listByProject(storeName,prefix,projectId,map){
   const st=s[storeName](),r=await st.list({prefix}),out=[];
