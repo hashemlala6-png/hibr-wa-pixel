@@ -1,7 +1,7 @@
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
-const {countReceivedPayments}=require('./contract-policy');
+const {countReceivedPayments,canDownloadDelivery}=require('./contract-policy');
 const MAX_BYTES=4*1024*1024;
 const blobOptions=(name)=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const stores={
@@ -63,8 +63,8 @@ exports.handler=async event=>{
       const id=clean(event.queryStringParameters?.deliveryId,180);if(!id)return json(400,{error:'معرّف التسليم مطلوب.'});
       const item=await stores.deliveries().get(id,{type:'json'}).catch(()=>null);if(!item)return json(404,{error:'التسليم غير موجود.'});
       const project=await getProject(item.projectId);if(!project||!await ownedByClient(project,account))return json(404,{error:'التسليم غير موجود ضمن حسابك.'});
-      if(item.accessLevel==='final'&&!await isFullyPaid(project))return json(403,{error:'تتاح الملفات النهائية بعد تسديد كامل قيمة المشروع.'});
-      if(!['preview','final'].includes(item.accessLevel))return json(403,{error:'هذا الملف غير متاح للتنزيل.'});
+      const fullyPaid=await isFullyPaid(project);
+      if(!canDownloadDelivery(item.accessLevel,fullyPaid))return json(item.accessLevel==='final'?403:403,{error:item.accessLevel==='final'?'تتاح الملفات النهائية بعد تسديد كامل قيمة المشروع.':'هذا الملف غير متاح للتنزيل.'});
       const data=await stores.files().get(item.fileKey,{type:'arrayBuffer'});if(!data)return json(404,{error:'تعذر العثور على الملف.'});
       const bytes=Buffer.from(data);
       return {statusCode:200,isBase64Encoded:true,headers:{'Content-Type':item.contentType||'application/octet-stream','Content-Length':String(bytes.length),'Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(item.filename||'delivery'),'Cache-Control':'private, no-store, max-age=0','X-Content-Type-Options':'nosniff'},body:bytes.toString('base64')};
