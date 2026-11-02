@@ -2,13 +2,14 @@ const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const MAX_BYTES=4*1024*1024;
+const blobOptions=(name)=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const stores={
-  projects:()=>getStore({name:'hbpx-projects',consistency:'strong'}),
-  payments:()=>getStore({name:'hbpx-payments',consistency:'strong'}),
-  leads:()=>getStore({name:'hbpx-leads',consistency:'strong'}),
-  accounts:()=>getStore({name:'hbpx-client-accounts',consistency:'strong'}),
-  deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'strong'}),
-  files:()=>getStore({name:'hbpx-private-deliveries',consistency:'strong'})
+  projects:()=>getStore(blobOptions('hbpx-projects')),
+  payments:()=>getStore(blobOptions('hbpx-payments')),
+  leads:()=>getStore(blobOptions('hbpx-leads')),
+  accounts:()=>getStore(blobOptions('hbpx-client-accounts')),
+  deliveries:()=>getStore(blobOptions('hbpx-deliveries')),
+  files:()=>getStore(blobOptions('hbpx-private-deliveries'))
 };
 const clean=(v,n=200)=>String(v??'').trim().slice(0,n);
 async function list(store,prefix){const st=store(),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){const x=await st.get(b.key,{type:'json'}).catch(()=>null);if(x)out.push(x)}return out}
