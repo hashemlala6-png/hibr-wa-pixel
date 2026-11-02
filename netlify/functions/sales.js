@@ -1,5 +1,5 @@
 const { env } = require('./env');
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const { activationBlockReason, countReceivedPayments } = require('./contract-policy');
 const { logActivity } = require('./client-activity');
@@ -20,6 +20,7 @@ const amount=v=>{const n=Number(String(v??'').replace(/[^0-9]/g,''));return Numb
 async function clientIdForLead(leadId){const lead=await stores.leads().get(clean(leadId,120),{type:'json'}).catch(()=>null);return lead?.clientId||null}
 async function all(name){const st=stores[name]();const result=await st.list({prefix:name==='quotes'?'quote-':name==='projects'?'project-':'payment-'});const out=[];for(const item of result.blobs||[]){try{const x=await st.get(item.key,{type:'json'});if(x)out.push(x)}catch{}}out.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));return out}
 exports.handler=async event=>{
+ connectLambda(event);
  if(event.httpMethod==='OPTIONS')return json(204,{});
  const auth=requireAdmin(event);if(auth)return auth;
  try{
