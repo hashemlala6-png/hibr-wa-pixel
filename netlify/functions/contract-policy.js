@@ -25,6 +25,11 @@ function countReceivedPayments(payments, projectId) {
     }, 0);
 }
 
+function canDownloadDelivery(accessLevel, fullyPaid) {
+  const level = String(accessLevel || '').toLowerCase();
+  return level === 'preview' || (level === 'final' && fullyPaid === true);
+}
+
 function activationBlockReason(projectId, contracts, payments) {
   const signed = contracts.find(c => c.projectId === projectId && c.status === 'signed' && c.signedAt);
   if (!signed) return 'لا يمكن بدء المشروع قبل توقيع عقده من العميل.';
@@ -36,4 +41,4 @@ function activationBlockReason(projectId, contracts, payments) {
   return null;
 }
 
-module.exports = { calculatePaymentSchedule, countReceivedPayments, activationBlockReason };
+module.exports = { calculatePaymentSchedule, countReceivedPayments, canDownloadDelivery, activationBlockReason };
