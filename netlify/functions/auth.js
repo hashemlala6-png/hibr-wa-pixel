@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { createSession, sessionCookie, clearCookie, verifySession, json } = require('./auth-utils');
 const { env } = require('./session-core');
 
@@ -37,6 +37,7 @@ async function limited(ip) {
 }
 
 exports.handler = async (event) => {
+  connectLambda(event);
   if (event.httpMethod === 'GET' && (event.queryStringParameters || {}).action === 'me') {
     return json(200, { authenticated: verifySession(event) });
   }
