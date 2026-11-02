@@ -133,7 +133,7 @@ async function loadOps(){try{OPS=await api('/.netlify/functions/operations')}cat
 async function uploadProjectDelivery(projectId){
  const p=(SALES?.projects||[]).find(x=>x.id===projectId);if(!p)return;
  const title=prompt('عنوان التسليم:');if(!title)return;
- const accessLevel=prompt('نوع الملف: اكتبي preview للمعاينة المحمية أو final للنسخة النهائية.','preview');if(!['preview','final'].includes(String(accessLevel||'').trim().toLowerCase())){alert('النوع غير صحيح.');return}
+ const accessLevel=prompt('نوع الملف: اكتبي preview للمعاينة (ارفعي نسخة عليها علامة مائية أو منخفضة الدقة؛ النظام لا يضيف العلامة تلقائياً) أو final للنسخة النهائية.','preview');if(!['preview','final'].includes(String(accessLevel||'').trim().toLowerCase())){alert('النوع غير صحيح.');return}
  const note=prompt('ملاحظة للعميل (اختياري):','')||'';
  const picker=document.createElement('input');picker.type='file';picker.accept='.pdf,image/png,image/jpeg,image/webp';picker.style.display='none';document.body.appendChild(picker);
  picker.onchange=async()=>{try{
