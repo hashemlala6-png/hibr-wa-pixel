@@ -1,6 +1,6 @@
 const { env } = require('./env');
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {getAIContext,contextPrompt,saveAIHistory}=require('./ai-context');
 const {logActivity}=require('./client-activity');
@@ -17,6 +17,7 @@ async function vqaForProject(projectId){const r=await vqa().list({prefix:'vqa-'}
 async function latestApprovedFinal(projectId){const r=await gates().list({prefix:'gate-'}),out=[];for(const b of r.blobs||[]){try{const x=await gates().get(b.key,{type:'json'});if(x?.projectId===projectId&&x.status==='approved'&&x.kind==='final')out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.approvedAt||b.updatedAt)-new Date(a.approvedAt||a.updatedAt))[0]||null;}
 
 exports.handler=async e=>{
+  connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});
  const auth=requireAdmin(e);if(auth)return auth;
  try{
