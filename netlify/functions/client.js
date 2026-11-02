@@ -1,6 +1,7 @@
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
+const {countReceivedPayments}=require('./contract-policy');
 const s={
   leads:()=>getStore({name:'hbpx-leads',consistency:'eventual'}),
   projects:()=>getStore({name:'hbpx-projects',consistency:'eventual'}),
@@ -38,7 +39,7 @@ exports.handler=async e=>{
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
       const invoices=await listByProject('invoices','invoice-',p.id,x=>({number:x.number,total:x.total,dueDate:x.dueDate,status:x.status,createdAt:x.createdAt}));
       const contracts=await listByProject('contracts','contract-',p.id,x=>({number:x.number,amount:x.amount,status:x.status,startDate:x.startDate,dueDate:x.dueDate}));
-      const paid=payments.filter(x=>['received','paid','confirmed'].includes(String(x.status||'received').toLowerCase())).reduce((a,x)=>a+Number(x.amount||0),0);
+      const paid=countReceivedPayments(payments,p.id);
       const projectAmount=Number(p.amount||0);
       const fullyPaid=projectAmount>0&&paid>=projectAmount;
       const deliveries=await listByProject('deliveries','delivery-',p.id,x=>{
