@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calculatePaymentSchedule, countReceivedPayments, activationBlockReason } = require('../netlify/functions/contract-policy');
+const { calculatePaymentSchedule, countReceivedPayments, canDownloadDelivery, activationBlockReason } = require('../netlify/functions/contract-policy');
 
 test('calculates exact 10/90 split for IQD amounts', () => {
   const p = calculatePaymentSchedule(100000);
@@ -93,4 +93,19 @@ test('activation accepts paid and confirmed status for the deposit', () => {
     { projectId: 'p1', amount: 6000, status: 'confirmed' }
   ];
   assert.equal(activationBlockReason('p1', contracts, payments), null);
+});
+
+test('allows preview downloads before full payment', () => {
+  assert.equal(canDownloadDelivery('preview', false), true);
+  assert.equal(canDownloadDelivery('preview', true), true);
+});
+
+test('blocks final downloads until full payment is confirmed', () => {
+  assert.equal(canDownloadDelivery('final', false), false);
+  assert.equal(canDownloadDelivery('final', true), true);
+});
+
+test('blocks unknown delivery access levels', () => {
+  assert.equal(canDownloadDelivery('public', true), false);
+  assert.equal(canDownloadDelivery('', true), false);
 });
