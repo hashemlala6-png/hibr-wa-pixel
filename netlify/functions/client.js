@@ -34,15 +34,24 @@ exports.handler=async e=>{
       const lead= p.leadId ? await s.leads().get(p.leadId,{type:'json'}).catch(()=>null) : null;
       const belongs=clientIds.includes(p.clientId)||clientIds.includes(p.accountId)||p.email===account.email||(lead&&clientIds.includes(lead.clientId));
       if(!belongs)continue;
-      const payments=await listByProject('payments','payment-',p.id,x=>({amount:x.amount,method:x.method,createdAt:x.createdAt}));
+      const payments=await listByProject('payments','payment-',p.id,x=>({amount:x.amount,method:x.method,status:x.status||'received',createdAt:x.createdAt}));
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
       const invoices=await listByProject('invoices','invoice-',p.id,x=>({number:x.number,total:x.total,dueDate:x.dueDate,status:x.status,createdAt:x.createdAt}));
       const contracts=await listByProject('contracts','contract-',p.id,x=>({number:x.number,amount:x.amount,status:x.status,startDate:x.startDate,dueDate:x.dueDate}));
-      const deliveries=await listByProject('deliveries','delivery-',p.id,x=>({title:x.title,url:x.url,note:x.note,status:x.status,createdAt:x.createdAt}));
+      const paid=payments.filter(x=>['received','paid','confirmed'].includes(String(x.status||'received').toLowerCase())).reduce((a,x)=>a+Number(x.amount||0),0);
+      const projectAmount=Number(p.amount||0);
+      const fullyPaid=projectAmount>0&&paid>=projectAmount;
+      const deliveries=await listByProject('deliveries','delivery-',p.id,x=>{
+        const status=String(x.status||'').toLowerCase();
+        const accessLevel=String(x.accessLevel||x.access_level||'').toLowerCase();
+        const isPreview=accessLevel==='preview'||['preview','watermarked','protected_preview'].includes(status);
+        const isFinal=accessLevel==='final'||['delivered','released'].includes(status);
+        const canOpen=Boolean(x.url)&&(isPreview||(fullyPaid&&isFinal));
+        return {title:x.title,url:canOpen?x.url:'',note:x.note,status:x.status,accessLevel:isPreview?'preview':(isFinal?'final':'pending'),createdAt:x.createdAt};
+      });
       const rr=await listByProject('resultPlans','result-',p.id,x=>({promise:x.promise||x.plan?.promise||'',deliverables:x.plan?.deliverables||[],handoffMessage:x.plan?.handoff_message||x.plan?.handoffMessage||'',status:x.status}));
       const approvedResults=rr.filter(x=>['approved','delivered'].includes(x.status));
-      const paid=payments.reduce((a,x)=>a+Number(x.amount||0),0);
-      projects.push({id:p.id,name:p.name,status:p.status,startDate:p.startDate,dueDate:p.dueDate,amount:p.amount,paid,remaining:Math.max(Number(p.amount||0)-paid,0),payments,tasks,invoices,contracts,deliveries,clientResult:approvedResults[0]||null});
+      projects.push({id:p.id,name:p.name,status:p.status,startDate:p.startDate,dueDate:p.dueDate,amount:p.amount,paid,remaining:Math.max(projectAmount-paid,0),fullyPaid,payments,tasks,invoices,contracts,deliveries,clientResult:approvedResults[0]||null});
     }
     projects.sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
     return json(200,{client:{id:account.id,clientId:account.clientId||account.id,name:account.name,email:account.email,whatsapp:account.whatsapp},projects});
