@@ -1,7 +1,7 @@
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
-const {countReceivedPayments}=require('./contract-policy');
+const {countReceivedPayments,canDownloadDelivery}=require('./contract-policy');
 const s={
   leads:()=>getStore({name:'hbpx-leads',consistency:'eventual'}),
   projects:()=>getStore({name:'hbpx-projects',consistency:'eventual'}),
@@ -44,7 +44,7 @@ exports.handler=async e=>{
       const fullyPaid=projectAmount>0&&paid>=projectAmount;
       const deliveries=await listByProject('deliveries','delivery-',p.id,x=>{
         const accessLevel=String(x.accessLevel||'').toLowerCase();
-        const canDownload=Boolean(x.fileKey)&&(accessLevel==='preview'||(fullyPaid&&accessLevel==='final'));
+        const canDownload=Boolean(x.fileKey)&&canDownloadDelivery(accessLevel,fullyPaid);
         return {id:x.id,title:x.title,url:'',downloadUrl:canDownload?'/.netlify/functions/deliveries?deliveryId='+encodeURIComponent(x.id):'',note:x.note,status:x.status,accessLevel:accessLevel||'pending',createdAt:x.createdAt};
       });
       const rr=await listByProject('resultPlans','result-',p.id,x=>({promise:x.promise||x.plan?.promise||'',deliverables:x.plan?.deliverables||[],handoffMessage:x.plan?.handoff_message||x.plan?.handoffMessage||'',status:x.status}));
