@@ -43,8 +43,12 @@ exports.handler=async e=>{
    if(!contract||!ids.has(contract.projectId))return json(404,{error:'العقد غير موجود ضمن مشاريع حسابك.'});
    if(contract.status==='signed'||contract.signedAt)return json(409,{error:'هذا العقد موقّع مسبقاً.'});
    if(!['pending','pending_signature','sent','awaiting_signature','review'].includes(String(contract.status||'pending')))return json(409,{error:'هذا العقد غير متاح للتوقيع حالياً. تواصل مع الإدارة.'});
+   const project=projects.find(p=>p.id===contract.projectId);
+   if(!project||!Number.isSafeInteger(Number(contract.amount))||Number(contract.amount)<=0||Number(project.amount)!==Number(contract.amount))return json(409,{error:'قيمة العقد لا تطابق قيمة المشروع أو غير مكتملة. يرجى انتظار تحديث الإدارة.'});
+   const expectedDeposit=Math.round(Number(contract.amount)*0.10);
+   if(Number(contract.depositAmount)!==expectedDeposit||Number(contract.balanceAmount)!==Number(contract.amount)-expectedDeposit)return json(409,{error:'جدول الدفعات في العقد غير مطابق لسياسة 10% و90%. يرجى انتظار تحديث الإدارة.'});
    const terms=String(contract.terms||contract.content||contract.body||'').trim();
-   if(terms.length<30)return json(409,{error:'العقد لم يتضمن بنود الاتفاق كاملة بعد. يرجى انتظار تحديث الإدارة.'});
+   if(terms.length<30||!terms.includes('10%')||!terms.includes('90%'))return json(409,{error:'العقد يجب أن يتضمن شروط العربون 10% والرصيد 90% قبل التوقيع.'});
    const crypto=require('crypto'),now=new Date().toISOString();
    const agreementText=JSON.stringify({contractId:id,projectId:contract.projectId,accountId:account.id,email:account.email,signedName:name,terms,amount:contract.amount||0,startDate:contract.startDate||'',dueDate:contract.dueDate||'',signedAt:now,ip:String(e.headers?.['x-nf-client-connection-ip']||'').slice(0,100),userAgent:String(e.headers?.['user-agent']||'').slice(0,300)});
    contract.status='signed';contract.signedAt=now;contract.signedName=name;contract.signerAccountId=account.id;contract.signerEmail=account.email;contract.signedHash=crypto.createHash('sha256').update(agreementText).digest('hex');contract.acceptance={accepted:true,acceptedAt:now,version:1,termsHash:crypto.createHash('sha256').update(terms).digest('hex')};contract.updatedAt=now;
