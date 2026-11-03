@@ -12,6 +12,24 @@ const stores={
   deliveries:()=>getStore(blobOptions('hbpx-deliveries')),
   files:()=>getStore(blobOptions('hbpx-private-deliveries'))
 };
+const qualityGates=()=>getStore(blobOptions('hbpx-quality-gates'));
+const visualQA=()=>getStore(blobOptions('hbpx-visual-qa'));
+const approvals=()=>getStore(blobOptions('hbpx-project-approvals'));
+async function approvedFinalGate(projectId){
+  const r=await qualityGates().list({prefix:'gate-'});let best=null;
+  for(const row of r.blobs||[]){const x=await qualityGates().get(row.key,{type:'json'}).catch(()=>null);if(x?.projectId===projectId&&x.status==='approved'&&x.kind==='final'&&(!best||new Date(x.approvedAt||x.updatedAt)>new Date(best.approvedAt||best.updatedAt)))best=x;}
+  return best;
+}
+async function newestVisualQA(projectId){
+  const r=await visualQA().list({prefix:'vqa-'});let latest=null;
+  for(const row of r.blobs||[]){const x=await visualQA().get(row.key,{type:'json'}).catch(()=>null);if(x?.projectId===projectId&&(!latest||new Date(x.createdAt)>new Date(latest.createdAt)))latest=x;}
+  return latest;
+}
+async function hasClientContentApproval(projectId){
+  const r=await approvals().list({prefix:'approval-'});
+  for(const row of r.blobs||[]){const x=await approvals().get(row.key,{type:'json'}).catch(()=>null);if(x?.projectId===projectId&&x.kind==='content'&&x.status==='approved')return true;}
+  return false;
+}
 const clean=(v,n=200)=>String(v??'').trim().slice(0,n);
 async function list(store,prefix){const st=store(),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){const x=await st.get(b.key,{type:'json'}).catch(()=>null);if(x)out.push(x)}return out}
 async function getProject(projectId){return stores.projects().get(projectId,{type:'json'}).catch(()=>null)}
@@ -40,6 +58,15 @@ exports.handler=async event=>{
       const contentType=clean(b.contentType,100).toLowerCase();
       if(!projectId||!title||!filename||!accessLevel||!['application/pdf','image/png','image/jpeg','image/webp'].includes(contentType))return json(400,{error:'اختاري مشروعاً واسماً ونوع ملف صحيحاً (PDF أو صورة).'});
       const project=await getProject(projectId);if(!project)return json(404,{error:'المشروع غير موجود.'});
+      if(accessLevel==='final'){
+        if(!await hasClientContentApproval(projectId))return json(409,{error:'لا يمكن رفع النسخة النهائية قبل موافقة العميل على المحتوى.'});
+        const gate=await approvedFinalGate(projectId);
+        if(!gate)return json(409,{error:'النسخة النهائية تنتظر اعتماد الفحص النهائي الشامل للجودة.'});
+        const latest=await newestVisualQA(projectId);
+        if(latest&&new Date(latest.createdAt)>new Date(gate.approvedAt||gate.updatedAt))return json(409,{error:'يوجد فحص بصري أحدث من اعتماد الجودة. أعيدي الفحص النهائي واعتمدي النسخة الأحدث.'});
+        if(gate.result?.passed!==true||Number(gate.result?.criticalCount)>0)return json(409,{error:'بوابة الجودة النهائية غير ناجحة؛ لا يمكن رفع النسخة النهائية.'});
+        if(!await isFullyPaid(project))return json(409,{error:'لا يمكن رفع الملفات النهائية قبل استلام كامل قيمة المشروع (العربون 10% والرصيد 90%).'});
+      }
       const raw=String(b.dataBase64||'').replace(/^data:[^,]+,/, '');
       if(!/^[A-Za-z0-9+/]*={0,2}$/.test(raw)||raw.length>Math.ceil(MAX_BYTES*4/3)+8)return json(413,{error:'الملف أكبر من الحد المسموح (4 ميغابايت) أو بياناته غير صالحة.'});
       const bytes=Buffer.from(raw,'base64');if(!bytes.length||bytes.length>MAX_BYTES)return json(413,{error:'حجم الملف غير مقبول. الحد الأقصى 4 ميغابايت.'});
