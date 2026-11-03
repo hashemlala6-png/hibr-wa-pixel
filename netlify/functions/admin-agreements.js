@@ -19,6 +19,8 @@ exports.handler=async e=>{
  if(type==='contract'){
   const title=clean(b.title,180),terms=clean(b.terms,12000),amount=Number(b.amount||0);
   if(!title||terms.length<30||!Number.isSafeInteger(amount)||amount<=0)return json(400,{error:'العنوان وبنود العقد الكاملة وقيمة صحيحة بالدينار العراقي أكبر من صفر مطلوبة.'});
+  const projectAmount=Number(project.amount);
+  if(!Number.isSafeInteger(projectAmount)||projectAmount<=0||amount!==projectAmount)return json(409,{error:'قيمة العقد يجب أن تطابق قيمة المشروع المسجلة. حدّثي قيمة المشروع أولاً ثم أعيدي إنشاء العقد.'});
   const paymentSchedule=calculatePaymentSchedule(amount);
   const {depositAmount,balanceAmount}=paymentSchedule;
   const completeTerms=`${terms}
