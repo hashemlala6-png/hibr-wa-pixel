@@ -48,12 +48,14 @@ exports.handler=async e=>{
    }
    if(b.type==='delivery'){
     if(!clean(b.projectId,120)||!clean(b.title,180)||!clean(b.url,2000))return json(400,{error:'المشروع والعنوان ورابط التسليم مطلوبة.'});
+    let deliveryUrl;try{deliveryUrl=new URL(clean(b.url,2000));}catch{return json(400,{error:'رابط التسليم غير صالح.'});}
+    if(deliveryUrl.protocol!=='https:'||deliveryUrl.username||deliveryUrl.password)return json(400,{error:'يجب أن يكون رابط التسليم آمناً ويبدأ بـ HTTPS.'});
     const projectId=clean(b.projectId,120);const gate=await approvedGate(projectId);
     if(!gate)return json(409,{error:'التسليم مقفول حتى تعتمد الفحص النهائي الشامل للمشروع.'});
     const latest=await newestVQA(projectId);
     if(latest && new Date(latest.createdAt)>new Date(gate.approvedAt||gate.updatedAt))return json(409,{error:'تم فحص مخرج بصري بعد اعتماد بوابة الجودة. أعد الفحص النهائي واعتمد النسخة الأحدث قبل التسليم.'});
     if(gate.result?.passed!==true||Number(gate.result?.criticalCount)>0)return json(409,{error:'التسليم مقفول: بوابة الجودة النهائية غير ناجحة.'});
-    const id='delivery-'+Date.now()+'-'+crypto.randomBytes(3).toString('hex');const x={id,projectId:clean(b.projectId,120),title:clean(b.title,180),url:clean(b.url,2000),note:clean(b.note,1000),qualityGateId:gate.id,status:'ready',createdAt:now,updatedAt:now};await stores.deliveries().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,'delivery','تم تسجيل تسليم',{title:x.title});return json(201,{item:x});
+    const id='delivery-'+Date.now()+'-'+crypto.randomBytes(3).toString('hex');const x={id,projectId:clean(b.projectId,120),title:clean(b.title,180),url:deliveryUrl.toString(),note:clean(b.note,1000),qualityGateId:gate.id,status:'ready',createdAt:now,updatedAt:now};await stores.deliveries().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,'delivery','تم تسجيل تسليم',{title:x.title});return json(201,{item:x});
    }
    return json(400,{error:'نوع العملية غير معروف.'});
   }
