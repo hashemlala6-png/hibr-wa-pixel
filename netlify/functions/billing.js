@@ -39,7 +39,14 @@ exports.handler=async e=>{
    }
    if(b.type==='contract'){
     if(!clean(b.projectId,120)||!clean(b.clientName,160))return json(400,{error:'المشروع واسم العميل مطلوبان.'});
-    const id='contract-'+Date.now()+'-'+crypto.randomBytes(3).toString('hex');const x={id,number:num('CTR'),projectId:clean(b.projectId,120),clientName:clean(b.clientName,160),scope:clean(b.scope,4000),terms:clean(b.terms,5000),amount:amount(b.amount),startDate:clean(b.startDate,30),dueDate:clean(b.dueDate,30),status:'draft',createdAt:now,updatedAt:now};await stores.contracts().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,'contract','تم إنشاء عقد',{number:x.number,amount:x.amount});return json(201,{item:x});
+    const projectId=clean(b.projectId,120),p=await projectStore().get(projectId,{type:'json'}).catch(()=>null);
+    if(!p)return json(404,{error:'المشروع المرتبط بالعقد غير موجود.'});
+    const contractAmount=amount(b.amount),projectAmount=amount(p.amount);
+    if(!contractAmount||!projectAmount||contractAmount!==projectAmount)return json(409,{error:'قيمة العقد يجب أن تطابق قيمة المشروع المسجلة قبل إرساله للعميل.'});
+    const depositAmount=Math.round(contractAmount*0.10),balanceAmount=contractAmount-depositAmount;
+    const paymentTerms='شروط الدفع: يُدفع 10% من قيمة العقد عربوناً عند التعاقد وقبل بدء التنفيذ، وتُدفع نسبة 90% المتبقية بعد موافقة العميل على المحتوى وقبل تسليم الملفات النهائية كاملة الجودة.';
+    const enteredTerms=clean(b.terms,4500),terms=(enteredTerms.includes('10%')&&enteredTerms.includes('90%')?enteredTerms:(enteredTerms+'\\n\\n'+paymentTerms)).trim().slice(0,5000);
+    const id='contract-'+Date.now()+'-'+crypto.randomBytes(3).toString('hex');const x={id,number:num('CTR'),projectId,clientName:clean(b.clientName,160),scope:clean(b.scope,4000),terms,amount:contractAmount,currency:'IQD',depositAmount,balanceAmount,paymentSchedule:{currency:'IQD',depositRate:10,balanceRate:90,depositAmount,balanceAmount,depositDue:'عند التعاقد وقبل بدء التنفيذ',balanceDue:'بعد موافقة العميل على المحتوى وقبل التسليم النهائي'},startDate:clean(b.startDate,30),dueDate:clean(b.dueDate,30),status:'draft',createdAt:now,updatedAt:now};await stores.contracts().setJSON(id,x);if(p?.leadId)await logActivity(p.leadId,'contract','تم إنشاء عقد',{number:x.number,amount:x.amount});return json(201,{item:x});
    }
    if(b.type==='subscription'){
     if(!clean(b.projectId,120)||!clean(b.clientName,160)||!amount(b.amount)||!clean(b.planName,160))return json(400,{error:'المشروع والعميل والباقـة والقيمة مطلوبة.'});
