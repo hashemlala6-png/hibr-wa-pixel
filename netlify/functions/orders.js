@@ -26,12 +26,14 @@ exports.handler=async e=>{
       const id=clean(b.id,180); if(!id)return json(400,{error:'معرّف الطلب مطلوب.'});
       const x=await orders().get(id,{type:'json'}).catch(()=>null); if(!x)return json(404,{error:'الطلب غير موجود.'});
       if(e.httpMethod==='PATCH'){
-        const allowed=['new','reviewing','quoted','approved','in_progress','completed','cancelled'];
+        const allowed=['new','reviewing','quoted','approved','in_progress','completed','cancelled','archived'];
         if(!allowed.includes(b.status))return json(400,{error:'حالة الطلب غير صحيحة.'});
         const previous=x.status; x.status=b.status; x.updatedAt=new Date().toISOString();
+        if(b.status==='archived'){x.archivedAt=x.updatedAt;x.archivedBy='owner';}
+        else if(previous==='archived'){delete x.archivedAt;delete x.archivedBy;}
         await orders().setJSON(x.id,x);
-        if(x.leadId){const lead=await leads().get(x.leadId,{type:'json'}).catch(()=>null);if(lead){const leadStatus={new:'new',reviewing:'contacted',quoted:'proposal',approved:'won',in_progress:'active',completed:'completed',cancelled:'lost'}[b.status]||lead.status;lead.status=leadStatus;lead.updatedAt=x.updatedAt;await leads().setJSON(lead.id,lead);}}
-        await logActivity(x.clientId,'order','تم تحديث حالة الطلب من لوحة المالك',{orderId:x.id,from:previous,to:x.status});
+        if(x.leadId && b.status!=='archived'){const lead=await leads().get(x.leadId,{type:'json'}).catch(()=>null);if(lead){const leadStatus={new:'new',reviewing:'contacted',quoted:'proposal',approved:'won',in_progress:'active',completed:'completed',cancelled:'lost'}[b.status]||lead.status;lead.status=leadStatus;lead.updatedAt=x.updatedAt;await leads().setJSON(lead.id,lead);}}
+        await logActivity(x.clientId,'order',b.status==='archived'?'تمت أرشفة الطلب من لوحة المالك':previous==='archived'?'تمت استعادة الطلب من الأرشيف':'تم تحديث حالة الطلب من لوحة المالك',{orderId:x.id,from:previous,to:x.status});
         return json(200,{order:x});
       }
       // Preserve the order history: DELETE is a soft archive, never a destructive removal.
