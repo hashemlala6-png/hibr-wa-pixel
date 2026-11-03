@@ -30,14 +30,16 @@ function canDownloadDelivery(accessLevel, fullyPaid) {
   return level === 'preview' || (level === 'final' && fullyPaid === true);
 }
 
-function activationBlockReason(projectId, contracts, payments) {
+function activationBlockReason(projectId, contracts, payments, projectAmount) {
   const signed = contracts.find(c => c.projectId === projectId && c.status === 'signed' && c.signedAt);
   if (!signed) return 'لا يمكن بدء المشروع قبل توقيع عقده من العميل.';
-  const schedule = calculatePaymentSchedule(Number(signed.amount));
-  const deposit = Number.isSafeInteger(signed.depositAmount) && signed.depositAmount >= 0
-    ? signed.depositAmount : schedule.depositAmount;
+  const amount = Number(signed.amount);
+  if (!Number.isSafeInteger(amount) || amount <= 0) return 'قيمة العقد غير صالحة. حدّث العقد قبل بدء التنفيذ.';
+  if (Number(projectAmount) !== amount) return 'قيمة العقد لا تطابق قيمة المشروع. صحّحي القيم قبل بدء التنفيذ.';
+  const schedule = calculatePaymentSchedule(amount);
+  if (!Number.isSafeInteger(Number(signed.depositAmount)) || Number(signed.depositAmount) !== schedule.depositAmount) return 'قيمة العربون في العقد غير مطابقة لنسبة 10%. صحّحي العقد قبل بدء التنفيذ.';
   const paid = countReceivedPayments(payments, projectId);
-  if (paid < deposit) return 'تم توقيع العقد، لكن لم يُسجّل استلام العربون كاملاً بعد. لا يمكن بدء التنفيذ.';
+  if (paid < schedule.depositAmount) return 'تم توقيع العقد، لكن لم يُسجّل استلام العربون كاملاً بعد. لا يمكن بدء التنفيذ.';
   return null;
 }
 
