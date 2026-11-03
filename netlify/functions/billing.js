@@ -16,6 +16,7 @@ async function newestVQA(projectId){const r=await vqaStore().list({prefix:'vqa-'
 const stores={
  invoices:()=>getStore({name:'hbpx-invoices',consistency:'strong'}),
  contracts:()=>getStore({name:'hbpx-contracts',consistency:'strong'}),
+ approvals:()=>getStore({name:'hbpx-project-approvals',consistency:'strong'}),
  deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'strong'}),
  subscriptions:()=>getStore({name:'hbpx-subscriptions',consistency:'strong'})
 };
@@ -45,7 +46,7 @@ exports.handler=async e=>{
     if(!contractAmount||!projectAmount||contractAmount!==projectAmount)return json(409,{error:'قيمة العقد يجب أن تطابق قيمة المشروع المسجلة قبل إرساله للعميل.'});
     const depositAmount=Math.round(contractAmount*0.10),balanceAmount=contractAmount-depositAmount;
     const paymentTerms='شروط الدفع: يُدفع 10% من قيمة العقد عربوناً عند التعاقد وقبل بدء التنفيذ، وتُدفع نسبة 90% المتبقية بعد موافقة العميل على المحتوى وقبل تسليم الملفات النهائية كاملة الجودة.';
-    const enteredTerms=clean(b.terms,4500),terms=(enteredTerms.includes('10%')&&enteredTerms.includes('90%')?enteredTerms:(enteredTerms+'\\n\\n'+paymentTerms)).trim().slice(0,5000);
+    const enteredTerms=clean(b.terms,4500),terms=(enteredTerms.includes('10%')&&enteredTerms.includes('90%')?enteredTerms:(enteredTerms+'\n\n'+paymentTerms)).trim().slice(0,5000);
     const id='contract-'+Date.now()+'-'+crypto.randomBytes(3).toString('hex');const x={id,number:num('CTR'),projectId,clientName:clean(b.clientName,160),scope:clean(b.scope,4000),terms,amount:contractAmount,currency:'IQD',depositAmount,balanceAmount,paymentSchedule:{currency:'IQD',depositRate:10,balanceRate:90,depositAmount,balanceAmount,depositDue:'عند التعاقد وقبل بدء التنفيذ',balanceDue:'بعد موافقة العميل على المحتوى وقبل التسليم النهائي'},startDate:clean(b.startDate,30),dueDate:clean(b.dueDate,30),status:'draft',createdAt:now,updatedAt:now};await stores.contracts().setJSON(id,x);if(p?.leadId)await logActivity(p.leadId,'contract','تم إنشاء عقد',{number:x.number,amount:x.amount});return json(201,{item:x});
    }
    if(b.type==='subscription'){
@@ -57,7 +58,7 @@ exports.handler=async e=>{
     if(!clean(b.projectId,120)||!clean(b.title,180)||!clean(b.url,2000))return json(400,{error:'المشروع والعنوان ورابط التسليم مطلوبة.'});
     let deliveryUrl;try{deliveryUrl=new URL(clean(b.url,2000));}catch{return json(400,{error:'رابط التسليم غير صالح.'});}
     if(deliveryUrl.protocol!=='https:'||deliveryUrl.username||deliveryUrl.password)return json(400,{error:'يجب أن يكون رابط التسليم آمناً ويبدأ بـ HTTPS.'});
-    const projectId=clean(b.projectId,120);const gate=await approvedGate(projectId);
+    const projectId=clean(b.projectId,120);const approvalRows=await stores.approvals().list({prefix:'approval-'});let contentApproved=false;for(const row of approvalRows.blobs||[]){const approval=await stores.approvals().get(row.key,{type:'json'}).catch(()=>null);if(approval?.projectId===projectId&&approval.kind==='content'&&approval.status==='approved'){contentApproved=true;break;}}if(!contentApproved)return json(409,{error:'التسليم النهائي ينتظر موافقة العميل على المحتوى.'});const gate=await approvedGate(projectId);
     if(!gate)return json(409,{error:'التسليم مقفول حتى تعتمد الفحص النهائي الشامل للمشروع.'});
     const latest=await newestVQA(projectId);
     if(latest && new Date(latest.createdAt)>new Date(gate.approvedAt||gate.updatedAt))return json(409,{error:'تم فحص مخرج بصري بعد اعتماد بوابة الجودة. أعد الفحص النهائي واعتمد النسخة الأحدث قبل التسليم.'});
