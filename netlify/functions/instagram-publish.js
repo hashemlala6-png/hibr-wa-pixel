@@ -225,8 +225,11 @@ exports.handler = async event => {
   if (!item) return json(404, { error: 'المسودة غير موجودة.' });
   if (item.status !== 'approved') return json(409, { error: 'لا يمكن النشر إلا بعد اعتماد المسودة من المالكة.' });
   if (item.publishedAt || item.publishStatus === 'published') return json(409, { item: publicResult(item), error: 'هذا المحتوى منشور بالفعل ولا يمكن نشره مرة ثانية.' });
-  if (item.publishStatus === 'publishing' || item.publishStatus === 'publish_uncertain') {
-    return json(409, { item: publicResult(item), error: 'حالة طلب النشر غير محسومة. تحققي من حساب Instagram قبل أي إعادة محاولة لتجنب تكرار المنشور.' });
+  if (item.publishStatus === 'publishing') {
+    return json(409, { item: publicResult(item), error: 'طلب النشر قيد التنفيذ لدى Instagram. لا تضغطي مرة ثانية؛ حدّثي القائمة بعد قليل للتحقق من النتيجة.' });
+  }
+  if (item.publishStatus === 'publish_uncertain') {
+    return json(409, { item: publicResult(item), error: 'انقطع الاتصال أثناء طلب النشر، والنتيجة غير محسومة. تحققي من الحساب يدوياً قبل أي محاولة جديدة لتجنب التكرار.' });
   }
   if (!item.approvedAt || item.approvedBy !== 'owner') {
     return json(409, { error: 'سجل موافقة المالكة غير مكتمل. أعيدي اعتماد المحتوى من استوديو المحتوى.' });
