@@ -128,7 +128,7 @@ exports.handler=async event=>{
     if(!b.leadId||!amount(b.amount))return json(400,{error:'العميل والقيمة مطلوبان.'});
     const identity=await identityForLead(b.leadId);
     if(!identity)return json(404,{error:'طلب العميل المرتبط غير موجود.'});
-    const id=\`quote-\${Date.now()}-\${Math.random().toString(36).slice(2,7)}\`;
+    const id=`quote-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
     const x={id,leadId:clean(b.leadId,120),clientId:identity.clientId,accountId:identity.accountId,package:clean(b.package,60),packageName:clean(b.packageName,120),amount:amount(b.amount),duration:clean(b.duration,120),notes:clean(b.notes,2000),status:'draft',createdAt:now,updatedAt:now};
     await stores.quotes().setJSON(id,x);
     await logActivity(identity.clientId,'quote','تم إنشاء عرض سعر',{id:x.id,amount:x.amount,package:x.packageName});
@@ -140,7 +140,7 @@ exports.handler=async event=>{
     const identity=await identityForLead(b.leadId);
     if(!identity)return json(404,{error:'العميل المرتبط بالمشروع غير موجود.'});
     const lead=identity.lead;
-    const id=\`project-\${Date.now()}-\${Math.random().toString(36).slice(2,7)}\`;
+    const id=`project-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
     const x={id,leadId:clean(b.leadId,120),clientId:identity.clientId,accountId:identity.accountId,clientEmail:lead.email||null,clientWhatsapp:lead.whatsapp||null,name:clean(b.name,160),amount:amount(b.amount),startDate:clean(b.startDate,30),dueDate:clean(b.dueDate,30),status:b.status,createdAt:now,updatedAt:now};
     await stores.projects().setJSON(id,x);
     await logActivity(identity.clientId,'project','تم إنشاء مشروع',{id:x.id,name:x.name,amount:x.amount});
@@ -151,7 +151,7 @@ exports.handler=async event=>{
     const project=await stores.projects().get(clean(b.projectId,120),{type:'json'}).catch(()=>null);
     if(!project)return json(404,{error:'المشروع غير موجود.'});
     const clientId=await clientIdForProject(project);
-    const id=\`payment-\${Date.now()}-\${Math.random().toString(36).slice(2,7)}\`;
+    const id=`payment-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
     const x={id,projectId:clean(b.projectId,120),clientId:clientId||null,amount:amount(b.amount),method:clean(b.method,60),note:clean(b.note,500),createdAt:now};
     await stores.payments().setJSON(id,x);
     if(clientId)await logActivity(clientId,'payment','تم تسجيل دفعة',{projectId:x.projectId,amount:x.amount,method:x.method});
