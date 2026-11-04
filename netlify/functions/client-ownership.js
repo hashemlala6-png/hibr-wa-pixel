@@ -57,7 +57,8 @@ function ownsProject(project, account, lead = null) {
   // A linked lead is the strongest legacy ownership reference. It must match BOTH contacts;
   // a stale/shared clientId must never override a different linked lead.
   if (String(project.leadId || '').trim()) {
-    return sameClientContact(lead, account) || sameClientContact(project, account);
+    // Fail closed if the linked lead is missing or belongs to another contact.
+    return sameClientContact(lead, account);
   }
 
   // Projects without a lead link require either a unique account ID or both exact contacts.
