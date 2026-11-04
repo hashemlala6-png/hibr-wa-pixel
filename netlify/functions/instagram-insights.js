@@ -117,12 +117,13 @@ async function sync(days) {
     permalink: /^https:\/\/(www\.)?instagram\.com\//i.test(String(x.permalink || '')) ? x.permalink : null,
     likes: numericValue(x.like_count), comments: numericValue(x.comments_count)
   }));
+  const permissionRequired = metricResults.every(x => !x.available);
   const stamp = new Date().toISOString();
   const snapshot = {
     id: 'snapshot-' + Date.now() + '-' + crypto.randomBytes(4).toString('hex'),
     createdAt: stamp, range: { since, until, days }, profile,
     metrics: metricResults, media, mediaError: mediaResult.error || null,
-    verified: true, source: 'instagram-login',
+    verified: true, source: 'instagram-login', permissionRequired,
     note: 'بيانات مباشرة من Instagram API. المؤشرات غير المتاحة تُعرض كغير متاحة ولا تُعامل كصفر.'
   };
   await store(SNAPSHOT_STORE).setJSON(snapshot.id, snapshot);
