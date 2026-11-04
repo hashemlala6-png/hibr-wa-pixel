@@ -9,8 +9,12 @@ function normalizeEmail(value) {
 // Canonical Iraqi phone representation for identity comparisons and WhatsApp API recipients.
 function normalizePhoneForMatch(value) {
   let digits = String(value ?? '').replace(/\D/g, '');
-  if (digits.startsWith('00964')) return '964' + digits.slice(5);
-  if (digits.startsWith('964')) return digits;
+  if (digits.startsWith('00964')) digits = '964' + digits.slice(5);
+  if (digits.startsWith('964')) {
+    let national = digits.slice(3);
+    if (national.startsWith('0')) national = national.slice(1);
+    return '964' + national;
+  }
   if (digits.startsWith('0')) return '964' + digits.slice(1);
   if (digits.length === 10) return '964' + digits;
   return digits;
