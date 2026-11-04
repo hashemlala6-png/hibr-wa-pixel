@@ -38,6 +38,7 @@ function activationBlockReason(projectId, contracts, payments, projectAmount) {
   if (Number(projectAmount) !== amount) return 'قيمة العقد لا تطابق قيمة المشروع. صحّحي القيم قبل بدء التنفيذ.';
   const schedule = calculatePaymentSchedule(amount);
   if (!Number.isSafeInteger(Number(signed.depositAmount)) || Number(signed.depositAmount) !== schedule.depositAmount) return 'قيمة العربون في العقد غير مطابقة لنسبة 10%. صحّحي العقد قبل بدء التنفيذ.';
+  if (!Number.isSafeInteger(Number(signed.balanceAmount)) || Number(signed.balanceAmount) !== schedule.balanceAmount) return 'قيمة الرصيد في العقد غير مطابقة لنسبة 90%. صحّحي العقد قبل بدء التنفيذ.';
   const paid = countReceivedPayments(payments, projectId);
   if (paid < schedule.depositAmount) return 'تم توقيع العقد، لكن لم يُسجّل استلام العربون كاملاً بعد. لا يمكن بدء التنفيذ.';
   return null;
