@@ -1,6 +1,6 @@
 const { env } = require('./env');
 const crypto = require('crypto');
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
 
@@ -63,6 +63,7 @@ async function gaFetch(config,since,until){
 }
 
 exports.handler=async event=>{
+ connectLambda(event);
  const internal = event.headers?.['x-hbpx-internal-sync'] || event.headers?.['X-HBPX-Internal-Sync'];
  const internalBuf=Buffer.from(String(internal||'')); const secretBuf=Buffer.from(String(env('INTERNAL_SYNC_SECRET')||'')); const isInternal=!!(internal&&secretBuf.length&&internalBuf.length===secretBuf.length&&crypto.timingSafeEqual(internalBuf,secretBuf));
  if(!isInternal){ const auth=requireAdmin(event); if(auth)return auth; }
