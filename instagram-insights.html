@@ -68,7 +68,7 @@ function render(s){
  $('metricNotes').innerHTML=metrics.filter(m=>!m.available).map(m=>'<div class="row"><div><b>'+esc(metricLabel(m.name))+'</b><div class="small">'+esc(m.error||m.note||'المؤشر غير متاح لهذه الفترة.')+'</div></div><span class="pill fail">غير متاح</span></div>').join('')||'<div class="status ok">تمت قراءة المؤشرات المتاحة بنجاح.</div>';
  const media=s.media||[];
  $('media').innerHTML=media.length?media.map(x=>'<div class="row"><div><b>'+esc(x.mediaType||x.productType||'منشور')+'</b><div class="small">'+esc(x.caption||'بدون وصف')+'</div><div class="small">'+esc(x.timestamp||'')+' · إعجابات: '+num(x.likes)+' · تعليقات: '+num(x.comments)+'</div>'+(x.permalink?'<a target="_blank" rel="noopener" href="'+esc(x.permalink)+'">فتح المنشور</a>':'')+'</div></div>').join(''):'<div class="status">'+esc(s.mediaError||'لا توجد منشورات حديثة أعادها Instagram.')+'</div>';
- $('status').className='status ok';$('status').textContent='تم تحميل قراءة محفوظة من Instagram API. المؤشرات غير المتاحة لا تُحتسب صفراً.';
+ if(s.permissionRequired){$('status').className='status warn';$('status').textContent='لم تُرجع Meta أي مؤشر متاح. تحققي من منح instagram_business_manage_insights، ثم افصلي الحساب وأعيدي ربطه لتحديث الصلاحيات. وقد يعتمد توفر بعض المقاييس أيضاً على نوع الحساب والفترة.';}else{$('status').className='status ok';$('status').textContent='تم تحميل قراءة من Instagram API. المؤشرات غير المتاحة لا تُحتسب صفراً.';}
 }
 async function load(){
  $('status').textContent='جارٍ تحميل آخر قراءة محفوظة…';
