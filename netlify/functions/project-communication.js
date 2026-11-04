@@ -12,12 +12,12 @@ const clean=(v,n=1200)=>String(v??'').trim().slice(0,n);
 const id=()=>Date.now()+'-'+crypto.randomBytes(5).toString('hex');
 
 async function getActor(event){
+  if(requireAdmin(event)===null)return {role:'owner'};
   const clientSession=getClientSession(event);
   if(clientSession){
     const account=await accounts().get(clientSession.sub,{type:'json'}).catch(()=>null);
     if(account)return {role:'client',account};
   }
-  if(requireAdmin(event)===null)return {role:'owner'};
   return null;
 }
 async function ownedProject(projectId,actor){
