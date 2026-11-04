@@ -97,7 +97,7 @@ async function createMediaContainer(item, accountId, token) {
     const imageUrl = mediaUrl(urls[0], 'image');
     const params = { image_url: imageUrl, caption: clean(item.caption, 2200) };
     if (item.altText) params.alt_text = clean(item.altText, 1000);
-    return createContainer(accountId, token, params);
+    return { containerId: await createContainer(accountId, token, params), childContainerIds: [] };
   }
   if (item.format === 'CAROUSEL') {
     if (urls.length < 2 || urls.length > 10) throw new Error('الكاروسيل يحتاج من صورتين إلى 10 صور JPEG.');
@@ -109,26 +109,37 @@ async function createMediaContainer(item, accountId, token) {
         is_carousel_item: 'true'
       }));
     }
-    return createContainer(accountId, token, {
-      media_type: 'CAROUSEL',
-      children: childIds.join(','),
-      caption: clean(item.caption, 2200)
-    });
+    // Carousel children need to finish processing before the parent container
+    // is created. Persist these IDs so the owner can continue without
+    // recreating the media assets or accidentally starting a second attempt.
+    return { containerId: null, childContainerIds: childIds };
   }
   if (item.format === 'REEL') {
     if (urls.length !== 1) throw new Error('Reel يحتاج فيديو واحداً.');
     const videoUrl = mediaUrl(urls[0], 'video');
-    return createContainer(accountId, token, {
-      media_type: 'REELS',
-      video_url: videoUrl,
-      caption: clean(item.caption, 2200),
-      share_to_feed: 'true'
-    });
+    return {
+      containerId: await createContainer(accountId, token, {
+        media_type: 'REELS',
+        video_url: videoUrl,
+        caption: clean(item.caption, 2200),
+        share_to_feed: 'true'
+      }),
+      childContainerIds: []
+    };
   }
   if (item.format === 'STORY') {
     throw new Error('نشر Stories غير مفعّل في هذا المسار حالياً. يمكن تجهيزها كمسودة، لكن لا يمكن إرسالها من هذه النسخة.');
   }
   throw new Error('نوع المحتوى غير مدعوم للنشر.');
+}
+async function createCarouselParent(item, accountId, token) {
+  const childIds = Array.isArray(item.instagramChildContainerIds) ? item.instagramChildContainerIds : [];
+  if (childIds.length < 2 || childIds.length > 10) throw new Error('معرّفات صور الكاروسيل غير مكتملة.');
+  return createContainer(accountId, token, {
+    media_type: 'CAROUSEL',
+    children: childIds.join(','),
+    caption: clean(item.caption, 2200)
+  });
 }
 async function containerStatus(containerId, token) {
   const data = await graph(containerId, token, 'GET', { fields: 'id,status_code,status' });
@@ -181,10 +192,14 @@ exports.handler = async event => {
       item.publishError = null;
       await saveContent(item);
       try {
-        const containerId = await createMediaContainer(item, accountId, token);
-        item.instagramContainerId = containerId;
+        const created = await createMediaContainer(item, accountId, token);
+        item.instagramContainerId = created.containerId || null;
+        item.instagramChildContainerIds = created.childContainerIds || [];
+        item.publishStage = created.childContainerIds?.length ? 'children_processing' : 'parent_processing';
         item.publishStatus = 'processing';
-        item.publishMessage = 'تم إنشاء حاوية المحتوى لدى Instagram. ننتظر جاهزيتها قبل النشر.';
+        item.publishMessage = created.childContainerIds?.length
+          ? 'تم رفع صور الكاروسيل. ننتظر اكتمال معالجة كل صورة قبل تجهيز المنشور الرئيسي.'
+          : 'تم إنشاء حاوية المحتوى لدى Instagram. ننتظر جاهزيتها قبل النشر.';
         await saveContent(item);
       } catch (error) {
         item.publishStatus = 'failed';
@@ -196,8 +211,52 @@ exports.handler = async event => {
     }
 
     item = await readContent(id);
-    if (item.publishStatus !== 'processing' || !item.instagramContainerId) {
-      return json(409, { item: publicResult(item), error: 'لا توجد حاوية محتوى قيد المعالجة. ابدئي محاولة جديدة فقط بعد مراجعة الحالة السابقة.' });
+    if (item.publishStatus !== 'processing') {
+      return json(409, { item: publicResult(item), error: 'لا توجد عملية معالجة قيد الانتظار. ابدئي محاولة جديدة فقط بعد مراجعة الحالة السابقة.' });
+    }
+
+    if (item.publishStage === 'children_processing') {
+      const childIds = Array.isArray(item.instagramChildContainerIds) ? item.instagramChildContainerIds : [];
+      if (childIds.length < 2 || childIds.length > 10) {
+        item.publishStatus = 'failed';
+        item.publishError = 'لم تُحفظ معرّفات صور الكاروسيل بالشكل الصحيح.';
+        await saveContent(item);
+        return json(409, { item: publicResult(item), error: item.publishError });
+      }
+      const childStates = await Promise.all(childIds.map(id => containerStatus(id, token).catch(error => ({
+        status: 'CHECK_FAILED', message: clean(error.message, 300)
+      }))));
+      const pendingChild = childStates.find(x => x.status === 'IN_PROGRESS' || x.status === 'PENDING');
+      const failedChild = childStates.find(x => x.status !== 'FINISHED' && x !== pendingChild);
+      if (failedChild) {
+        item.publishStatus = 'failed';
+        item.publishError = failedChild.message || ('تعذرت معالجة إحدى صور الكاروسيل: ' + failedChild.status);
+        item.publishMessage = 'لم يتم إنشاء المنشور الرئيسي ولم يتم النشر.';
+        await saveContent(item);
+        return json(409, { item: publicResult(item), error: item.publishError });
+      }
+      if (pendingChild) {
+        item.publishMessage = 'Instagram ما زال يعالج صور الكاروسيل. اضغطي متابعة النشر بعد قليل.';
+        await saveContent(item);
+        return json(202, { item: publicResult(item), containerStatus: 'CHILDREN_IN_PROGRESS', retryAfterSeconds: 20, message: item.publishMessage });
+      }
+      try {
+        item.instagramContainerId = await createCarouselParent(item, accountId, token);
+        item.publishStage = 'parent_processing';
+        item.publishMessage = 'اكتملت معالجة الصور وأنشأ Instagram حاوية الكاروسيل الرئيسية. نتحقق من جاهزيتها.';
+        await saveContent(item);
+      } catch (error) {
+        item.publishStatus = 'failed';
+        item.publishError = clean(error.message, 500);
+        item.publishMessage = 'لم يتم إنشاء الحاوية الرئيسية ولم يتم النشر.';
+        await saveContent(item);
+        return json(502, { item: publicResult(item), error: item.publishError });
+      }
+      item = await readContent(id);
+    }
+
+    if (!item.instagramContainerId || item.publishStage !== 'parent_processing') {
+      return json(409, { item: publicResult(item), error: 'حاوية النشر الرئيسية غير جاهزة للفحص.' });
     }
 
     let state;
@@ -254,7 +313,9 @@ exports.handler = async event => {
     }
 
     item.publishStatus = 'published';
+    item.publishStage = 'published';
     item.publishedAt = new Date().toISOString();
+    item.instagramChildContainerIds = [];
     item.instagramMediaId = String(published.id);
     item.publishMessage = 'أكد Instagram نشر المحتوى.';
     try {
