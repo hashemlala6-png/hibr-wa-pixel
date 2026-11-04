@@ -89,7 +89,9 @@ exports.handler = async event => {
         policy: {
           approvalRequired: true,
           approvedMeansOwnerAuthorizedOnly: true,
-          publishingEnabled: false,
+          publishingEnabled: true,
+          publishingRequiresApprovedStatus: true,
+          publishingRequiresSeparateOwnerClick: true,
           schedulingIsReminderOnly: true,
           externalActionsExecuted: false
         }
