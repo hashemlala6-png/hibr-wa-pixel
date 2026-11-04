@@ -2,6 +2,7 @@ const {getStore,connectLambda}=require('@netlify/blobs');
 const {json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const {countReceivedPayments,canDownloadDelivery}=require('./contract-policy');
+const {projectBelongsToAccount}=require('./client-project-access');
 const s={
   leads:()=>getStore({name:'hbpx-leads',consistency:'eventual'}),
   projects:()=>getStore({name:'hbpx-projects',consistency:'eventual'}),
@@ -31,10 +32,8 @@ exports.handler=async e=>{
     for(const b of pr.blobs||[]){
       const p=await projectsStore.get(b.key,{type:'json'}).catch(()=>null);
       if(!p)continue;
-      const clientIds=[account.id,account.clientId].filter(Boolean);
       const lead= p.leadId ? await s.leads().get(p.leadId,{type:'json'}).catch(()=>null) : null;
-      const email=String(account.email||'').toLowerCase();const belongs=clientIds.includes(p.clientId)||clientIds.includes(p.accountId)||email===String(p.email||p.clientEmail||'').toLowerCase()||(lead&&(clientIds.includes(lead.clientId)||email===String(lead.email||'').toLowerCase()));
-      if(!belongs)continue;
+      if(!projectBelongsToAccount(p,account,lead))continue;
       const payments=await listByProject('payments','payment-',p.id,x=>({projectId:x.projectId,amount:x.amount,method:x.method,status:x.status||'received',createdAt:x.createdAt}));
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
       const invoices=await listByProject('invoices','invoice-',p.id,x=>({number:x.number,total:x.total,dueDate:x.dueDate,status:x.status,createdAt:x.createdAt}));
