@@ -59,11 +59,12 @@ async function linkApprovedLeads(email,phone,accountId){
     if(previous!==accountId){
       lead.clientId=accountId;
       await leads().setJSON(lead.id,lead);
-      try{await leadIndex().setJSON(`client-${accountId}-${lead.id}`,{leadId:lead.id,clientId:accountId,createdAt:lead.createdAt||new Date().toISOString()});}
-      catch(err){console.warn('client lead index update failed',err?.message||err);}
-      if(previous){
-        try{await leadIndex().delete(`client-${previous}-${lead.id}`);}catch{}
-      }
+    }
+    // Rebuild the exact account index even when the lead already carries this ID.
+    try{await leadIndex().setJSON(`client-${accountId}-${lead.id}`,{leadId:lead.id,clientId:accountId,createdAt:lead.createdAt||new Date().toISOString()});}
+    catch(err){console.warn('client lead index update failed',err?.message||err);}
+    if(previous&&previous!==accountId){
+      try{await leadIndex().delete(`client-${previous}-${lead.id}`);}catch{}
     }
     linked++;
   }
