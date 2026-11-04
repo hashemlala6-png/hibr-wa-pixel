@@ -50,6 +50,13 @@ test('legacy shared clientId alone never grants project access', () => {
   assert.equal(ownsProject(anotherProject, account, {email:'b@example.com',whatsapp:'07712345678',clientId:'legacy-phone-group'}), false);
 });
 
+test('a linked lead from another contact overrides a colliding accountId', () => {
+  const account = {id:'account-a',email:'a@example.com',whatsapp:'07712345678'};
+  const project = {id:'project-collision',accountId:'account-a',clientId:'account-a',leadId:'lead-b'};
+  const otherLead = {id:'lead-b',email:'b@example.com',whatsapp:'07712345678'};
+  assert.equal(ownsProject(project,account,otherLead),false);
+});
+
 test('a project linked through an exact lead contact pair belongs to that account', () => {
   const account = {id:'email-account-a',email:'a@example.com',whatsapp:'07712345678'};
   const project = {id:'project-1',leadId:'lead-1',clientId:'legacy-phone-group'};
