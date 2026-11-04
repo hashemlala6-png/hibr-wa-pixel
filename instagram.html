@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>ربط Instagram | حبر وبكسل</title>
+<style>
+:root{--bg:#f7f5ef;--card:#fff;--ink:#24313a;--muted:#687780;--line:#e4e2da;--blue:#245d83;--green:#287452;--red:#a44848}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+button,a{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);padding:11px 15px;text-decoration:none}
+.primary{background:var(--blue);border-color:var(--blue);color:white;font-weight:700}.danger{color:var(--red)}
+.wrap{max-width:900px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(25px,5vw,36px);margin:4px 0}.eyebrow{font-size:12px;color:var(--blue);font-weight:800;letter-spacing:.08em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:15px}
+.muted{color:var(--muted);line-height:1.8}.status{padding:13px;border-radius:12px;background:#f0f4f5;line-height:1.8;margin:12px 0}
+.ok{background:#eaf5ee;color:var(--green)}.bad{background:#fff0ed;color:var(--red)}.warn{background:#fff6df;color:#765812}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.field{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;direction:ltr;text-align:left}
+.small{font-size:12px;color:var(--muted);line-height:1.8}.steps{display:grid;gap:9px}.step{background:#fafaf8;border:1px solid var(--line);border-radius:12px;padding:13px 14px}.step b{display:block;margin-bottom:4px}
+.hidden{display:none!important}.back{display:inline-block;padding:10px 13px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);text-decoration:none}
+@media(max-width:600px){.wrap{padding:13px}.card{padding:15px}.top{align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div><div class="eyebrow">HIBR & PIXEL · INSTAGRAM CONNECTION</div><h1>ربط حساب Instagram</h1><div class="muted">بوابة ربط الحساب الرسمي للوكالة — دون الحاجة إلى صفحة Facebook عند استخدام Instagram Login.</div></div>
+  <a class="back" href="/admin.html">العودة إلى لوحة الإدارة</a>
+</header>
+<section class="card">
+  <h2 style="margin-top:0">حالة الحساب</h2>
+  <div id="status" class="status">جارٍ التحقق من الجلسة وحالة الربط…</div>
+  <div id="account" class="hidden"></div>
+  <div class="actions">
+    <button id="connect" class="primary">ربط حساب Instagram</button>
+    <button id="verify" class="hidden">التحقق من الاتصال</button>
+    <button id="refreshToken" class="hidden">تحديث صلاحية الرمز</button>
+    <button id="disconnect" class="danger hidden">فصل الحساب</button>
+    <button id="reload">تحديث الحالة</button>
+  </div>
+  <div id="actionStatus" class="small" role="status" aria-live="polite"></div>
+</section>
+<section class="card">
+  <h2 style="margin-top:0">تهيئة Meta لأول مرة</h2>
+  <p class="muted">أنشئي تطبيقاً في Meta for Developers وأضيفي منتج Instagram مع إعداد API setup with Instagram Login. استخدمي Instagram App ID وInstagram App Secret، وليس رمزاً مكتوباً داخل الصفحة.</p>
+  <div class="steps">
+    <div class="step"><b>1. إعداد التطبيق</b><span class="small">في Meta for Developers، أضيفي Instagram ثم Instagram Login، واجعلي التطبيق في وضع التطوير أثناء الاختبار.</span></div>
+    <div class="step"><b>2. عنوان العودة OAuth Redirect URI</b><span class="small">انسخي العنوان أدناه وأضيفيه كما هو في إعدادات Business Login في Meta، ثم خزّنيه في Netlify باسم INSTAGRAM_REDIRECT_URI.</span><input id="redirectUri" class="field" readonly value="جارٍ التحميل…"><div class="actions"><button id="copyRedirect">نسخ عنوان العودة</button></div></div>
+    <div class="step"><b>3. متغيرات Netlify السرية</b><span class="small">أضيفي INSTAGRAM_APP_ID وINSTAGRAM_APP_SECRET وINSTAGRAM_REDIRECT_URI وADMIN_SESSION_SECRET في Environment Variables. لا تضعي App Secret أو Access Token في ملفات GitHub.</span></div>
+    <div class="step"><b>4. حسابات الاختبار والصلاحيات</b><span class="small">أضيفي حساب Instagram الاحترافي كحساب اختبار/دور في التطبيق، وامنحي الصلاحيات المطلوبة. استخدام حسابات خارج أدوار التطبيق قد يتطلب Advanced Access ومراجعة Meta.</span></div>
+  </div>
+  <div class="status warn">مهم: هذه المرحلة تربط الحساب وتتحقق من هويته وصلاحية الرمز فقط. لا تنشر منشورات أو Reels ولا ترسل رسائل أو ترد على تعليقات تلقائياً. كل نشر أو رد مستقبلي سيبقى داخل مسار مراجعة المالكة أولاً.</div>
+</section>
+<section class="card">
+  <h2 style="margin-top:0">ما الذي سيأتي بعد نجاح الربط؟</h2>
+  <p class="muted">بعد إثبات الاتصال، تكون المرحلة التالية هي تجهيز مسودات المحتوى وتقويم النشر، ثم بناء إجراءات النشر والتعليقات والرسائل عبر صلاحيات Meta الفعلية. لا تُفعّل أي عملية خارجية قبل إظهار معاينتها واعتمادها.</p>
+</section>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+async function api(path,opt){
+  const r=await fetch('/.netlify/functions/'+path,{credentials:'same-origin',cache:'no-store',...(opt||{})});
+  const d=await r.json().catch(()=>({}));
+  if(r.status===401){location.href='/admin.html';throw new Error('انتهت جلسة المالك.')}
+  if(!r.ok)throw new Error(d.error||'تعذر الاتصال بالخادم.');
+  return d;
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function showConnected(d){
+  $('status').className='status ok';
+  $('status').textContent='الحساب مربوط بنجاح عبر Instagram Login.';
+  const a=d.account||{};
+  $('account').classList.remove('hidden');
+  $('account').innerHTML='<div><b>@'+esc(a.username||'حساب Instagram')+'</b><div class="small">نوع الحساب: '+esc(a.accountType||'غير محدد')+' · المعرّف: '+esc(a.userId||'—')+'</div><div class="small">تاريخ الربط: '+esc(d.connectedAt||'—')+'</div><div class="small">تنتهي صلاحية الرمز: '+esc(d.expiresAt||'غير معروف')+'</div><div class="small">آخر تحقق: '+esc(d.lastVerifiedAt||'لم يُتحقق بعد')+'</div></div>';
+  $('connect').classList.add('hidden');$('verify').classList.remove('hidden');
+  $('refreshToken').classList.remove('hidden');$('disconnect').classList.remove('hidden');
+}
+async function load(){
+  $('actionStatus').textContent='';
+  try{
+    const d=await api('instagram-oauth?action=status');
+    $('redirectUri').value=d.redirectUri|| (location.origin+'/.netlify/functions/instagram-oauth');
+    if(d.connected){showConnected(d);}
+    else{
+      $('status').className='status '+(d.configured?'warn':'bad');
+      $('status').textContent=d.configured?'لم يتم ربط حساب Instagram بعد. اضغطي زر الربط للمتابعة عبر صفحة Instagram الرسمية.':'الربط غير جاهز: أضيفي بيانات تطبيق Instagram السرية إلى Netlify أولاً، ثم أعيدي تحديث الصفحة.';
+      $('account').classList.add('hidden');$('connect').classList.remove('hidden');
+      $('connect').disabled=!d.configured;
+      $('verify').classList.add('hidden');$('refreshToken').classList.add('hidden');$('disconnect').classList.add('hidden');
+    }
+  }catch(e){$('status').className='status bad';$('status').textContent=e.message;}
+}
+$('connect').onclick=async()=>{
+  $('connect').disabled=true;$('actionStatus').textContent='يجري تجهيز صفحة التفويض الرسمية…';
+  try{const d=await api('instagram-oauth?action=connect');location.href=d.authorizationUrl;}
+  catch(e){$('actionStatus').textContent=e.message;$('connect').disabled=false;}
+};
+$('verify').onclick=async()=>{
+  $('actionStatus').textContent='يجري التحقق من الحساب لدى Instagram…';
+  try{const d=await api('instagram-oauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'verify'})});$('actionStatus').textContent='نجح التحقق من @'+(d.account.username||'الحساب')+'.';await load();}
+  catch(e){$('actionStatus').textContent=e.message;}
+};
+$('refreshToken').onclick=async()=>{
+  $('actionStatus').textContent='يجري تحديث رمز الوصول طويل الأجل…';
+  try{const d=await api('instagram-oauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'refresh'})});$('actionStatus').textContent='تم تحديث الرمز. الصلاحية الجديدة حتى '+d.expiresAt;await load();}
+  catch(e){$('actionStatus').textContent=e.message;}
+};
+$('disconnect').onclick=async()=>{
+  if(!confirm('هل تريدين فصل حساب Instagram عن نظام حبر وبكسل؟'))return;
+  try{await api('instagram-oauth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'disconnect'})});$('actionStatus').textContent='تم فصل الحساب من النظام.';await load();}
+  catch(e){$('actionStatus').textContent=e.message;}
+};
+$('reload').onclick=load;
+$('copyRedirect').onclick=async()=>{
+  try{await navigator.clipboard.writeText($('redirectUri').value);$('actionStatus').textContent='تم نسخ عنوان العودة.';}
+  catch{$('actionStatus').textContent='تعذر النسخ التلقائي. حددي العنوان وانسخيه.';}
+};
+const params=new URLSearchParams(location.search);
+if(params.get('connected')==='1')$('actionStatus').textContent='اكتمل الربط عبر Instagram. يجري تحميل بيانات الحساب…';
+if(params.get('instagram_error'))$('actionStatus').textContent='لم يكتمل الربط: '+params.get('instagram_error');
+history.replaceState({},'',location.pathname);
+load();
+</script>
+</body>
+</html>
