@@ -52,7 +52,7 @@ exports.handler=async e=>{
   const service=clean(b.service,160), details=clean(b.details,3000), budget=clean(b.budget,120), timeline=clean(b.timeline,120);
   if(!service||!details)return json(400,{error:'اختاري الخدمة واكتبي تفاصيل الطلب.'});
   const now=new Date().toISOString();
-  const clientId=account.clientId||account.id;
+  const clientId=account.id;
   const orderId=`order-${account.id}-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
   // Reuse an existing open lead for this unified client identity when possible.
   // This prevents repeated authenticated orders from creating duplicate leads
