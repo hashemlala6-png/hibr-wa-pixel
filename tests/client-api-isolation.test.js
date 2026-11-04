@@ -22,6 +22,7 @@ function fixture() {
     'hbpx-projects': {
       'project-a': {id:'project-a',clientId:'legacy-phone-group',accountId:'legacy-phone-group',leadId:'lead-a',name:'Project A'},
       'project-b': {id:'project-b',clientId:'legacy-phone-group',accountId:'legacy-phone-group',leadId:'lead-b',name:'Project B'},
+      'project-collision': {id:'project-collision',clientId:'acct-a',accountId:'acct-a',leadId:'lead-b',name:'Stale ID collision'},
       'project-unlinked': {id:'project-unlinked',clientId:'legacy-phone-group',accountId:'legacy-phone-group',name:'Unlinked legacy project'}
     },
     'hbpx-tasks': {
