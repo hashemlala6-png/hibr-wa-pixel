@@ -2,6 +2,7 @@ const crypto=require('crypto');
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {json,requireAdmin}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
+const {projectBelongsToAccount}=require('./client-project-access');
 
 const projects=()=>getStore({name:'hbpx-projects',consistency:'strong'});
 const accounts=()=>getStore({name:'hbpx-client-accounts',consistency:'strong'});
@@ -23,9 +24,8 @@ async function ownedProject(projectId,actor){
   const p=await projects().get(projectId,{type:'json'}).catch(()=>null);
   if(!p)return null;
   if(actor.role==='owner')return p;
-  const a=actor.account,ids=[a.id,a.clientId].filter(Boolean);
   const lead=p.leadId?await getStore({name:'hbpx-leads',consistency:'strong'}).get(p.leadId,{type:'json'}).catch(()=>null):null;
-  return ids.includes(p.clientId)||ids.includes(p.accountId)||p.email===a.email||(lead&&ids.includes(lead.clientId))?p:null;
+  return projectBelongsToAccount(p,actor.account,lead)?p:null;
 }
 async function list(store,prefix){
   const s=store(),r=await s.list({prefix,limit:100}),out=[];
