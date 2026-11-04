@@ -45,7 +45,7 @@ exports.handler=async e=>{
       const deliveries=await listByProject('deliveries','delivery-',p.id,x=>{
         const hasPrivateFile=Boolean(x.fileKey);
         const accessLevel=String(x.accessLevel||(x.url?'final':'')).toLowerCase();
-        const canDownloadPrivate=hasPrivateFile&&(accessLevel==='preview'||(accessLevel==='final'&&fullyPaid&&validSignedContract));
+        const canDownloadPrivate=hasPrivateFile&&canDownloadDelivery(accessLevel,fullyPaid)&&(accessLevel!=='final'||validSignedContract);
         let externalUrl='';
         if(!hasPrivateFile&&x.url&&accessLevel==='final'&&fullyPaid&&validSignedContract){
           try{
