@@ -202,10 +202,11 @@ async function createCarouselParent(item, accountId, token) {
   });
 }
 async function containerStatus(containerId, token) {
-  const data = await graph(containerId, token, 'GET', { fields: 'id,status_code,status' });
+  // Meta documents status_code as the supported container readiness field.
+  const data = await graph(containerId, token, 'GET', { fields: 'status_code' });
   return {
-    status: clean(data.status_code || data.status, 40).toUpperCase(),
-    message: clean(data.status, 300)
+    status: clean(data.status_code, 40).toUpperCase(),
+    message: ''
   };
 }
 async function publishContainer(accountId, containerId, token) {
