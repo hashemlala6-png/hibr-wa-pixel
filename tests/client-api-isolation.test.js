@@ -129,6 +129,13 @@ test('customer APIs isolate same-phone accounts with a legacy shared clientId', 
   assert.deepEqual(agreementsPayloadA.contracts.map(c=>c.id),['contract-a']);
   assert.deepEqual(agreementsPayloadA.subscriptions.map(s=>s.id),['subscription-a']);
 
+  const agreementsB = loadHandler('../netlify/functions/client-agreements.js', data);
+  const agreementResultB = await agreementsB.handler({httpMethod:'GET',session:{sub:'acct-b'},headers:{}});
+  const agreementsPayloadB = responseBody(agreementResultB);
+  assert.equal(agreementResultB.statusCode,200);
+  assert.deepEqual(agreementsPayloadB.contracts.map(c=>c.id),['contract-b']);
+  assert.deepEqual(agreementsPayloadB.subscriptions.map(s=>s.id),['subscription-b']);
+
   const before = clone(data['hbpx-contracts']['contract-b']);
   const signingAttempt = loadHandler('../netlify/functions/client-agreements.js', data);
   const forbidden = await signingAttempt.handler({
