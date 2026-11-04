@@ -90,7 +90,7 @@ async function getAIContext(clientId) {
   const results = Array.from(resultsMap.values());
   const aiHistory = indexedAI.length ? indexedAI : fallbackAI.filter(x=>x.clientId===clientId);
 
-  const lead = leads.filter(x => x.id === clientId || x.clientId === clientId).sort((a,b) => new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))[0] || null;
+  const lead = leads.slice().sort((a,b) => new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))[0] || null;
   const effectiveClient = profile || lead || (account ? {id:account.id,name:account.name,email:account.email,whatsapp:account.whatsapp} : { id: clientId });
 
   const activityItems = activities
