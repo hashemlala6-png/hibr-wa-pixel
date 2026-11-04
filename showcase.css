@@ -1,0 +1,87 @@
+/* H&P showcase — editorial service ledger and interactive concept board. */
+.concept-lab-section{padding:35px 0 90px}
+.concept-lab-heading{display:grid;grid-template-columns:1fr .7fr;gap:50px;align-items:end;margin-bottom:33px}
+.concept-lab-heading h2{font:900 clamp(2.7rem,5.4vw,5.4rem)/1.08 Cairo,sans-serif;letter-spacing:-.08em;margin:13px 0 0;color:#182e29}
+.concept-lab-heading h2 em{font-style:normal;color:#c65d3f}
+.concept-lab-heading>p{max-width:460px;color:#69766d;font-size:.9rem;line-height:2.1;margin:0 0 5px}
+.concept-lab{--concept-ink:#193a32;--concept-accent:#c65d3f;--concept-paper:#e6ddcb;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:0;border:1px solid #d9d2c5;background:#f8f5ed;min-height:590px}
+.concept-lab[data-concept="care"]{--concept-ink:#234b48;--concept-accent:#b77a63;--concept-paper:#e4e8dd}
+.concept-lab[data-concept="retail"]{--concept-ink:#262f2d;--concept-accent:#be5b3e;--concept-paper:#eadbb9}
+.concept-selector{padding:28px 27px;display:flex;flex-direction:column;justify-content:space-between}
+.concept-selector-label{font:800 .58rem Arial,sans-serif;letter-spacing:.15em;color:#a06a51}
+.concept-tabs{display:grid;border-top:1px solid #d9d2c5;margin-top:26px}
+.concept-tab{width:100%;display:grid;grid-template-columns:30px 1fr 18px;align-items:center;gap:10px;text-align:right;padding:17px 8px;border:0;border-bottom:1px solid #d9d2c5;background:transparent;color:#193a32;cursor:pointer;transition:background .2s,padding .2s}
+.concept-tab:hover{background:#eee9df;padding-inline:14px}
+.concept-tab[aria-pressed="true"]{background:#e8e2d6;box-shadow:inset -3px 0 #c65d3f;padding-inline:14px}
+.concept-tab small{font:800 .62rem Arial,sans-serif;color:#c65d3f}
+.concept-tab span{font:800 1rem Cairo,sans-serif}
+.concept-tab b{color:#c65d3f;font:700 1rem Arial}
+.concept-context{margin-top:auto;background:#eae5da;padding:20px 18px;color:#193a32}
+.concept-context-top,.concept-context-bottom{display:flex;justify-content:space-between;gap:10px;align-items:center;font:800 .53rem Arial,sans-serif;letter-spacing:.11em;color:#7c8579}
+.concept-context-copy{padding:27px 0 24px}
+.concept-context-copy small{font:800 .58rem Arial,sans-serif;letter-spacing:.12em;color:#c65d3f}
+.concept-context-copy h3{font:900 1.6rem/1.3 Cairo,sans-serif;letter-spacing:-.05em;margin:8px 0}
+.concept-context-copy p{font-size:.78rem;line-height:2;color:#647168;margin:0}
+.concept-context-rule{height:1px;background:#d6cec0;margin-bottom:15px}
+.concept-context-bottom{align-items:flex-start}
+.concept-context-bottom strong{font-family:Cairo,sans-serif;color:#193a32;letter-spacing:0;text-align:left}
+.concept-stage{padding:23px 27px;background:var(--concept-paper);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;position:relative;transition:background .28s}
+.concept-stage:before{content:"";position:absolute;width:420px;height:420px;border:1px solid var(--concept-ink);opacity:.18;border-radius:50%;right:-150px;top:7%;box-shadow:0 0 0 22px transparent,0 0 0 48px transparent}
+.concept-stage-top,.concept-stage-bottom{position:relative;z-index:2;display:flex;justify-content:space-between;gap:12px;font:800 .55rem Arial,sans-serif;letter-spacing:.13em;color:var(--concept-ink)}
+.concept-artwork{position:relative;width:min(440px,90%);min-height:430px;align-self:center;padding:30px;background:var(--concept-ink);color:#f7f1e3;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;box-shadow:22px 24px 0 rgba(25,58,50,.10);transform:rotate(-2.5deg);transition:transform .25s,background .25s}
+.concept-lab[data-concept="care"] .concept-artwork{border-radius:120px 120px 3px 3px;transform:rotate(1.5deg)}
+.concept-lab[data-concept="retail"] .concept-artwork{border-radius:2px;transform:rotate(2deg)}
+.concept-artwork:before{content:"";position:absolute;width:260px;height:260px;border:1px solid #ffffff3a;border-radius:50%;right:22%;top:18%;box-shadow:0 0 0 17px #ffffff09,0 0 0 38px #ffffff07}
+.concept-artwork:after{content:"";position:absolute;width:160px;height:160px;border-radius:50%;background:var(--concept-accent);left:-65px;bottom:12%;mix-blend-mode:screen;opacity:.9}
+.concept-art-orbit{position:absolute;width:75%;height:75%;border:1px dashed #ffffff35;border-radius:50%;right:8%;top:12%;transform:rotate(-25deg)}
+.concept-art-overline,.concept-art-footer{position:relative;z-index:2;font:800 .57rem Arial,sans-serif;letter-spacing:.13em;color:#cbd5c8}
+.concept-art-title{position:relative;z-index:2;white-space:pre-line;font:900 clamp(3rem,5.5vw,5.5rem)/1.03 Cairo,sans-serif;letter-spacing:-.1em;margin:25px 0}
+.concept-art-sticker{position:relative;z-index:2;align-self:flex-end;background:var(--concept-accent);padding:11px 15px;color:#fff8ec;white-space:pre-line;text-align:center;font:900 .9rem/1.35 Arial,sans-serif;letter-spacing:.08em;transform:rotate(-5deg)}
+.concept-art-mark{position:absolute;left:30px;bottom:85px;display:grid;grid-template-columns:repeat(3,8px);gap:6px;transform:rotate(-15deg);z-index:2}
+.concept-art-mark i{width:8px;height:8px;background:#f4ecd9}
+.concept-art-mark i:nth-child(3n){background:var(--concept-accent);transform:translateY(-5px)}
+.concept-disclosure{margin:20px 0 0;color:#747f75;font-size:.74rem;line-height:1.9}
+.concept-disclosure b{color:#c65d3f}
+.brand-service-section{padding:15px 0 60px}
+.brand-service-section .brand-offers{display:block;border-top:1px solid #19342e;border-bottom:1px solid #19342e}
+.brand-service-section .brand-offer{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1fr);column-gap:8vw;align-items:start;padding:35px 30px!important;border:0!important;border-bottom:1px solid #d9d2c5!important;position:relative}
+.brand-service-section .brand-offer:before{content:"";position:absolute;right:0;top:20px;bottom:20px;width:3px;background:#c65d3f;opacity:0;transition:opacity .2s}
+.brand-service-section .brand-offer:hover:before{opacity:1}
+.brand-service-section .brand-offer-top{grid-column:1/-1;display:flex;justify-content:space-between;gap:15px;margin-bottom:20px;color:#8a9388;font:800 .61rem Arial,sans-serif;letter-spacing:.13em}
+.brand-service-section .brand-offer h2{grid-column:1;grid-row:2;font:900 clamp(2.2rem,4vw,4.25rem)/1.12 Cairo,sans-serif;letter-spacing:-.08em;margin:0}
+.brand-service-section .brand-offer h2 em{font-style:normal;color:#c65d3f}
+.brand-service-section .brand-offer>p{grid-column:2;grid-row:2;color:#69766d;font-size:.88rem;line-height:2;margin:0 0 16px;max-width:520px}
+.brand-service-section .brand-offer ul{grid-column:2;grid-row:3;margin:0 0 17px;padding:0 18px 0 0;color:#56675d;font-size:.82rem;line-height:2.15;columns:2;column-gap:28px}
+.brand-service-section .brand-offer-link{grid-column:2;grid-row:4;justify-self:start;font-size:.82rem;font-weight:800}
+.brand-service-section .brand-offer-design{background:#e6ebe1!important}
+.brand-service-section .brand-bundle{display:flex;justify-content:space-between;align-items:center;gap:25px;margin-top:0!important;border-radius:0!important;background:#193d34!important;padding:32px 35px!important}
+.brand-service-section .brand-bundle h2{font:900 clamp(2rem,3.4vw,3.5rem)/1.1 Cairo,sans-serif;letter-spacing:-.07em}
+.brand-service-section .brand-bundle h2 em{font-style:normal;color:#e6c47d}
+.brand-service-section .brand-bundle p{max-width:620px;color:#d1dbd0}
+.brand-service-section .brand-bundle .solid-btn{white-space:nowrap;background:#c65d3f!important;border-color:#c65d3f!important}
+.brand-service-section .brand-quality-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;border-top:1px solid #19342e;border-bottom:1px solid #19342e}
+.brand-service-section .brand-quality-grid article{display:grid;grid-template-columns:35px 1fr;gap:4px 13px;padding:22px 16px;border:0;border-bottom:1px solid #d9d2c5}
+.brand-service-section .brand-quality-grid article:nth-child(odd){border-inline-start:1px solid #d9d2c5}
+.brand-service-section .brand-quality-grid article>b{grid-row:1/3;color:#c65d3f;font:800 .68rem Arial,sans-serif}
+.brand-service-section .brand-quality-grid h3{margin:0;font:800 1.05rem Cairo,sans-serif}
+.brand-service-section .brand-quality-grid p{margin:0;color:#69766d;font-size:.8rem;line-height:1.9}
+@media(max-width:800px){
+ .concept-lab-heading{grid-template-columns:1fr;gap:13px}
+ .concept-lab{grid-template-columns:1fr}
+ .concept-selector{padding:20px 17px;gap:25px}
+ .concept-tabs{margin-top:10px}
+ .concept-context{margin-top:0}
+ .concept-stage{min-height:470px;padding:18px}
+ .concept-artwork{min-height:360px;width:min(360px,92%);padding:22px}
+ .concept-art-title{font-size:4rem}
+ .brand-service-section .brand-offer{grid-template-columns:1fr;gap:12px;padding:26px 15px!important}
+ .brand-service-section .brand-offer h2,.brand-service-section .brand-offer>p,.brand-service-section .brand-offer ul,.brand-service-section .brand-offer-link{grid-column:1;grid-row:auto}
+ .brand-service-section .brand-offer h2{font-size:2.35rem}
+ .brand-service-section .brand-offer ul{columns:1}
+ .brand-service-section .brand-bundle{display:block;padding:25px 20px!important}
+ .brand-service-section .brand-bundle .solid-btn{display:inline-flex;margin-top:14px}
+ .brand-service-section .brand-quality-grid{grid-template-columns:1fr}
+ .brand-service-section .brand-quality-grid article:nth-child(odd){border-inline-start:0}
+ .concept-lab-heading h2{font-size:3.2rem}
+}
+@media(prefers-reduced-motion:reduce){.concept-tab,.concept-stage,.concept-artwork,.brand-service-section .brand-offer:before{transition:none!important}}
