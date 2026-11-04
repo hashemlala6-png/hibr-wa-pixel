@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calculatePaymentSchedule, countReceivedPayments, canDownloadDelivery, activationBlockReason } = require('../netlify/functions/contract-policy');
+const { calculatePaymentSchedule, countReceivedPayments, canDownloadDelivery, latestSignedContract, signedContractBlockReason, activationBlockReason } = require('../netlify/functions/contract-policy');
 
 test('calculates exact 10/90 split for IQD amounts', () => {
   const p = calculatePaymentSchedule(100000);
@@ -108,6 +108,28 @@ test('uses the newest signed contract when multiple signed records exist', () =>
   ];
   const payments = [{ projectId: 'p1', amount: 10000, status: 'received' }];
   assert.equal(activationBlockReason('p1', contracts, payments, 100000), null);
+});
+
+test('requires a signed contract matching the project before final delivery', () => {
+  assert.match(signedContractBlockReason('p1', [], 100000), /توقيع العقد/);
+  const wrongAmount = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 90000, depositAmount: 9000, balanceAmount: 81000 }];
+  assert.match(signedContractBlockReason('p1', wrongAmount, 100000), /لا تطابق قيمة المشروع/);
+});
+
+test('blocks final delivery when the signed payment schedule is incomplete or incorrect', () => {
+  const wrongDeposit = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 9999, balanceAmount: 90001 }];
+  const wrongBalance = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 89999 }];
+  assert.match(signedContractBlockReason('p1', wrongDeposit, 100000), /العربون/);
+  assert.match(signedContractBlockReason('p1', wrongBalance, 100000), /الرصيد/);
+});
+
+test('accepts a matching signed contract and selects the newest signed record', () => {
+  const contracts = [
+    { id: 'old', projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 89999 },
+    { id: 'new', projectId: 'p1', status: 'signed', signedAt: '2026-02-01', amount: 100000, depositAmount: 10000, balanceAmount: 90000 }
+  ];
+  assert.equal(latestSignedContract('p1', contracts).id, 'new');
+  assert.equal(signedContractBlockReason('p1', contracts, 100000), null);
 });
 
 test('allows preview downloads before full payment', () => {
