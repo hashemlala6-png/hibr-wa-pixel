@@ -106,7 +106,7 @@ async function notifyClientApproval(lead) {
     } catch (e) { result.email = 'failed'; console.error('client approval email failed', e.message || e); }
   } else if (!lead.email) result.email = 'no_customer_email';
   const token = process.env.WHATSAPP_ACCESS_TOKEN, phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID, template = process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_NAME;
-  const phone = normalizePhone(lead.whatsapp);
+  const phone = normalizePhoneForMatch(lead.whatsapp).replace(/^964/, '');
   if (token && phoneId && template && phone) {
     try {
       const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone, type: 'template', template: { name: template, language: { code: process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_LANGUAGE || 'ar' }, components: [{ type: 'body', parameters: [{ type: 'text', text: String(lead.name || 'عميل').slice(0,200) }, { type: 'text', text: String(lead.service || 'الخدمة المطلوبة').slice(0,200) }] }] } }) });
