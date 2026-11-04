@@ -195,3 +195,30 @@
  .cw-footer div{gap:5px;flex-direction:column;align-items:flex-start}
 }
 @media(prefers-reduced-motion:reduce){.cw-loading span{animation:none!important}.cw-stage,.cw-primary{transition:none!important}}
+
+/* Fine details for empty states, handoff notes, and compact invoice rows. */
+.cw-no-project{display:flex;align-items:center;justify-content:space-between;gap:25px;padding:34px 38px;background:var(--cw-paper-2);border:1px dashed #c9c0b1}
+.cw-no-project>div{max-width:620px}
+.cw-no-project small{font:800 .58rem Arial,sans-serif;letter-spacing:.15em;color:var(--cw-orange)}
+.cw-no-project h3{font:900 1.5rem Cairo,sans-serif;margin:8px 0;color:var(--cw-ink)}
+.cw-no-project p{font-size:.79rem;line-height:1.9;color:var(--cw-muted);margin:0}
+.cw-no-project-mark{font:900 5.5rem Cairo,sans-serif;letter-spacing:-.1em;color:#e5dfd3}
+.cw-no-project .cw-primary{margin-top:18px;text-decoration:none}
+.cw-result-note ul{padding-right:20px;margin:7px 0}
+.cw-result-note li{padding:3px 0}
+.cw-result-note p{margin:8px 0 0}
+.cw-payments-note{margin-top:12px;padding:8px 10px;background:#eee9df;color:var(--cw-muted);font-size:.68rem}
+.cw-payments-note b{color:var(--cw-green)}
+.cw-signed-note{padding:10px 12px;background:#e5eee7;color:var(--cw-ok);font-size:.73rem;line-height:1.8}
+.cw-note-muted{color:var(--cw-muted)!important;font-size:.72rem!important}
+.cw-invoice{display:block;padding:10px 12px;background:#f2eee5;border:1px solid #e6dfd3}
+.cw-invoice-head,.cw-invoice-meta{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cw-invoice-head strong{font-size:.74rem}
+.cw-invoice-meta{margin-top:6px}
+.cw-invoice-meta small{font-size:.63rem;color:var(--cw-muted)}
+.cw-invoice-meta>b{font:800 .75rem Cairo,sans-serif;color:var(--cw-green);white-space:nowrap}
+@media(max-width:700px){
+ .cw-no-project{padding:22px 17px}
+ .cw-no-project-mark{font-size:3.2rem}
+ .cw-no-project h3{font-size:1.2rem}
+}
