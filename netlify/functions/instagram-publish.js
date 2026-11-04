@@ -17,6 +17,61 @@ function store(name) {
   if (siteID && token) { options.siteID = siteID; options.token = token; }
   return getStore(options);
 }
+
+async function acquirePublishLock(itemId) {
+  const locks = store('hbpx-instagram-publish-locks');
+  const key = 'lock-' + itemId;
+  const token = crypto.randomBytes(18).toString('hex');
+  const now = Date.now();
+  const lock = { token, acquiredAt: now, expiresAt: now + 120000 };
+
+  const current = await locks.getWithMetadata(key, { consistency: 'strong', type: 'json' });
+  if (!current) {
+    const created = await locks.setJSON(key, lock, { onlyIfNew: true });
+    return created.modified ? { acquired: true, key, token } : { acquired: false };
+  }
+  const data = current.data || {};
+  if (Number(data.expiresAt) > now) return { acquired: false, expiresAt: data.expiresAt };
+
+  const replaced = await locks.setJSON(key, lock, { onlyIfMatch: current.etag });
+  return replaced.modified ? { acquired: true, key, token } : { acquired: false };
+}
+
+async function releasePublishLock(lock) {
+  if (!lock?.acquired) return;
+  try {
+    const locks = store('hbpx-instagram-publish-locks');
+    const current = await locks.getWithMetadata(lock.key, { consistency: 'strong', type: 'json' });
+    if (!current || current.data?.token !== lock.token) return;
+    await locks.setJSON(lock.key, {
+      token: '',
+      acquiredAt: 0,
+      expiresAt: 0,
+      releasedAt: Date.now()
+    }, { onlyIfMatch: current.etag });
+  } catch (error) {
+    console.error('Instagram publish lock release failed', error?.message || error);
+  }
+}
+
+async function publishingQuota(accountId, token) {
+  const data = await graph(accountId + '/content_publishing_limit', token, 'GET', {
+    fields: 'quota_usage,config'
+  });
+  const row = Array.isArray(data.data) ? data.data[0] : null;
+  const usage = Number(row?.quota_usage);
+  const total = Number(row?.config?.quota_total);
+  const duration = Number(row?.config?.quota_duration);
+  if (!row || !Number.isFinite(usage) || !Number.isFinite(total) || total <= 0) {
+    throw new Error('لم تُرجع Meta بيانات حصة النشر. أوقفنا النشر احتياطياً حتى نتحقق من الحد الفعلي للحساب.');
+  }
+  return {
+    usage,
+    total,
+    remaining: Math.max(0, total - usage),
+    durationSeconds: Number.isFinite(duration) ? duration : null
+  };
+}
 const clean = (v, n = 500) => String(v == null ? '' : v).trim().slice(0, n);
 function decrypt(box) {
   const secret = env('ADMIN_SESSION_SECRET');
@@ -177,12 +232,31 @@ exports.handler = async event => {
     return json(409, { error: 'سجل موافقة المالكة غير مكتمل. أعيدي اعتماد المحتوى من استوديو المحتوى.' });
   }
 
+  let publishLock = null;
   try {
+    publishLock = await acquirePublishLock(id);
+    if (!publishLock.acquired) {
+      return json(409, { error: 'هناك طلب نشر آخر يعمل على هذا المحتوى. انتظري حتى ينتهي قبل الضغط مرة ثانية.' });
+    }
     const connection = await store(CONNECTION_STORE).get(CONNECTION_KEY, { type: 'json' });
     if (!connection?.token || !connection?.profile?.userId) return json(409, { error: 'حساب Instagram غير مربوط. اربطي الحساب وتحققي منه أولاً.' });
     if (connection.expiresAt && new Date(connection.expiresAt).getTime() < Date.now()) return json(409, { error: 'انتهت صلاحية رمز Instagram. حدّثي الرمز أو أعيدي الربط قبل النشر.' });
     const token = decrypt(connection.token);
     const accountId = String(connection.profile.userId);
+
+    let quota;
+    try {
+      quota = await publishingQuota(accountId, token);
+    } catch (error) {
+      return json(502, { item: publicResult(item), error: clean(error.message, 500) });
+    }
+    if (quota.remaining <= 0) {
+      return json(429, {
+        item: publicResult(item),
+        quota,
+        error: 'وصل الحساب إلى حد النشر الحالي لدى Instagram. لم نرسل أمراً جديداً للنشر؛ انتظري تجدد الحصة ثم حاولي مرة أخرى.'
+      });
+    }
 
     if (action === 'start') {
       if (item.publishStatus === 'processing') return json(409, { item: publicResult(item), error: 'توجد عملية نشر قيد المعالجة. استخدمي متابعة النشر بدلاً من بدء محاولة جديدة.' });
@@ -283,6 +357,22 @@ exports.handler = async event => {
       return json(409, { item: publicResult(item), error: item.publishError });
     }
 
+    // Recheck the live publishing quota immediately before sending media_publish.
+    try {
+      quota = await publishingQuota(accountId, token);
+    } catch (error) {
+      item.publishMessage = 'تعذر التحقق من حصة النشر الحالية. لم نرسل أمر النشر؛ أعيدي المحاولة بعد التحقق.';
+      item.publishError = clean(error.message, 500);
+      await saveContent(item);
+      return json(502, { item: publicResult(item), error: item.publishError });
+    }
+    if (quota.remaining <= 0) {
+      item.publishMessage = 'لا توجد حصة نشر متبقية حالياً. الحاوية محفوظة؛ أعيدي المتابعة بعد تجدد حصة Instagram.';
+      item.publishError = null;
+      await saveContent(item);
+      return json(429, { item: publicResult(item), quota, error: item.publishMessage });
+    }
+
     // Persist the in-flight guard before calling media_publish. If the network
     // response is lost, the owner must verify the account manually rather than
     // accidentally publishing the same approved draft twice.
@@ -339,5 +429,7 @@ exports.handler = async event => {
     });
   } catch (error) {
     return json(500, { error: clean(error.message || 'تعذر تنفيذ طلب النشر.', 500) });
+  } finally {
+    await releasePublishLock(publishLock);
   }
 };
