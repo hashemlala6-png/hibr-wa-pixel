@@ -23,6 +23,7 @@ function fixture() {
       'project-a': {id:'project-a',clientId:'legacy-phone-group',accountId:'legacy-phone-group',leadId:'lead-a',name:'Project A'},
       'project-b': {id:'project-b',clientId:'legacy-phone-group',accountId:'legacy-phone-group',leadId:'lead-b',name:'Project B'},
       'project-collision': {id:'project-collision',clientId:'acct-a',accountId:'acct-a',leadId:'lead-b',name:'Stale ID collision'},
+      'project-conflicting-contact': {id:'project-conflicting-contact',leadId:'lead-b',email:'a@example.com',whatsapp:'07712345678',name:'Project contact conflicts with lead'},
       'project-unlinked': {id:'project-unlinked',clientId:'legacy-phone-group',accountId:'legacy-phone-group',name:'Unlinked legacy project'}
     },
     'hbpx-tasks': {
