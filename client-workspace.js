@@ -97,18 +97,21 @@
       (result.handoffMessage ? '<p>' + esc(result.handoffMessage) + '</p>' : '') + '</div>';
   }
 
-  function renderProject(project, index) {
+  function renderProject(project, index, serviceDirectory) {
     const amount = Number(project.amount || 0);
     const paid = Number(project.paid || 0);
     const remaining = Number(project.remaining ?? Math.max(amount - paid, 0));
     const hasAmount = amount > 0;
     const stage = label(project.status);
+    const contractInfo = (serviceDirectory || []).find((item) => item.projectId === project.id) || {};
+    const serviceName = project.service || project.serviceType || contractInfo.service || contractInfo.name || '';
     const contracts = Array.isArray(project.contracts) ? project.contracts : [];
     const invoices = Array.isArray(project.invoices) ? project.invoices : [];
     const payments = Array.isArray(project.payments) ? project.payments : [];
     return '<article class="cw-project-card">' +
       '<header class="cw-project-head"><div>' +
        '<div class="cw-project-title-line"><h3>' + esc(project.name || 'مشروع جديد') + '</h3><span class="cw-project-reference">PROJECT / ' + String(index + 1).padStart(2,'0') + '</span></div>' +
+       (serviceName ? '<div class="cw-project-service">' + esc(serviceName) + '</div>' : '') +
        '<div class="cw-project-dates"><span>البداية: ' + date(project.startDate) + '</span><span>التسليم المتوقع: ' + date(project.dueDate) + '</span></div>' +
       '</div><span class="cw-stage ' + stage[1] + '">' + stage[0] + '</span></header>' +
       '<div class="cw-project-finance">' +
@@ -128,13 +131,13 @@
       '</div></article>';
   }
 
-  function renderProjects(projects) {
+  function renderProjects(projects, serviceDirectory) {
     const root = $('projects');
     if (!Array.isArray(projects) || !projects.length) {
       root.innerHTML = '<div class="cw-no-project"><div><small>YOUR FIRST PROJECT</small><h3>مساحتك جاهزة لأول مشروع.</h3><p>بعد اعتماد المشروع وإنشاء ملفه، تظهر هنا المهام والاتفاقات والتسليمات والدفعات.</p><a class="cw-primary" href="order.html">إرسال طلب مشروع جديد <b>↗</b></a></div><span class="cw-no-project-mark">01</span></div>';
       return;
     }
-    root.innerHTML = projects.map(renderProject).join('');
+    root.innerHTML = projects.map((project, index) => renderProject(project, index, serviceDirectory)).join('');
   }
 
   function signable(contract) {
@@ -288,6 +291,7 @@
       const ordersData = results[2].status === 'fulfilled' ? results[2].value : null;
       const projects = workspace && Array.isArray(workspace.projects) ? workspace.projects : [];
       const contracts = agreements && Array.isArray(agreements.contracts) ? agreements.contracts : [];
+      const serviceDirectory = agreements && Array.isArray(agreements.services) ? agreements.services : [];
       const subscriptions = agreements && Array.isArray(agreements.subscriptions) ? agreements.subscriptions : [];
       const orders = ordersData && Array.isArray(ordersData.orders) ? ordersData.orders : [];
 
@@ -296,7 +300,7 @@
       renderSignal(contracts, projects);
       renderKpis(projects, orders);
 
-      if (results[1].status === 'fulfilled') renderProjects(projects);
+      if (results[1].status === 'fulfilled') renderProjects(projects, serviceDirectory);
       else $('projects').innerHTML = '<div class="cw-error-inline">' + esc(results[1].reason.message) + '</div>';
 
       if (results[0].status === 'fulfilled') {
