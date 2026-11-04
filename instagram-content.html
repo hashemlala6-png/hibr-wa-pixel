@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>استوديو محتوى Instagram | حبر وبكسل</title>
+<style>
+:root{--bg:#f7f5ef;--card:#fff;--ink:#24313a;--muted:#687780;--line:#e4e2da;--blue:#245d83;--green:#287452;--red:#a44848;--gold:#d8a83b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}button,a,input,textarea,select{font:inherit}
+button{cursor:pointer;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);padding:10px 13px}.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}.danger{color:var(--red)}
+.wrap{max-width:1180px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(25px,5vw,36px);margin:4px 0}.eyebrow{font-size:12px;color:var(--blue);font-weight:800;letter-spacing:.08em}
+.muted{color:var(--muted);line-height:1.8}.small{font-size:12px;color:var(--muted);line-height:1.8}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1.2fr);gap:14px;margin-top:15px}.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:18px;min-width:0}
+.field{display:block;width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff;margin:6px 0 12px;color:var(--ink)}
+textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.status{padding:12px;border-radius:11px;background:#f0f4f5;line-height:1.7;margin:11px 0}.ok{background:#eaf5ee;color:var(--green)}.bad{background:#fff0ed;color:var(--red)}.warn{background:#fff6df;color:#765812}
+.list{display:grid;gap:10px}.post{border:1px solid var(--line);border-radius:13px;padding:13px}.posthead{display:flex;justify-content:space-between;align-items:start;gap:9px}.pill{font-size:11px;padding:5px 9px;border-radius:20px;background:#eef2f4;white-space:nowrap}.pill.approved{background:#eaf5ee;color:var(--green)}.pill.pending_approval{background:#fff4d9;color:#765812}.pill.needs_changes,.pill.rejected{background:#fff0ed;color:var(--red)}
+.caption{white-space:pre-wrap;line-height:1.7;overflow-wrap:anywhere;margin:10px 0;max-height:160px;overflow:auto}.counts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.count{background:#fafaf7;border:1px solid var(--line);border-radius:11px;padding:10px}.count b{display:block;font-size:21px}
+.hidden{display:none!important}.back{display:inline-block;padding:10px 13px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);text-decoration:none}
+@media(max-width:850px){.grid{grid-template-columns:1fr}}@media(max-width:560px){.wrap{padding:12px}.card{padding:14px}.counts{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div><div class="eyebrow">HIBR & PIXEL · CONTENT STUDIO</div><h1>استوديو محتوى Instagram</h1><div class="muted">مسودات المحتوى، ترتيب المواعيد، وموافقة المالكة قبل أي إجراء خارجي.</div></div>
+  <div class="actions"><a class="back" href="/instagram.html">ربط الحساب</a><a class="back" href="/admin.html">لوحة الإدارة</a></div>
+</header>
+<div class="status warn"><b>وضع التشغيل الحالي:</b> هذه الصفحة تحفظ المسودات وتدير الموافقات فقط. التاريخ هو موعد مقترح للتذكير، وليس جدولة نشر تلقائية. زر الاعتماد لا ينشر المحتوى. النشر الفعلي غير مفعّل في هذه المرحلة.</div>
+<section class="counts" id="counts">
+  <div class="count"><span class="small">كل المسودات</span><b id="nAll">—</b></div>
+  <div class="count"><span class="small">تحتاج مراجعة</span><b id="nPending">—</b></div>
+  <div class="count"><span class="small">معتمدة</span><b id="nApproved">—</b></div>
+  <div class="count"><span class="small">تحتاج تعديلاً</span><b id="nChanges">—</b></div>
+</section>
+<div class="grid">
+<section class="card">
+  <h2 id="formTitle" style="margin-top:0">إنشاء مسودة محتوى</h2>
+  <p class="small">يمكن حفظ النص من استوديو الذكاء الاصطناعي أو إنشاء مسودة يدوية. أضيفي روابط الوسائط العامة عند توفر استضافة مناسبة.</p>
+  <form id="form">
+    <label class="small" for="title">عنوان داخلي للمحتوى</label>
+    <input id="title" class="field" maxlength="180" placeholder="مثلاً: منشور تعريف بالخدمة">
+    <label class="small" for="format">نوع المحتوى</label>
+    <select id="format" class="field"><option value="IMAGE">منشور صورة</option><option value="CAROUSEL">كاروسيل</option><option value="REEL">Reel</option><option value="STORY">Story</option></select>
+    <label class="small" for="caption">نص المنشور / الوصف</label>
+    <textarea id="caption" class="field" maxlength="2200" required placeholder="اكتبي النص أو الصقي نتيجة الذكاء الاصطناعي هنا…"></textarea>
+    <label class="small" for="mediaUrls">روابط الوسائط العامة — رابط واحد في كل سطر</label>
+    <textarea id="mediaUrls" class="field" rows="3" placeholder="https://..."></textarea>
+    <div class="small">المنشور يقبل رابطاً واحداً، والكاروسيل يحتاج رابطين على الأقل. لا تُحمّل هذه الصفحة الصور أو الفيديوهات إلى الإنترنت.</div>
+    <label class="small" for="altText">وصف بديل للصورة (اختياري)</label>
+    <input id="altText" class="field" maxlength="1000" placeholder="وصف مختصر للصورة لقابلية الوصول">
+    <label class="small" for="plannedAt">موعد النشر المقترح (اختياري)</label>
+    <input id="plannedAt" class="field" type="datetime-local">
+    <div class="actions"><button id="save" class="primary" type="submit">حفظ المسودة</button><button id="clear" type="button">مسودة جديدة</button></div>
+    <div id="formMsg" class="small" role="status" aria-live="polite"></div>
+  </form>
+</section>
+<section class="card">
+  <div class="posthead"><h2 style="margin:0">قائمة المحتوى</h2><button id="refresh">تحديث</button></div>
+  <div class="actions"><select id="filter" class="field" style="max-width:220px;margin:0"><option value="all">كل الحالات</option><option value="draft">مسودات</option><option value="pending_approval">بانتظار الموافقة</option><option value="approved">معتمدة</option><option value="needs_changes">تحتاج تعديلاً</option><option value="rejected">مرفوضة</option></select><span id="listStatus" class="small"></span></div>
+  <div id="posts" class="list" style="margin-top:12px"><div class="status">جارٍ تحميل المسودات…</div></div>
+</section>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);let ITEMS=[];let editingId=null;
+const labels={draft:'مسودة',needs_changes:'تحتاج تعديلاً',pending_approval:'بانتظار موافقة المالكة',approved:'معتمدة — لم تُنشر',rejected:'مرفوضة'};
+const formatLabels={IMAGE:'منشور صورة',CAROUSEL:'كاروسيل',REEL:'Reel',STORY:'Story'};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function api(path,opt){
+ const r=await fetch('/.netlify/functions/'+path,{credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json',...((opt&&opt.headers)||{})},...(opt||{})});
+ const d=await r.json().catch(()=>({}));
+ if(r.status===401){location.href='/admin.html';throw new Error('انتهت جلسة المالك.')}
+ if(!r.ok)throw new Error(d.error||'تعذر الاتصال بالخادم.');
+ return d;
+}
+function resetForm(){
+ editingId=null;$('form').reset();$('formTitle').textContent='إنشاء مسودة محتوى';$('save').textContent='حفظ المسودة';
+}
+function fillForm(x){
+ editingId=x.id;$('title').value=x.title||'';$('format').value=x.format||'IMAGE';$('caption').value=x.caption||'';
+ $('mediaUrls').value=(x.mediaUrls||[]).join('\n');$('altText').value=x.altText||'';
+ if(x.plannedAt){const d=new Date(x.plannedAt);const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);$('plannedAt').value=local.toISOString().slice(0,16);}
+ else $('plannedAt').value='';
+ $('formTitle').textContent='تعديل المسودة';$('save').textContent='حفظ التعديلات';$('caption').focus();
+}
+function render(){
+ const f=$('filter').value;const rows=ITEMS.filter(x=>f==='all'||x.status===f);
+ $('nAll').textContent=ITEMS.length;$('nPending').textContent=ITEMS.filter(x=>x.status==='pending_approval').length;
+ $('nApproved').textContent=ITEMS.filter(x=>x.status==='approved').length;$('nChanges').textContent=ITEMS.filter(x=>x.status==='needs_changes').length;
+ $('posts').innerHTML=rows.length?rows.map(x=>{
+  const editable=['draft','needs_changes','rejected'].includes(x.status);
+  const mediaCount=(x.mediaUrls||[]).length;
+  const schedule=x.plannedAt?new Date(x.plannedAt).toLocaleString('ar-IQ'):'غير محدد';
+  return '<article class="post"><div class="posthead"><div><b>'+esc(x.title||'مسودة Instagram')+'</b><div class="small">'+esc(formatLabels[x.format]||x.format)+' · '+esc(new Date(x.updatedAt||x.createdAt).toLocaleString('ar-IQ'))+'</div></div><span class="pill '+esc(x.status)+'">'+esc(labels[x.status]||x.status)+'</span></div>'+
+   '<div class="caption">'+esc(x.caption)+'</div><div class="small">الوسائط: '+mediaCount+' · الموعد المقترح: '+esc(schedule)+'</div>'+
+   (x.decisionNote?'<div class="status warn">ملاحظة المالكة: '+esc(x.decisionNote)+'</div>':'')+
+   '<div class="actions"><button type="button" data-copy="'+esc(x.id)+'">نسخ النص</button>'+
+   (editable?'<button type="button" data-edit="'+esc(x.id)+'">تعديل</button><button type="button" data-submit="'+esc(x.id)+'" class="primary">إرسال للمراجعة</button><button type="button" data-delete="'+esc(x.id)+'" class="danger">حذف</button>':'')+
+   (x.status==='pending_approval'?'<button type="button" data-approve="'+esc(x.id)+'" class="primary">اعتماد المسودة</button><button type="button" data-changes="'+esc(x.id)+'">طلب تعديل</button>':'')+
+   '</div></article>';
+ }).join(''):'<div class="status">لا توجد مسودات بهذه الحالة.</div>';
+}
+async function load(){
+ $('listStatus').textContent='جارٍ التحميل…';
+ try{const d=await api('instagram-content');ITEMS=d.items||[];render();$('listStatus').textContent='تم تحميل '+ITEMS.length+' عنصر.';}
+ catch(e){$('listStatus').textContent=e.message;$('posts').innerHTML='<div class="status bad">تعذر تحميل القائمة.</div>';}
+}
+$('form').onsubmit=async e=>{
+ e.preventDefault();$('save').disabled=true;$('formMsg').textContent='جارٍ الحفظ…';
+ const payload={title:$('title').value,format:$('format').value,caption:$('caption').value,mediaUrls:$('mediaUrls').value,altText:$('altText').value,plannedAt:$('plannedAt').value};
+ try{
+  if(editingId){await api('instagram-content',{method:'PATCH',body:JSON.stringify({id:editingId,action:'update',...payload})});$('formMsg').textContent='تم تحديث المسودة.';}
+  else{await api('instagram-content',{method:'POST',body:JSON.stringify(payload)});$('formMsg').textContent='تم حفظ المسودة.';}
+  resetForm();await load();
+ }catch(e){$('formMsg').textContent=e.message;}
+ finally{$('save').disabled=false;}
+};
+$('clear').onclick=()=>{resetForm();$('formMsg').textContent='';};
+$('refresh').onclick=load;$('filter').onchange=render;
+$('posts').onclick=async e=>{
+ const b=e.target.closest('button');if(!b)return;
+ const id=b.dataset.copy||b.dataset.edit||b.dataset.submit||b.dataset.delete||b.dataset.approve||b.dataset.changes;
+ const item=ITEMS.find(x=>x.id===id);if(!item)return;
+ try{
+  if(b.dataset.copy){await navigator.clipboard.writeText(item.caption||'');$('listStatus').textContent='تم نسخ نص المنشور.';return;}
+  if(b.dataset.edit){fillForm(item);return;}
+  if(b.dataset.submit){if(!confirm('إرسال هذه المسودة إلى مراجعة المالكة؟ لن يتم النشر.'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'submit'})});}
+  if(b.dataset.approve){if(!confirm('اعتماد هذه المسودة؟ الاعتماد يسجل موافقتك فقط ولا ينشر المحتوى.'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'approve'})});}
+  if(b.dataset.changes){const note=prompt('ما التعديلات المطلوبة؟','');if(note===null)return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'request_changes',note})});}
+  if(b.dataset.delete){if(!confirm('حذف هذه المسودة نهائياً؟'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'delete'})});}
+  await load();
+ }catch(e){$('listStatus').textContent=e.message;}
+};
+const params=new URLSearchParams(location.search);
+if(params.get('draft')==='1')$('formMsg').textContent='وصلتِ من استوديو الذكاء الاصطناعي. أكملي التفاصيل واحفظي المسودة.';
+load();
+</script>
+</body></html>
