@@ -28,6 +28,7 @@ textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display
   <div class="actions"><a class="back" href="/instagram.html">ربط الحساب</a><a class="back" href="/admin.html">لوحة الإدارة</a><a class="back" href="/instagram-insights.html">تحليلات الحساب</a></div>
 </header>
 <div class="status warn"><b>سياسة النشر:</b> اعتماد المسودة لا ينشرها. بعد الاعتماد يظهر إجراء مستقل باسم «بدء النشر»، ولا يُرسل الأمر إلى Instagram إلا بعد ضغط المالكة وتأكيدها. مواعيد التقويم تذكيرات وليست جدولة تلقائية. Stories تبقى مسودات في هذه النسخة.</div>
+<div id="igAccountStatus" class="status warn">جارٍ التحقق من اتصال حساب Instagram…</div>
 <section class="counts" id="counts">
   <div class="count"><span class="small">كل المسودات</span><b id="nAll">—</b></div>
   <div class="count"><span class="small">تحتاج مراجعة</span><b id="nPending">—</b></div>
@@ -83,7 +84,29 @@ textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display
 const $=id=>document.getElementById(id);let ITEMS=[];let editingId=null;
 const labels={draft:'مسودة',needs_changes:'تحتاج تعديلاً',pending_approval:'بانتظار موافقة المالكة',approved:'معتمدة — لم تُنشر',rejected:'مرفوضة'};
 const formatLabels={IMAGE:'منشور صورة',CAROUSEL:'كاروسيل',REEL:'Reel',STORY:'Story'};
+let IG_ACCOUNT=null;
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function mediaReady(x){
+ const urls=Array.isArray(x.mediaUrls)?x.mediaUrls:[];
+ const isJpeg=u=>{try{return /\.jpe?g$/i.test(new URL(u).pathname)}catch{return false}};
+ const isVideo=u=>{try{return /\.(mp4|mov|m4v)$/i.test(new URL(u).pathname)}catch{return false}};
+ if(String(x.caption||'').length>2200)return false;
+ if(x.format==='IMAGE')return urls.length===1&&isJpeg(urls[0]);
+ if(x.format==='CAROUSEL')return urls.length>=2&&urls.length<=10&&urls.every(isJpeg);
+ if(x.format==='REEL')return urls.length===1&&isVideo(urls[0]);
+ return false;
+}
+function renderMedia(x){
+ const urls=Array.isArray(x.mediaUrls)?x.mediaUrls:[];
+ return urls.map((u,i)=>{
+  let video=false;try{video=/\.(mp4|mov|m4v)$/i.test(new URL(u).pathname)}catch{}
+  return video
+   ?'<video controls preload="none" playsinline style="width:min(100%,320px);max-height:220px;border-radius:10px;background:#eee" src="'+esc(u)+'"></video>'
+   :'<img loading="lazy" alt="وسيط '+(i+1)+'" src="'+esc(u)+'" style="width:min(100%,220px);max-height:220px;object-fit:contain;border-radius:10px;background:#f2f2f2">';
+ }).join('');
+}
+
 async function api(path,opt){
  const r=await fetch('/.netlify/functions/'+path,{credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json',...((opt&&opt.headers)||{})},...(opt||{})});
  const d=await r.json().catch(()=>({}));
@@ -117,12 +140,13 @@ function render(){
   const mediaCount=(x.mediaUrls||[]).length;
   const schedule=x.plannedAt?new Date(x.plannedAt).toLocaleString('ar-IQ'):'غير محدد';
   return '<article class="post"><div class="posthead"><div><b>'+esc(x.title||'مسودة Instagram')+'</b><div class="small">'+esc(formatLabels[x.format]||x.format)+' · '+esc(new Date(x.updatedAt||x.createdAt).toLocaleString('ar-IQ'))+'</div></div><span class="pill '+esc(x.status)+'">'+esc(labels[x.status]||x.status)+'</span></div>'+
-   '<div class="caption">'+esc(x.caption)+'</div><div class="small">الوسائط: '+mediaCount+' · الموعد المقترح: '+esc(schedule)+'</div>'+
+   '<div class="caption">'+esc(x.caption)+'</div><div class="small">الوسائط: '+mediaCount+' · الموعد المقترح: '+esc(schedule)+'</div>'+(mediaCount?'<div class="actions" style="margin-top:8px">'+renderMedia(x)+'</div>':'')+
    (x.decisionNote?'<div class="status warn">ملاحظة المالكة: '+esc(x.decisionNote)+'</div>':'')+
    '<div class="actions"><button type="button" data-copy="'+esc(x.id)+'">نسخ النص</button>'+
    (editable?'<button type="button" data-edit="'+esc(x.id)+'">تعديل</button><button type="button" data-submit="'+esc(x.id)+'" class="primary">إرسال للمراجعة</button><button type="button" data-delete="'+esc(x.id)+'" class="danger">حذف</button>':'')+
    (x.status==='pending_approval'?'<button type="button" data-approve="'+esc(x.id)+'" class="primary">اعتماد المسودة</button><button type="button" data-changes="'+esc(x.id)+'">طلب تعديل</button>':'')+
-   (x.status==='approved'&&x.format!=='STORY'&&x.publishStatus!=='published'&&x.publishStatus!=='publishing'&&x.publishStatus!=='publish_uncertain'?'<button type="button" data-publish="'+esc(x.id)+'" class="primary">'+(x.publishStatus==='processing'?'متابعة النشر':'بدء النشر')+'</button>':'')+
+   (x.status==='approved'&&x.format!=='STORY'&&x.publishStatus!=='published'&&x.publishStatus!=='publishing'&&x.publishStatus!=='publish_uncertain'&&mediaReady(x)?'<button type="button" data-publish="'+esc(x.id)+'" class="primary">'+(x.publishStatus==='processing'?'متابعة النشر':'بدء النشر')+'</button>':'')+
+   (x.status==='approved'&&x.format!=='STORY'&&x.publishStatus!=='published'&&!mediaReady(x)?'<div class="status warn">المسودة معتمدة، لكنها تحتاج وسيطاً صالحاً للنشر: JPEG للصور/الكاروسيل أو MP4/MOV للـ Reel.</div>':'')+
    (x.status==='approved'&&x.format==='STORY'&&x.publishStatus!=='published'?'<div class="status warn">Stories محفوظة كمسودات فقط؛ نشرها غير مفعّل في هذا المسار.</div>':'')+
    (x.publishStatus==='published'?'<div class="status ok">نُشر على Instagram بتاريخ '+esc(x.publishedAt||'—')+(x.instagramPermalink?' · <a target="_blank" rel="noopener" href="'+esc(x.instagramPermalink)+'">فتح المنشور</a>':'')+'</div>':'')+
    (x.publishStatus==='processing'?'<div class="status warn">حاوية المحتوى قيد المعالجة لدى Instagram. استخدمي «متابعة النشر» عند جاهزيتها.</div>':'')+
@@ -133,8 +157,19 @@ function render(){
 }
 async function load(){
  $('listStatus').textContent='جارٍ التحميل…';
- try{const d=await api('instagram-content');ITEMS=d.items||[];render();$('listStatus').textContent='تم تحميل '+ITEMS.length+' عنصر.';}
- catch(e){$('listStatus').textContent=e.message;$('posts').innerHTML='<div class="status bad">تعذر تحميل القائمة.</div>';}
+ try{
+  const [d,connection]=await Promise.all([
+   api('instagram-content'),
+   api('instagram-oauth?action=status').catch(error=>({connected:false,error:error.message}))
+  ]);
+  ITEMS=d.items||[];
+  IG_ACCOUNT=connection.connected?connection.account:null;
+  $('igAccountStatus').className='status '+(connection.connected?'ok':'warn');
+  $('igAccountStatus').textContent=connection.connected
+   ?'الحساب المرتبط: @'+(IG_ACCOUNT?.username||'Instagram')+' — أي نشر يتطلب موافقة منفصلة وتأكيداً منك.'
+   :'لا يوجد حساب Instagram موثّق بعد. يمكنك تجهيز المسودات، لكن النشر لن يعمل قبل ربط الحساب والتحقق منه.'+(connection.error?' ('+connection.error+')':'');
+  render();$('listStatus').textContent='تم تحميل '+ITEMS.length+' عنصر.';
+ }catch(e){$('listStatus').textContent=e.message;$('posts').innerHTML='<div class="status bad">تعذر تحميل القائمة.</div>';}
 }
 $('form').onsubmit=async e=>{
  e.preventDefault();$('save').disabled=true;$('formMsg').textContent='جارٍ الحفظ…';
@@ -238,7 +273,8 @@ $('posts').onclick=async e=>{
   if(b.dataset.edit){fillForm(item);return;}
   if(b.dataset.publish){
    const isContinue=item.publishStatus==='processing';
-   const message=isContinue?'متابعة فحص جاهزية الحاوية وإرسال النشر إذا أصبحت جاهزة؟':'تأكيد بدء نشر هذا المحتوى على حساب Instagram المرتبط؟ هذا الإجراء سيرسل المحتوى خارج النظام.';
+   const handle=IG_ACCOUNT?.username?'@'+IG_ACCOUNT.username:'حساب Instagram المرتبط';
+   const message=isContinue?'متابعة فحص جاهزية المحتوى وإرسال أمر النشر إذا أصبح جاهزاً إلى '+handle+'؟':'تأكيد نشر «'+(item.title||'المحتوى')+'» على '+handle+'؟\n\n'+(item.caption||'').slice(0,450)+'\n\nسيتم إرسال هذا المحتوى خارج النظام.';
    if(!confirm(message))return;
    $('listStatus').textContent=isContinue?'يجري التحقق من جاهزية المحتوى…':'يجري إنشاء حاوية المحتوى لدى Instagram…';
    try{
