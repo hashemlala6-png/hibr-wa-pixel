@@ -95,6 +95,7 @@ exports.handler=async event=>{
       const id=clean(event.queryStringParameters?.deliveryId,180);if(!id)return json(400,{error:'معرّف التسليم مطلوب.'});
       const item=await stores.deliveries().get(id,{type:'json'}).catch(()=>null);if(!item)return json(404,{error:'التسليم غير موجود.'});
       const project=await getProject(item.projectId);if(!project||!await ownedByClient(project,account))return json(404,{error:'التسليم غير موجود ضمن حسابك.'});
+      if(item.accessLevel==='final'&&!await hasValidSignedContract(project))return json(403,{error:'هذا التسليم النهائي متوقف حتى يتوفر عقد موقّع يطابق قيمة المشروع وجدول الدفعات.'});
       const fullyPaid=await isFullyPaid(project);
       if(!canDownloadDelivery(item.accessLevel,fullyPaid))return json(item.accessLevel==='final'?403:403,{error:item.accessLevel==='final'?'تتاح الملفات النهائية بعد تسديد كامل قيمة المشروع.':'هذا الملف غير متاح للتنزيل.'});
       const data=await stores.files().get(item.fileKey,{type:'arrayBuffer'});if(!data)return json(404,{error:'تعذر العثور على الملف.'});
