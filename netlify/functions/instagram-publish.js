@@ -227,7 +227,7 @@ exports.handler = async event => {
         status: 'CHECK_FAILED', message: clean(error.message, 300)
       }))));
       const pendingChild = childStates.find(x => x.status === 'IN_PROGRESS' || x.status === 'PENDING');
-      const failedChild = childStates.find(x => x.status !== 'FINISHED' && x !== pendingChild);
+      const failedChild = childStates.find(x => !['FINISHED', 'IN_PROGRESS', 'PENDING'].includes(x.status));
       if (failedChild) {
         item.publishStatus = 'failed';
         item.publishError = failedChild.message || ('تعذرت معالجة إحدى صور الكاروسيل: ' + failedChild.status);
