@@ -1,7 +1,7 @@
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
-const {countReceivedPayments,canDownloadDelivery}=require('./contract-policy');
+const {countReceivedPayments,canDownloadDelivery,signedContractBlockReason}=require('./contract-policy');
 const {projectBelongsToAccount}=require('./client-project-access');
 const s={
   leads:()=>getStore({name:'hbpx-leads',consistency:'eventual'}),
@@ -37,16 +37,17 @@ exports.handler=async e=>{
       const payments=await listByProject('payments','payment-',p.id,x=>({projectId:x.projectId,amount:x.amount,method:x.method,status:x.status||'received',createdAt:x.createdAt}));
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
       const invoices=await listByProject('invoices','invoice-',p.id,x=>({number:x.number,total:x.total,dueDate:x.dueDate,status:x.status,createdAt:x.createdAt}));
-      const contracts=await listByProject('contracts','contract-',p.id,x=>({number:x.number,amount:x.amount,status:x.status,startDate:x.startDate,dueDate:x.dueDate}));
+      const contracts=await listByProject('contracts','contract-',p.id,x=>({number:x.number,amount:x.amount,status:x.status,signedAt:x.signedAt,depositAmount:x.depositAmount,balanceAmount:x.balanceAmount,startDate:x.startDate,dueDate:x.dueDate}));
       const paid=countReceivedPayments(payments,p.id);
       const projectAmount=Number(p.amount||0);
       const fullyPaid=projectAmount>0&&paid>=projectAmount;
+      const validSignedContract=!signedContractBlockReason(p.id,contracts,projectAmount);
       const deliveries=await listByProject('deliveries','delivery-',p.id,x=>{
         const hasPrivateFile=Boolean(x.fileKey);
         const accessLevel=String(x.accessLevel||(x.url?'final':'')).toLowerCase();
-        const canDownloadPrivate=hasPrivateFile&&canDownloadDelivery(accessLevel,fullyPaid);
+        const canDownloadPrivate=hasPrivateFile&&(accessLevel==='preview'||(accessLevel==='final'&&fullyPaid&&validSignedContract));
         let externalUrl='';
-        if(!hasPrivateFile&&x.url&&accessLevel==='final'&&fullyPaid){
+        if(!hasPrivateFile&&x.url&&accessLevel==='final'&&fullyPaid&&validSignedContract){
           try{
             const parsed=new URL(String(x.url));
             if(parsed.protocol==='https:')externalUrl=parsed.href;
