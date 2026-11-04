@@ -27,7 +27,7 @@ textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display
   <div><div class="eyebrow">HIBR & PIXEL · CONTENT STUDIO</div><h1>استوديو محتوى Instagram</h1><div class="muted">مسودات المحتوى، ترتيب المواعيد، وموافقة المالكة قبل أي إجراء خارجي.</div></div>
   <div class="actions"><a class="back" href="/instagram.html">ربط الحساب</a><a class="back" href="/admin.html">لوحة الإدارة</a><a class="back" href="/instagram-insights.html">تحليلات الحساب</a></div>
 </header>
-<div class="status warn"><b>وضع التشغيل الحالي:</b> هذه الصفحة تحفظ المسودات وتدير الموافقات فقط. التاريخ هو موعد مقترح للتذكير، وليس جدولة نشر تلقائية. زر الاعتماد لا ينشر المحتوى. النشر الفعلي غير مفعّل في هذه المرحلة.</div>
+<div class="status warn"><b>سياسة النشر:</b> اعتماد المسودة لا ينشرها. بعد الاعتماد يظهر إجراء مستقل باسم «بدء النشر»، ولا يُرسل الأمر إلى Instagram إلا بعد ضغط المالكة وتأكيدها. مواعيد التقويم تذكيرات وليست جدولة تلقائية. Stories تبقى مسودات في هذه النسخة.</div>
 <section class="counts" id="counts">
   <div class="count"><span class="small">كل المسودات</span><b id="nAll">—</b></div>
   <div class="count"><span class="small">تحتاج مراجعة</span><b id="nPending">—</b></div>
@@ -68,7 +68,7 @@ textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display
     <div id="formMsg" class="small" role="status" aria-live="polite"></div>
   </form>
 </section>
-<section id="calendar" class="card" style="margin-top:15px">
+<section class="card" style="margin-top:15px">
  <div class="posthead"><h2 style="margin:0">تقويم المحتوى القادم</h2><span class="small">يعرض المواعيد المخططة فقط — لا يوجد نشر تلقائي</span></div>
  <div id="calendar" class="list" style="margin-top:12px"><div class="status">جارٍ تحميل المواعيد…</div></div>
 </section>
@@ -122,6 +122,11 @@ function render(){
    '<div class="actions"><button type="button" data-copy="'+esc(x.id)+'">نسخ النص</button>'+
    (editable?'<button type="button" data-edit="'+esc(x.id)+'">تعديل</button><button type="button" data-submit="'+esc(x.id)+'" class="primary">إرسال للمراجعة</button><button type="button" data-delete="'+esc(x.id)+'" class="danger">حذف</button>':'')+
    (x.status==='pending_approval'?'<button type="button" data-approve="'+esc(x.id)+'" class="primary">اعتماد المسودة</button><button type="button" data-changes="'+esc(x.id)+'">طلب تعديل</button>':'')+
+   (x.status==='approved'&&x.publishStatus!=='published'&&x.publishStatus!=='publishing'&&x.publishStatus!=='publish_uncertain'?'<button type="button" data-publish="'+esc(x.id)+'" class="primary">'+(x.publishStatus==='processing'?'متابعة النشر':'بدء النشر')+'</button>':'')+
+   (x.publishStatus==='published'?'<div class="status ok">نُشر على Instagram بتاريخ '+esc(x.publishedAt||'—')+(x.instagramPermalink?' · <a target="_blank" rel="noopener" href="'+esc(x.instagramPermalink)+'">فتح المنشور</a>':'')+'</div>':'')+
+   (x.publishStatus==='processing'?'<div class="status warn">حاوية المحتوى قيد المعالجة لدى Instagram. استخدمي «متابعة النشر» عند جاهزيتها.</div>':'')+
+   (x.publishStatus==='publish_uncertain'?'<div class="status bad">حالة النشر غير محسومة. تحققي من حساب Instagram يدوياً قبل إعادة المحاولة.</div>':'')+
+   (x.publishStatus==='failed'?'<div class="status bad">تعذر النشر: '+esc(x.publishError||'راجعي إعدادات الحساب والوسائط.')+'</div>':'')+
    '</div></article>';
  }).join(''):'<div class="status">لا توجد مسودات بهذه الحالة.</div>';
 }
@@ -188,8 +193,22 @@ $('uploadMedia').onclick=async()=>{
  $('uploadMedia').disabled=true;status.textContent='يجري تجهيز توقيع رفع آمن…';
  try{
   const signed=await api('instagram-media-signature',{method:'POST',body:JSON.stringify({resourceType:isVideo?'video':'image'})});
+  let uploadFile=file;
+  if(!isVideo&&file.type!=='image/jpeg'){
+   status.textContent='يجري تحويل الصورة إلى JPEG مناسب للنشر على Instagram…';
+   const objectUrl=URL.createObjectURL(file);
+   try{
+    const img=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('تعذر فتح الصورة للتحويل.'));image.src=objectUrl;});
+    const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+    const context=canvas.getContext('2d');if(!context)throw new Error('تعذر تجهيز الصورة للتحويل.');
+    context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(img,0,0);
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.92));
+    if(!blob)throw new Error('تعذر تحويل الصورة إلى JPEG.');
+    uploadFile=new File([blob],file.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'});
+   }finally{URL.revokeObjectURL(objectUrl);}
+  }
   const form=new FormData();
-  form.append('file',file);
+  form.append('file',uploadFile);
   form.append('api_key',signed.apiKey);
   form.append('timestamp',String(signed.timestamp));
   form.append('folder',signed.folder);
@@ -216,6 +235,17 @@ $('posts').onclick=async e=>{
  try{
   if(b.dataset.copy){await navigator.clipboard.writeText(item.caption||'');$('listStatus').textContent='تم نسخ نص المنشور.';return;}
   if(b.dataset.edit){fillForm(item);return;}
+  if(b.dataset.publish){
+   const isContinue=item.publishStatus==='processing';
+   const message=isContinue?'متابعة فحص جاهزية الحاوية وإرسال النشر إذا أصبحت جاهزة؟':'تأكيد بدء نشر هذا المحتوى على حساب Instagram المرتبط؟ هذا الإجراء سيرسل المحتوى خارج النظام.';
+   if(!confirm(message))return;
+   $('listStatus').textContent=isContinue?'يجري التحقق من جاهزية المحتوى…':'يجري إنشاء حاوية المحتوى لدى Instagram…';
+   try{
+    const result=await api('instagram-publish',{method:'POST',body:JSON.stringify({id,action:isContinue?'continue':'start'})});
+    $('listStatus').textContent=result.message||result.item?.message||'تم تحديث حالة النشر.';
+   }catch(err){$('listStatus').textContent=err.message;}
+   await load();return;
+  }
   if(b.dataset.submit){if(!confirm('إرسال هذه المسودة إلى مراجعة المالكة؟ لن يتم النشر.'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'submit'})});}
   if(b.dataset.approve){if(!confirm('اعتماد هذه المسودة؟ الاعتماد يسجل موافقتك فقط ولا ينشر المحتوى.'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'approve'})});}
   if(b.dataset.changes){const note=prompt('ما التعديلات المطلوبة؟','');if(note===null)return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'request_changes',note})});}
