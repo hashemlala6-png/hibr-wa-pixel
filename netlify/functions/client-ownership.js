@@ -50,6 +50,24 @@ function clientIdentityKey(record) {
   return 'lead-' + (leadId || crypto.randomBytes(12).toString('hex'));
 }
 
+function resolveClientIdentity(record, accounts = []) {
+  const matches = (Array.isArray(accounts) ? accounts : []).filter(account =>
+    account && String(account.id || '').trim() && sameClientContact(record, account)
+  );
+  if (matches.length === 1) {
+    const id = String(matches[0].id).trim();
+    return { clientId: id, accountId: id, matchedAccount: true, ambiguousAccount: false };
+  }
+  // Duplicate matching accounts are ambiguous; keep a separate contact-pair identity
+  // and never attach the record to an arbitrary account.
+  return {
+    clientId: clientIdentityKey(record),
+    accountId: null,
+    matchedAccount: false,
+    ambiguousAccount: matches.length > 1
+  };
+}
+
 function ownsProject(project, account, lead = null) {
   const accountId = String(account?.id || '').trim();
   if (!accountId || !project) return false;
@@ -72,5 +90,6 @@ module.exports = {
   normalizePhoneForMatch,
   sameClientContact,
   clientIdentityKey,
+  resolveClientIdentity,
   ownsProject
 };
