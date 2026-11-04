@@ -54,12 +54,16 @@ function ownsProject(project, account, lead = null) {
   const accountId = String(account?.id || '').trim();
   if (!accountId || !project) return false;
 
-  // Direct account references are unique to the authenticated account.
+  // A linked lead is the strongest legacy ownership reference. It must match BOTH contacts;
+  // a stale/shared clientId must never override a different linked lead.
+  if (String(project.leadId || '').trim()) {
+    return sameClientContact(lead, account) || sameClientContact(project, account);
+  }
+
+  // Projects without a lead link require either a unique account ID or both exact contacts.
   if (String(project.accountId || '') === accountId) return true;
   if (String(project.clientId || '') === accountId) return true;
-
-  // Legacy records are accepted only with both exact contact fields or an exact linked lead.
-  return sameClientContact(project, account) || sameClientContact(lead, account);
+  return sameClientContact(project, account);
 }
 
 module.exports = {
