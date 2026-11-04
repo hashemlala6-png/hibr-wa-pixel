@@ -32,7 +32,7 @@
   const targets = {
     count: '#conceptCounter', sector: '#conceptSector', name: '#conceptName',
     reason: '#conceptReason', format: '#conceptFormat', code: '#conceptCode',
-    overline: '#conceptOverline', title: '#conceptArtTitle', sticker: '#conceptSticker',
+    overline: '#conceptOverline', artTitle: '#conceptArtTitle', sticker: '#conceptSticker',
     footer: '#conceptArtFooter', discipline: '#conceptDiscipline'
   };
   const nodes = Object.fromEntries(
