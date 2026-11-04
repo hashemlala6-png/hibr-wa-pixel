@@ -95,6 +95,21 @@ test('activation accepts paid and confirmed status for the deposit', () => {
   assert.equal(activationBlockReason('p1', contracts, payments, 100000), null);
 });
 
+test('blocks activation when the contract balance is not exactly 90 percent', () => {
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 89999 }];
+  const payments = [{ projectId: 'p1', amount: 10000, status: 'received' }];
+  assert.match(activationBlockReason('p1', contracts, payments, 100000), /الرصيد/);
+});
+
+test('uses the newest signed contract when multiple signed records exist', () => {
+  const contracts = [
+    { projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 89999 },
+    { projectId: 'p1', status: 'signed', signedAt: '2026-02-01', amount: 100000, depositAmount: 10000, balanceAmount: 90000 }
+  ];
+  const payments = [{ projectId: 'p1', amount: 10000, status: 'received' }];
+  assert.equal(activationBlockReason('p1', contracts, payments, 100000), null);
+});
+
 test('allows preview downloads before full payment', () => {
   assert.equal(canDownloadDelivery('preview', false), true);
   assert.equal(canDownloadDelivery('preview', true), true);
