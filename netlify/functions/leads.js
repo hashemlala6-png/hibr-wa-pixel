@@ -2,7 +2,7 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const crypto = require('crypto');
 const { logActivity } = require('./client-activity');
-const { normalizeEmail, normalizePhoneForMatch, sameClientContact, clientIdentityKey } = require('./client-ownership');
+const { resolveClientIdentity } = require('./client-ownership');
 
 // Explicit credentials are supported for deployments where Netlify does not inject Blobs context.
 // Prefer the platform-injected context; fall back to server-side environment variables only.
@@ -17,16 +17,23 @@ const store = () => getStore(blobOptions('hbpx-leads'));
 const rateStore = () => getStore(blobOptions('hbpx-lead-rate'));
 const clientIndex = () => getStore(blobOptions('hbpx-lead-index'));
 const accountsStore = () => getStore(blobOptions('hbpx-client-accounts'));
-async function findExistingAccountClientId(email,phone){
-  const identity={email,whatsapp:phone};
-  if(!normalizeEmail(email)||!normalizePhoneForMatch(phone))return null;
-  const r=await accountsStore().list({prefix:'email-'}).catch(()=>({blobs:[]}));
+async function listClientAccounts(){
+  const r=await accountsStore().list({prefix:'email-',limit:1000});
+  const out=[];
   for(const b of r.blobs||[]){
     const account=await accountsStore().get(b.key,{type:'json'}).catch(()=>null);
-    if(account&&sameClientContact(account,identity))return account.id||null;
+    if(account)out.push(account);
   }
-  return null;
+  return out;
 }
+async function resolveLeadIdentity(lead){
+  const accounts=await listClientAccounts().catch(err=>{
+    console.error('account identity lookup failed',err?.message||err);
+    return [];
+  });
+  return resolveClientIdentity(lead,accounts);
+}
+
 const requestIp = (event) => String(event.headers?.['x-nf-client-connection-ip'] || event.headers?.['x-forwarded-for'] || 'unknown').split(',')[0].trim().slice(0,120);
 async function rateLimit(ip){
   const key='ip-'+crypto.createHash('sha256').update(ip).digest('hex').slice(0,32);
@@ -141,9 +148,10 @@ exports.handler = async (event) => {
     if (!name || !whatsapp) return json(400, { error: 'الاسم ورقم واتساب مطلوبان.' });
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: 'البريد الإلكتروني غير صحيح.' });
     const id = `lead-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const existingAccountClientId = await findExistingAccountClientId(email, whatsapp).catch(err=>{console.error('account identity lookup failed',err?.message||err);return null;});
-    // Never group leads by phone alone: shared family/business numbers are common.
-    const clientId = existingAccountClientId || clientIdentityKey({id,email,whatsapp});
+    // Resolve an account only when exactly one account matches BOTH normalized contacts.
+    // If none (or multiple) match, keep this lead under its own pair-specific identity.
+    const identity = await resolveLeadIdentity({id,email,whatsapp});
+    const clientId = identity.clientId;
     const lead = {
       id, clientId, name, whatsapp,
       email, service, budget, details,
@@ -209,7 +217,8 @@ exports.handler = async (event) => {
     else if (b.lossReason !== undefined) current.lossReason = clean(b.lossReason, 160);
     current.updatedAt = new Date().toISOString();
     await store().setJSON(b.id, current);
-    await logActivity(current.clientId||b.id,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
+    const identity = await resolveLeadIdentity(current);
+    await logActivity(identity.clientId,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
     let customerNotifications = null;
     if (current.status === 'approved' && previousStatus !== 'approved') customerNotifications = await notifyClientApproval(current);
     return json(200, { lead: current, customerNotifications });
