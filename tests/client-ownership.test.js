@@ -14,6 +14,7 @@ test('Iraqi WhatsApp variants normalize to the same canonical number', () => {
   assert.equal(normalizePhoneForMatch('07712345678'), expected);
   assert.equal(normalizePhoneForMatch('+964 771 234 5678'), expected);
   assert.equal(normalizePhoneForMatch('00964-771-234-5678'), expected);
+  assert.equal(normalizePhoneForMatch('00964-0771-234-5678'), expected);
   assert.equal(normalizePhoneForMatch('9647712345678'), expected);
 });
 
