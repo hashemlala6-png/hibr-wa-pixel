@@ -46,3 +46,6 @@
   for = "/instagram-content.html"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[functions."instagram-reminders"]
+  schedule = "*/15 * * * *"
