@@ -83,7 +83,7 @@ async function sync(days) {
   const connection = await store(CONNECTION_STORE).get(CONNECTION_KEY, { type: 'json' });
   if (!connection?.token || !connection?.profile?.userId) return json(409, { error: 'لا يوجد حساب Instagram مربوط. اربطي الحساب أولاً.' });
   const token = decrypt(connection.token);
-  const since = dayOffset(days), until = new Date().toISOString().slice(0, 10);
+  const since = dayOffset(days - 1), until = new Date().toISOString().slice(0, 10);
   const profilePromise = graph('me', token, { fields: 'user_id,username,account_type,followers_count,media_count' })
     .catch(async () => graph('me', token, { fields: 'user_id,username,account_type' }));
   const mediaPromise = graph('me/media', token, {
