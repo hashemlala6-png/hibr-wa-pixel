@@ -1,6 +1,7 @@
 const { env } = require('./env');
 const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
+const { clientIdentityKey } = require('./client-ownership');
 const blobOptions = (name) => { const options={name,consistency:'strong'}; const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae'; const token=process.env.NETLIFY_AUTH_TOKEN; if(siteID&&token){options.siteID=siteID;options.token=token;} return options; };
 const stores = {
   leads:()=>getStore(blobOptions('hbpx-leads')),
@@ -26,13 +27,21 @@ async function build(){
  ]);
  const saved=await all('clients','client-'); const savedMap=new Map(saved.map(x=>[x.id,x]));
  const groups=new Map();
- leads.forEach(l=>{const cid=l.clientId||l.id;if(!groups.has(cid))groups.set(cid,[]);groups.get(cid).push(l)});
+ const accountPairMap=new Map();
+ for(const account of accounts){
+   const pairKey=clientIdentityKey(account);
+   if(pairKey&&!pairKey.startsWith('lead-'))accountPairMap.set(pairKey,account.id);
+ }
+ leads.forEach(lead=>{
+   const pairKey=clientIdentityKey(lead);
+   const cid=accountPairMap.get(pairKey)||pairKey;
+   if(!groups.has(cid))groups.set(cid,[]);
+   groups.get(cid).push(lead);
+ });
  const accountMap=new Map();
- for(const a of accounts){
-   accountMap.set(a.id,a);
-   if(a.clientId) accountMap.set(a.clientId,a);
-   const cid=a.clientId||a.id;
-   if(!groups.has(cid)) groups.set(cid,[]);
+ for(const account of accounts){
+   accountMap.set(account.id,account);
+   if(!groups.has(account.id))groups.set(account.id,[]);
  }
  return Array.from(groups.entries()).map(([id,group])=>{
    const account=accountMap.get(id)||null;
