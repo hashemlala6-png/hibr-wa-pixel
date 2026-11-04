@@ -57,6 +57,14 @@ test('a linked lead from another contact overrides a colliding accountId', () =>
   assert.equal(ownsProject(project,account,otherLead),false);
 });
 
+test('project contact fields cannot override a linked lead owned by another account', () => {
+  const account = {id:'account-a',email:'a@example.com',whatsapp:'07712345678'};
+  const project = {id:'project-conflict',leadId:'lead-b',email:'a@example.com',whatsapp:'07712345678'};
+  const linkedLead = {id:'lead-b',email:'b@example.com',whatsapp:'07712345678'};
+  assert.equal(ownsProject(project,account,linkedLead),false);
+  assert.equal(ownsProject(project,account,null),false);
+});
+
 test('a project linked through an exact lead contact pair belongs to that account', () => {
   const account = {id:'email-account-a',email:'a@example.com',whatsapp:'07712345678'};
   const project = {id:'project-1',leadId:'lead-1',clientId:'legacy-phone-group'};
