@@ -20,7 +20,7 @@ async function listDue(now) {
     const page = await content.list({ prefix: 'post-', limit: 100, cursor });
     for (const blob of page.blobs || []) {
       const item = await content.get(blob.key, { type: 'json' }).catch(() => null);
-      if (!item || item.status !== 'approved' || item.reminderSentAt || !item.plannedAt) continue;
+      if (!item || item.status !== 'approved' || item.publishStatus === 'published' || item.reminderSentAt || !item.plannedAt) continue;
       const planned = new Date(item.plannedAt).getTime();
       if (Number.isFinite(planned) && planned <= now) due.push({ key: blob.key, item });
     }
