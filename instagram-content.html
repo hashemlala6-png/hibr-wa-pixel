@@ -48,6 +48,13 @@ textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display
     <label class="small" for="mediaUrls">روابط الوسائط العامة — رابط واحد في كل سطر</label>
     <textarea id="mediaUrls" class="field" rows="3" placeholder="https://..."></textarea>
     <div class="small">المنشور يقبل رابطاً واحداً، والكاروسيل يحتاج رابطين على الأقل. لا تُحمّل هذه الصفحة الصور أو الفيديوهات إلى الإنترنت.</div>
+    <div class="status" style="margin:12px 0">
+      <b>فحص جودة التصميم بالذكاء الاصطناعي</b>
+      <div class="small">ارفعي صورة المنشور أو شريحة واحدة من الكاروسيل لفحص النص العربي والتكوين والقص والوضوح. المقاس المستهدف 1080×1350. الصور فقط حالياً، وبحد أقصى 4MB.</div>
+      <input id="visualFile" class="field" type="file" accept="image/png,image/jpeg,image/webp">
+      <div class="actions"><button id="runVisualQA" type="button">فحص جودة الصورة</button></div>
+      <div id="qaResult" class="small" role="status" aria-live="polite"></div>
+    </div>
     <label class="small" for="altText">وصف بديل للصورة (اختياري)</label>
     <input id="altText" class="field" maxlength="1000" placeholder="وصف مختصر للصورة لقابلية الوصول">
     <label class="small" for="plannedAt">موعد النشر المقترح (اختياري)</label>
@@ -128,6 +135,38 @@ $('form').onsubmit=async e=>{
  }catch(e){$('formMsg').textContent=e.message;}
  finally{$('save').disabled=false;}
 };
+$('runVisualQA').onclick=async()=>{
+ const status=$('qaResult'),file=$('visualFile').files?.[0];
+ if(!file){status.textContent='اختاري صورة أولاً.';return;}
+ if(!['image/png','image/jpeg','image/webp'].includes(file.type)){status.textContent='الصيغ المدعومة: PNG وJPG وWEBP.';return;}
+ if(file.size>4*1024*1024){status.textContent='الصورة أكبر من 4MB. اختاري نسخة أصغر.';return;}
+ $('runVisualQA').disabled=true;status.textContent='يجري فحص المقاس والنص والتكوين والوضوح…';
+ try{
+  const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('تعذر قراءة الصورة من الجهاز.'));reader.readAsDataURL(file);});
+  const dimensions=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve({width:img.naturalWidth,height:img.naturalHeight});img.onerror=()=>reject(new Error('تعذر فتح الصورة.'));img.src=dataUrl;});
+  const d=await api('visual-qa',{method:'POST',body:JSON.stringify({
+   projectId:'instagram-content',
+   name:$('title').value.trim()||'Instagram content draft',
+   spec:'صورة لمنشور أو شريحة كاروسيل على حساب Instagram احترافي. يجب أن يكون المقاس الدقيق 1080×1350 بكسل بنسبة 4:5. افحص النص العربي حرفياً، سلامة الحروف، عدم التداخل أو التشوه، وضوح النص، القص، الهوامش الآمنة، التوازن البصري، التباين، النظافة، وغياب العناصر غير المطلوبة. لا تخمّن النص إذا لم يكن واضحاً.',
+   imageBase64:dataUrl,
+   expectedWidth:1080,expectedHeight:1350,
+   actualWidth:dimensions.width,actualHeight:dimensions.height,
+   fileName:file.name,fileType:file.type,fileSize:file.size
+  })});
+  const x=d.inspection?.result||{};
+  const checks=Array.isArray(x.checks)?x.checks:[];
+  const fixes=Array.isArray(x.must_fix)?x.must_fix:[];
+  const opportunities=Array.isArray(x.wow_opportunities)?x.wow_opportunities:[];
+  const escList=arr=>arr.map(v=>'<li>'+esc(typeof v==='string'?v:JSON.stringify(v))+'</li>').join('');
+  status.innerHTML='<div class="status '+(x.passed?'ok':'bad')+'"><b>'+(x.passed?'اجتاز الفحص':'لم يجتز الفحص')+'</b> · الدرجة '+Number(x.score||0)+'/100 · ملاحظات حرجة '+Number(x.criticalCount||0)+'<div>'+esc(x.summary||'')+'</div></div>'+
+   '<div class="small">المقاس المكتشف: '+dimensions.width+'×'+dimensions.height+' · رقم الفحص: '+esc(d.inspection?.id||'')+'</div>'+
+   (checks.length?'<b>نتائج الفحص</b><ul>'+checks.map(z=>'<li>'+esc(z.name||'')+' — '+esc(z.status||'')+': '+esc(z.evidence||z.action||'')+'</li>').join('')+'</ul>':'')+
+   (fixes.length?'<b>ما يجب إصلاحه</b><ul>'+escList(fixes)+'</ul>':'')+
+   (opportunities.length?'<b>فرص التحسين</b><ul>'+escList(opportunities)+'</ul>':'');
+ }catch(e){status.textContent='تعذر الفحص: '+e.message;}
+ finally{$('runVisualQA').disabled=false;}
+};
+$('format').onchange=()=>{const imageMode=['IMAGE','CAROUSEL'].includes($('format').value);$('runVisualQA').disabled=!imageMode;$('qaResult').textContent=imageMode?'فحص الصور متاح لهذا النوع.':'فحص الصور متاح للمنشورات والكاروسيل فقط حالياً.';};
 $('clear').onclick=()=>{resetForm();$('formMsg').textContent='';};
 $('refresh').onclick=load;$('filter').onchange=render;
 $('posts').onclick=async e=>{
