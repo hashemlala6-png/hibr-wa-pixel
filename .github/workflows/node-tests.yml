@@ -1,0 +1,25 @@
+name: Node tests
+
+on:
+  push:
+    branches:
+      - main
+      - feature/customer-journey-experience
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check function syntax
+        run: find netlify/functions -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Run tests
+        run: node --test

@@ -3,7 +3,7 @@ const { requireAdmin, json } = require('./auth-utils');
 const { getAIContext, contextPrompt, saveAIHistory } = require('./ai-context');
 const crypto = require('crypto');
 const { logActivity } = require('./client-activity');
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const dnaStore = () => getStore({ name: 'hbpx-creative-dna', consistency: 'strong' });
 async function saveDNA(clientId, item) {
   const id = `dna-${clientId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
@@ -110,6 +110,7 @@ async function verifyImageEdit({apiKey, originalBase64, editedBase64, plan}) {
 }
 
 exports.handler=async event=>{
+  connectLambda(event);
  if(event.httpMethod==='OPTIONS')return json(204,{});const auth=requireAdmin(event);if(auth)return auth;if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
  let p={};try{p=JSON.parse(event.body||'{}')}catch{return json(400,{error:'بيانات غير صالحة.'})}
  const clientId=clean(p.clientId,120), instruction=clean(p.instruction,3000), mode=clean(p.mode,40)||'writing';

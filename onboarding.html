@@ -1,1 +1,119 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="ابدأ مشروعك مع حبر وبكسل."><title>ابدأ مشروعك — حبر وبكسل</title><link rel="stylesheet" href="public.css?v=43"></head><body><div class="site"><header class="nav"><a class="logo" href="index.html">حبر وبكسل<i></i></a><nav class="navlinks"><a href="index.html">الرئيسية</a><a href="services.html">الخدمات</a><a href="portfolio.html">الأعمال</a><a href="contact.html">تواصل</a></nav><div class="nav-actions"><button class="menu" aria-label="القائمة">☰</button></div></header></div><main><section class="site intake"><div class="intake-head"><div><div class="kicker">START A PROJECT / 01</div><h1 class="intake-title">خلينا نعرف<br>وين تريد <em>توصل.</em></h1></div><p class="intake-lead">هذه مو استمارة طويلة. نحتاج الأساسيات فقط حتى نفهم نقطة البداية ونرجع لك بخطوة واضحة.</p></div><form id="startForm" name="project-intake" method="POST" data-netlify="true" class="intake-form" novalidate><input type="hidden" name="form-name" value="project-intake"><input type="hidden" name="bot-field" value="" aria-hidden="true"><div class="intake-row"><label class="intake-label" for="name">الاسم / الشركة</label><input class="intake-control" id="name" name="name" autocomplete="name" required placeholder="اسمك أو اسم المشروع"></div><div class="intake-row"><label class="intake-label" for="whatsapp">واتساب</label><input class="intake-control" id="whatsapp" name="whatsapp" inputmode="tel" autocomplete="tel" required placeholder="077xxxxxxxx"></div><div class="intake-row"><label class="intake-label" for="email">البريد الإلكتروني</label><input class="intake-control" id="email" name="email" type="email" autocomplete="email" required placeholder="name@example.com"></div><div class="intake-row"><label class="intake-label" for="service">الخدمة</label><select class="intake-control" id="service" name="service"><option>هوية وحضور بصري</option><option>محتوى وتصميم</option><option>تجربة رقمية</option><option>استراتيجية ونمو</option></select></div><div class="intake-row"><label class="intake-label" for="budget">الميزانية التقريبية</label><select class="intake-control" id="budget" name="budget"><option>أحتاج توجيه</option><option>أقل من 500 ألف</option><option>500 ألف – 1 مليون</option><option>1 – 3 مليون</option><option>أكثر من 3 مليون</option></select></div><div class="intake-row"><label class="intake-label" for="details">شنو تريد يتحسن؟</label><textarea class="intake-control intake-textarea" id="details" name="details" required placeholder="المشكلة، الهدف، الجمهور، أو الشيء اللي تريد يتغير..."></textarea></div><div class="intake-actions"><button class="solid-btn" type="submit">أرسل البداية ←</button><button class="outline-btn wa-outline" type="button" data-wa>واتساب مباشر</button></div><div id="msg" class="status" aria-live="polite"></div><p class="intake-note">إذا ما تعرف أي خدمة تناسبك، اختار «أحتاج توجيه» واحچي لنا عن الهدف.</p></form></section></main><div class="site footer"><span>حبر وبكسل — Digital Studio</span><span>فكرة أوضح. حضور يشتغل.</span></div><script src="public.js?v=43"></script><script>(function(){const q=new URLSearchParams(location.search),map={identity:'هوية وحضور بصري',content:'محتوى وتصميم',digital:'تجربة رقمية',growth:'استراتيجية ونمو'},sel=document.getElementById('service');if(map[q.get('service')])sel.value=map[q.get('service')];window.hwp?.trackFunnel('onboarding_start');document.getElementById('startForm').addEventListener('submit',async function(e){e.preventDefault();const msg=document.getElementById('msg'),btn=this.querySelector('button[type="submit"]');const payload={name:document.getElementById('name').value.trim(),whatsapp:document.getElementById('whatsapp').value.trim(),email:document.getElementById('email').value.trim(),service:sel.value,budget:document.getElementById('budget').value,details:document.getElementById('details').value.trim(),source:'public-onboarding'};msg.textContent='جارٍ إرسال البداية…';btn.disabled=true;try{const r=await fetch('/.netlify/functions/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'تعذر الإرسال');msg.style.color='#3f8a63';msg.textContent='تم استلام البداية ✓ راح نتواصل وياك قريباً.';window.hwp?.trackFunnel('quote_request');this.reset()}catch(err){msg.style.color='#b65757';msg.textContent=err.message||'تعذر إرسال الطلب.'}finally{btn.disabled=false}})})();</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="ابدأ مشروعك مع حبر وبكسل بخطوات بسيطة وواضحة.">
+<meta name="theme-color" content="#f7f8fa">
+<title>خلّينا نبدأ — حبر وبكسل</title>
+<link rel="stylesheet" href="public.css?v=45">
+<meta name="theme-color" content="#F3EBDD"><link rel="stylesheet" href="light-theme.css?v=1"></head>
+<body class="hp44">
+<header class="site nav hp-nav">
+<a class="logo" href="index.html" aria-label="حبر وبكسل">حبر<span>وبكسل</span><i></i></a>
+<nav class="navlinks"><a href="index.html">الرئيسية</a><a href="discovery.html">مساحة الحلول</a><a href="services.html">الخدمات</a><a href="portfolio.html">الأعمال</a><a href="contact.html">تواصل</a></nav>
+<div class="nav-actions"><a class="text-link" href="login.html?next=account">دخول العميل</a><button class="menu" aria-label="القائمة">☰</button></div>
+</header>
+<main class="hp-journey">
+<section class="site journey-shell">
+<div class="journey-intro"><span class="hp-label">LET'S MAKE IT REAL / 01</span><h1>كل مشروع كبير<br>يبدأ <em>بسؤال صغير.</em></h1><p>ما تحتاج تعرف كل التفاصيل هسه. جاوبنا خطوة خطوة، وإحنا نرتّب الصورة وياك.</p></div>
+<div class="journey-card">
+<div class="journey-top"><span id="stepCount">01 / 04</span><div class="journey-progress" aria-label="تقدم الخطوات"><i id="progressFill"></i></div></div>
+<form id="projectWizard" novalidate>
+<section class="journey-step" data-step="0">
+<div class="journey-question"><span>أولاً</span><h2>شنو تحتاج من حبر وبكسل؟</h2><p>اختار الأقرب لفكرتك. تگدر تغيّره بعدين.</p></div>
+<div class="choice-grid">
+<button type="button" class="choice" data-service="هوية وحضور بصري"><span class="choice-no">01</span><strong>هوية وحضور بصري</strong><small>أريد مشروعي يبين بشخصية واضحة</small><b>↗</b></button>
+<button type="button" class="choice" data-service="محتوى وتصميم"><span class="choice-no">02</span><strong>محتوى وتصميم</strong><small>أحتاج أفكاراً ونصوصاً وتصاميم</small><b>↗</b></button>
+<button type="button" class="choice" data-service="تجربة رقمية"><span class="choice-no">03</span><strong>موقع أو تجربة رقمية</strong><small>أريد تجربة سهلة تخدم زبائني</small><b>↗</b></button>
+<button type="button" class="choice" data-service="استراتيجية ونمو"><span class="choice-no">04</span><strong>ترتيب ونمو</strong><small>أحتاج أفهم شنو الخطوة الصحيحة</small><b>↗</b></button>
+</div>
+</section>
+<section class="journey-step" data-step="1" hidden>
+<div class="journey-question"><span>ثانياً</span><h2>شنو النتيجة اللي تتمنى توصللها؟</h2><p>مو مطلوب جواب مثالي؛ اختار الأقرب.</p></div>
+<div class="goal-list">
+<button type="button" class="goal" data-goal="أريد أبدأ مشروع أو علامة من الصفر">أريد أبدأ من الصفر <b>↗</b></button>
+<button type="button" class="goal" data-goal="أريد أطور شكل وحضور مشروعي الحالي">أريد أطور مشروعي الحالي <b>↗</b></button>
+<button type="button" class="goal" data-goal="أريد محتوى يجذب العملاء ويشرح قيمة مشروعي">أريد أوصل للعملاء بشكل أفضل <b>↗</b></button>
+<button type="button" class="goal" data-goal="أحتاج مساعدة بتحديد الاتجاه المناسب">بعدني أبحث عن الاتجاه المناسب <b>↗</b></button>
+</div>
+<label class="journey-field"><span>إذا تحب، احچيلنا أكثر (اختياري)</span><textarea id="projectDetails" rows="3" maxlength="1800" placeholder="شنو طبيعة مشروعك؟ شنو الشي اللي تريد يتغيّر؟"></textarea></label>
+</section>
+<section class="journey-step" data-step="2" hidden>
+<div class="journey-question"><span>ثالثاً</span><h2>خلّينا نتعرف عليك.</h2><p>حتى نعرف لمن نرجع ونناقش الفكرة.</p></div>
+<div class="journey-fields">
+<label class="journey-field"><span>اسمك أو اسم المشروع</span><input id="clientName" autocomplete="name" maxlength="120" required placeholder="مثلاً: متجر ..."></label>
+<label class="journey-field"><span>رقم واتساب</span><input id="clientPhone" autocomplete="tel" inputmode="tel" required maxlength="40" placeholder="077xxxxxxxx"></label>
+<label class="journey-field"><span>البريد الإلكتروني (اختياري)</span><input id="clientEmail" type="email" autocomplete="email" maxlength="254" placeholder="name@example.com"></label>
+</div>
+</section>
+<section class="journey-step" data-step="3" hidden>
+<div class="journey-question"><span>أخيراً</span><h2>هاي بداية فكرتك.</h2><p>راجع الملخص، وإذا كلشي صحيح أرسل البداية. ماكو التزام أو دفع بهالمرحلة.</p></div>
+<div class="journey-summary" id="journeySummary"></div>
+<label class="journey-consent"><input id="consent" type="checkbox" required><span>أوافق على استخدام معلوماتي للتواصل بخصوص هذا الطلب.</span></label>
+</section>
+<div class="journey-message" id="journeyMessage" role="status" aria-live="polite"></div>
+<div class="journey-controls"><button class="journey-back" id="backStep" type="button" hidden>رجوع</button><span class="journey-hint" id="stepHint">خطوة واحدة كل مرة. خذ راحتك.</span><button class="journey-next" id="nextStep" type="button" disabled>نكمل <span>←</span></button><button class="journey-next" id="submitProject" type="submit" hidden>أرسل بداية المشروع <span>↗</span></button></div>
+</form>
+</div>
+<div class="journey-foot"><span>H I B R & PIXEL</span><span>فكرة أوضح. بداية أسهل.</span><a href="https://wa.me/9647721971156" target="_blank" rel="noopener">تفضل تحچي ويانه مباشرة؟ واتساب ↗</a></div>
+</section>
+</main>
+<script src="public.js?v=45"></script>
+<script>
+(function(){
+const form=document.getElementById('projectWizard'),steps=[...document.querySelectorAll('.journey-step')],$=id=>document.getElementById(id);
+const params=new URLSearchParams(location.search);
+let discoverySteps=[];try{const parsed=JSON.parse(params.get('steps')||'[]');if(Array.isArray(parsed))discoverySteps=parsed.slice(0,5).map(x=>String(x).slice(0,240))}catch{}
+const state={service:params.get('service')||'',goal:params.get('goal')||'',details:params.get('challenge')||'',audience:params.get('audience')||'',success:params.get('success')||'',map:{direction:params.get('direction')||'',role:params.get('role')||'',first:params.get('first')||'',outside:params.get('outside')||'',boundary:params.get('boundary')||'',steps:discoverySteps},name:'',phone:'',email:''};
+const serviceMap={identity:'هوية وحضور بصري',content:'محتوى وتصميم',digital:'تجربة رقمية',growth:'استراتيجية ونمو'};
+if(serviceMap[state.service])state.service=serviceMap[state.service];
+$('projectDetails').value=state.details;
+document.querySelectorAll('[data-goal]').forEach(b=>b.classList.toggle('selected',b.dataset.goal===state.goal));
+let current=0;
+function setMessage(text,error=true){$('journeyMessage').textContent=text;$('journeyMessage').classList.toggle('is-error',!!error)}
+function valid(){
+ if(current===0)return !!state.service;
+ if(current===1)return !!state.goal;
+ if(current===2){const phone=$('clientPhone').value.trim(),name=$('clientName').value.trim(),email=$('clientEmail').value.trim();return !!name&&/^[+()\d\s-]{7,40}$/.test(phone)&&(!email||/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))}
+ return $('consent').checked;
+}
+function render(){
+ steps.forEach((s,i)=>s.hidden=i!==current);
+ $('stepCount').textContent=String(current+1).padStart(2,'0')+' / 04';
+ $('progressFill').style.width=((current+1)/4*100)+'%';
+ $('backStep').hidden=current===0;
+ $('nextStep').hidden=current===3;
+ $('submitProject').hidden=current!==3;
+ $('nextStep').disabled=!valid();
+ $('submitProject').disabled=!valid();
+ $('stepHint').textContent=current===3?'كلشي واضح؟ نرسلها للفريق حتى يراجعها.':'خطوة واحدة كل مرة. خذ راحتك.';
+ if(current===3)summary();
+}
+function summary(){
+ $('journeySummary').innerHTML='';
+ const rows=[['الخدمة',state.service],['الهدف',state.goal],['التفاصيل',state.details||'ماكو تفاصيل إضافية'],['الاسم',state.name],['واتساب',state.phone],['البريد',state.email||'غير مضاف']];
+ rows.forEach(([k,v])=>{const row=document.createElement('div');row.className='summary-row';const key=document.createElement('span');key.textContent=k;const val=document.createElement('strong');val.textContent=v;row.append(key,val);$('journeySummary').append(row)});
+}
+document.querySelectorAll('[data-service]').forEach(b=>{b.addEventListener('click',()=>{state.service=b.dataset.service;document.querySelectorAll('[data-service]').forEach(x=>x.classList.toggle('selected',x===b));render()});if(b.dataset.service===state.service)b.classList.add('selected')});
+document.querySelectorAll('[data-goal]').forEach(b=>b.addEventListener('click',()=>{state.goal=b.dataset.goal;document.querySelectorAll('[data-goal]').forEach(x=>x.classList.toggle('selected',x===b));render()}));
+$('projectDetails').addEventListener('input',e=>{state.details=e.target.value;render()});
+['clientName','clientPhone','clientEmail'].forEach(id=>$(id).addEventListener('input',()=>{state.name=$('clientName').value.trim();state.phone=$('clientPhone').value.trim();state.email=$('clientEmail').value.trim();render()}));
+$('consent').addEventListener('change',render);
+$('nextStep').addEventListener('click',()=>{if(!valid()){setMessage('اختار إجابة حتى نكمل.');return}setMessage('',false);current=Math.min(3,current+1);render()});
+$('backStep').addEventListener('click',()=>{setMessage('',false);current=Math.max(0,current-1);render()});
+form.addEventListener('submit',async e=>{
+ e.preventDefault();if(!valid()){setMessage('راجع الموافقة والبيانات المطلوبة.');return}
+ const btn=$('submitProject');btn.disabled=true;setMessage('دا نرسل بداية مشروعك…',false);
+ const payload={name:state.name,whatsapp:state.phone,email:state.email,service:state.service,budget:'أحتاج توجيه',details:[state.goal,state.details].filter(Boolean).join(' — '),source:state.audience?'guided-solution-discovery':'guided-project-journey',discovery:state.audience?{audience:state.audience,challenge:state.details,success:state.success,map:state.map}:null};
+ try{
+ const r=await fetch('/.netlify/functions/leads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'تعذر إرسال الطلب، حاول مرة ثانية.');
+ setMessage('وصلتنا البداية بنجاح ✓ رقم طلبك محفوظ. راح نتواصل وياك حتى نرتب الخطوة التالية.',false);
+ form.innerHTML='<div class="journey-success"><span>✓</span><h2>من هنا تبدي الحكاية.</h2><p>استلمنا معلوماتك. فريق حبر وبكسل راح يراجع الفكرة ويتواصل وياك.</p><a class="solid-btn" href="index.html">العودة للموقع</a><a class="journey-login" href="login.html?next=account">عندك حساب؟ ادخل لمساحتك</a></div>';
+ window.hwp?.trackFunnel('guided_project_submit');
+ }catch(err){setMessage(err.message||'صار خطأ غير متوقع.');btn.disabled=false}
+});
+render();
+})();
+</script>
+</body></html>

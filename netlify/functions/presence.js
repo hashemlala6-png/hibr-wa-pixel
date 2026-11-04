@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, verifySession, json } = require('./auth-utils');
 
 const store = () => getStore({ name: 'hbpx-presence', consistency: 'strong' });
@@ -47,6 +47,7 @@ async function upsert(key, record) {
 }
 
 exports.handler = async (event, context) => {
+  connectLambda(event);
   if (event.httpMethod === 'OPTIONS') return json(204, {});
   const action = event.queryStringParameters?.action || 'heartbeat';
 

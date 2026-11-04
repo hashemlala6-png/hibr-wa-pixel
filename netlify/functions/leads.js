@@ -2,6 +2,7 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const crypto = require('crypto');
 const { logActivity } = require('./client-activity');
+const {sameClientIdentity}=require('./client-identity');
 
 // Explicit credentials are supported for deployments where Netlify does not inject Blobs context.
 // Prefer the platform-injected context; fall back to server-side environment variables only.
@@ -16,19 +17,14 @@ const store = () => getStore(blobOptions('hbpx-leads'));
 const rateStore = () => getStore(blobOptions('hbpx-lead-rate'));
 const clientIndex = () => getStore(blobOptions('hbpx-lead-index'));
 const accountsStore = () => getStore(blobOptions('hbpx-client-accounts'));
-function normalizeEmail(v){return String(v||'').trim().toLowerCase();}
-function normalizePhone(v){return String(v||'').replace(/\D/g,'').replace(/^0/,'964');}
 async function findExistingAccountClientId(email,phone){
-  const targetEmail=normalizeEmail(email), targetPhone=normalizePhone(phone);
-  if(!targetEmail&&!targetPhone)return null;
+  if(!String(email||'').trim()||!String(phone||'').trim())return null;
   const r=await accountsStore().list({prefix:'email-'}).catch(()=>({blobs:[]}));
   let best=null;
   for(const b of r.blobs||[]){
     const a=await accountsStore().get(b.key,{type:'json'}).catch(()=>null);
     if(!a)continue;
-    const emailMatch=targetEmail&&normalizeEmail(a.email)===targetEmail;
-    const phoneMatch=targetPhone&&normalizePhone(a.whatsapp)===targetPhone;
-    if(emailMatch||phoneMatch){best=a;break;}
+    if(sameClientIdentity({email,whatsapp:phone},a)){best=a;break;}
   }
   return best?.clientId||best?.id||null;
 }
@@ -142,6 +138,10 @@ exports.handler = async (event) => {
     let b;
     try { b = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'بيانات غير صالحة' }); }
     const name = clean(b.name, 120), whatsapp = clean(b.whatsapp, 40), email = clean(b.email, 254), service = clean(b.service, 120), budget = clean(b.budget, 120), details = clean(b.details, 3000);
+    const discoveryInput = b.discovery && typeof b.discovery === 'object' && !Array.isArray(b.discovery) ? b.discovery : null;
+    const discoveryAudience = ['idea','business','team','institution'].includes(discoveryInput?.audience) ? discoveryInput.audience : '';
+    const mapInput = discoveryInput?.map && typeof discoveryInput.map === 'object' && !Array.isArray(discoveryInput.map) ? discoveryInput.map : {};
+    const discovery = discoveryAudience ? { audience: discoveryAudience, challenge: clean(discoveryInput.challenge, 1200), success: clean(discoveryInput.success, 240), map: { direction: clean(mapInput.direction, 300), role: clean(mapInput.role, 400), first: clean(mapInput.first, 300), outside: clean(mapInput.outside, 300), boundary: clean(mapInput.boundary, 700), steps: Array.isArray(mapInput.steps) ? mapInput.steps.slice(0,5).map(x=>clean(x,240)) : [] } } : null;
     if (String(b.website || '').trim()) return json(400, { error: 'تعذر معالجة الطلب.' });
     if (!name || !whatsapp) return json(400, { error: 'الاسم ورقم واتساب مطلوبان.' });
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: 'البريد الإلكتروني غير صحيح.' });
@@ -154,6 +154,7 @@ exports.handler = async (event) => {
       email, service, budget, details,
       activity: clean(b.activity || service, 180), message: clean(b.message || details, 3000),
       source: clean(b.source || 'contact-form', 80),
+      discovery,
       package: clean(b.package, 120),
       status: 'new', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
     };
@@ -205,18 +206,35 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'PATCH') {
     let b;
     try { b = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'بيانات غير صالحة' }); }
-    if (!b.id || !allowedStatuses.includes(b.status)) return json(400, { error: 'العميل أو الحالة غير صحيحة.' });
-    const current = await store().get(b.id, { type: 'json' });
+    if (!b.id || (b.status !== undefined && !allowedStatuses.includes(b.status))) return json(400, { error: 'معرّف العميل أو الحالة غير صحيحة.' });
+    const current = await store().get(clean(b.id, 200), { type: 'json' });
     if (!current) return json(404, { error: 'العميل غير موجود.' });
-    const previousStatus = current.status;
-    current.status = b.status;
-    if (b.status === 'lost') current.lossReason = clean(b.lossReason, 160);
-    else if (b.lossReason !== undefined) current.lossReason = clean(b.lossReason, 160);
+    let customerNotifications = null;
+    if (b.status !== undefined) {
+      const previousStatus = current.status;
+      current.status = b.status;
+      if (b.status === 'lost') current.lossReason = clean(b.lossReason, 160);
+      else if (b.lossReason !== undefined) current.lossReason = clean(b.lossReason, 160);
+      if (current.status === 'approved' && previousStatus !== 'approved') customerNotifications = await notifyClientApproval(current);
+      await logActivity(current.clientId||b.id,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
+    }
+    if (b.proposalDraft !== undefined) {
+      const p = b.proposalDraft && typeof b.proposalDraft === 'object' && !Array.isArray(b.proposalDraft) ? b.proposalDraft : {};
+      const list = v => Array.isArray(v) ? v.slice(0, 12).map(x=>clean(x,240)).filter(Boolean) : [];
+      current.proposalDraft = {
+        summary: clean(p.summary, 1200),
+        scope: clean(p.scope, 1600),
+        deliverables: list(p.deliverables),
+        milestones: list(p.milestones),
+        estimate: clean(p.estimate, 300),
+        priceNotes: clean(p.priceNotes, 500),
+        status: 'internal_review',
+        updatedAt: new Date().toISOString()
+      };
+      await logActivity(current.clientId||b.id,'proposal_draft','تم إعداد مسودة تصور مشروع للمراجعة الداخلية',{leadId:b.id});
+    }
     current.updatedAt = new Date().toISOString();
     await store().setJSON(b.id, current);
-    await logActivity(current.clientId||b.id,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
-    let customerNotifications = null;
-    if (current.status === 'approved' && previousStatus !== 'approved') customerNotifications = await notifyClientApproval(current);
     return json(200, { lead: current, customerNotifications });
   }
 

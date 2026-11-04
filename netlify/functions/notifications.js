@@ -1,5 +1,5 @@
 const { env } = require('./env');
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const store=()=>getStore({name:'hbpx-owner-notifications',consistency:'strong'});
 const stateStore=()=>getStore({name:'hbpx-owner-notification-state',consistency:'strong'});
@@ -14,6 +14,7 @@ async function list(limit=60){
   return out.slice(0,limit);
 }
 exports.handler=async e=>{
+  connectLambda(e);
   if(e.httpMethod==='OPTIONS')return json(204,{});
   const a=requireAdmin(e);if(a)return a;
   try{

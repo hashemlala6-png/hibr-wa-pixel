@@ -3,6 +3,7 @@ const crypto=require('crypto');
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {json,requireAdmin}=require('./auth-utils');
 const {createClientSession,getClientSession,sessionCookie,clearCookie}=require('./client-auth-utils');
+const {normalizeEmail:emailNorm,normalizeIraqiPhone:normalizePhone,sameClientIdentity}=require('./client-identity');
 const blobOptions=(name)=>{const options={name,consistency:'eventual'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID;const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const accounts=()=>getStore(blobOptions('hbpx-client-accounts'));
 const leads=()=>getStore(blobOptions('hbpx-leads'));
@@ -10,7 +11,6 @@ const rate=()=>getStore(blobOptions('hbpx-client-auth-rate'));
 const memoryRate = new Map();
 function memoryLimited(e,kind){ const k=kind+'-'+crypto.createHash('sha256').update(ip(e)).digest('hex').slice(0,32), now=Date.now(), win=10*60*1000, max=12; const cur=memoryRate.get(k); if(!cur||now-cur.startedAt>win){memoryRate.set(k,{startedAt:now,count:1});return true;} if(Number(cur.count||0)>=max)return false; cur.count=Number(cur.count||0)+1; return true; }
 const clean=(v,n=240)=>String(v??'').trim().slice(0,n);
-const emailNorm=v=>clean(v,240).toLowerCase();
 const keyForEmail=e=>'email-'+crypto.createHash('sha256').update(emailNorm(e)).digest('hex').slice(0,48);
 const ip=e=>String(e.headers?.['x-nf-client-connection-ip']||e.headers?.['x-forwarded-for']||'unknown').split(',')[0].trim().slice(0,120);
 async function limited(e,kind){
@@ -33,14 +33,13 @@ function checkPassword(password,a){const h=hashPassword(password,a.salt);return 
 async function safeActivity(...args){try{const {logActivity}=require('./client-activity'); await logActivity(...args);}catch{}}
 async function safeMetric(...args){try{const {record}=require('./platform-analytics'); await record(...args);}catch{}}
 function hasSessionSecret(){return Boolean(env('CLIENT_SESSION_SECRET'))}
-function normalizePhone(v){let d=String(v||'').replace(/\D/g,'');if(d.startsWith('00964'))d=d.slice(5);else if(d.startsWith('964'))d=d.slice(3);if(d.startsWith('0'))d=d.slice(1);return d;}
 async function hasApprovedLead(email,phone){
   try{
     const r=await leads().list({prefix:'lead-',limit:1000});
     for(const item of r.blobs||[]){
       const l=await leads().get(item.key,{type:'json'}).catch(()=>null);
       if(!l)continue;
-      if(l.status==='approved' && emailNorm(l.email)===emailNorm(email) && normalizePhone(l.whatsapp)===normalizePhone(phone))return true;
+      if(l.status==='approved' && sameClientIdentity({email,whatsapp:phone},l))return true;
     }
     return false;
   }catch(err){console.error('approved lead lookup unavailable',err?.message||err);throw err;}
@@ -51,9 +50,7 @@ async function findExistingClientId(email,phone){
     let best=null;
     for(const item of r.blobs||[]){
       const l=await leads().get(item.key,{type:'json'}).catch(()=>null); if(!l)continue;
-      const sameEmail=email&&emailNorm(l.email)===email;
-      const samePhone=phone&&normalizePhone(l.whatsapp)===phone;
-      if(sameEmail||samePhone){
+      if(sameClientIdentity({email,whatsapp:phone},l)){
         if(!best||new Date(l.createdAt||0)>new Date(best.createdAt||0))best=l;
       }
     }

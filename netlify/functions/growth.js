@@ -1,7 +1,7 @@
 const { env } = require('./env');
 
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
 const stores={
@@ -22,6 +22,7 @@ async function byClient(name,prefix,clientId,field='clientId'){return (await all
 async function allActivity(){const st=getStore({name:'hbpx-client-activity',consistency:'strong'});const r=await st.list({prefix:'activity-'});const o=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)o.push(x)}catch{}}return o.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))}
 
 exports.handler=async e=>{
+ connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});
  const a=requireAdmin(e);if(a)return a;
  try{

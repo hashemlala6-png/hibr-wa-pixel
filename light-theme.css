@@ -1,0 +1,40 @@
+/* Hibr & Pixel — warm light visual system */
+:root{
+ --bg:#f3ebdd;--paper:#fbf8f1;--ink:#343b3a;--muted:#77766f;
+ --blue:#7895a2;--blue-deep:#607f8d;--blue-pale:#e6e9e3;--line:#ded3c4;
+ --hp-ink:#343b3a;--hp-muted:#77766f;--hp-blue:#7895a2;--hp-yellow:#c58d70;
+ --hp-paper:#f3ebdd;--hp-line:#ded3c4;
+ --hp46-ink:#343b3a;--hp46-blue:#7895a2;--hp46-sky:#e9e2d7;--hp46-paper:#f3ebdd;--hp46-yellow:#c58d70;
+}
+body,body.hp44,body.hp46{background:#f3ebdd!important;color:#343b3a!important}
+.hp-nav,.nav{background:#f3ebdd!important;border-color:#ded3c4!important}
+.navlinks{color:#626d6b!important}
+.navlinks a:after{background:#7895a2!important}
+.solid-btn,.journey-next,.hp46-primary{background:#7895a2!important;border-color:#7895a2!important;color:#fff!important}
+.solid-btn:hover{background:#607f8d!important}
+.outline-btn,.menu{background:#fbf8f1!important;border-color:#ded3c4!important;color:#343b3a!important}
+.hp46-hero,.hp46-portfolio-hero,.hp46-lab,.hp46-method,.dis-hero{background:#e9e2d7!important}
+.hp46-manifesto,.hp46-services,.hp46-concepts,.hp46-steps>div,.journey-card,.account-box,.case,.hp46-answer{background:#fbf8f1!important}
+.hp46-final,.hp46-footer,.hp-contact,.hp-footer{background:#e9e2d7!important;color:#343b3a!important}
+.hp46-final p,.hp46-footer p,.hp46-footer small,.hp46-footer .site>div,.hp-contact p,.hp-footer{color:#68716e!important}
+.hp46-final a,.hp-wa{background:#c58d70!important;color:#fff!important}
+.hp46-final .hp46-section-no,.hp46-footer a:hover{color:#607f8d!important}
+.hp46-concept-visual{background:#e7dfd2!important}
+.concept-one .hp46-concept-visual{background:#e9ddcb!important}
+.concept-two .hp46-concept-visual{background:#dfe6df!important}
+.concept-three .hp46-concept-visual{background:#dfe7e8!important}
+.concept-sun{background:#c58d70!important}
+.hp46-concept-visual .concept-word{color:#343b3a!important}
+.hp46-service-list,.hp46-service-list>a,.hp46-concept,.hp46-steps>div{border-color:#ded3c4!important}
+.hp46-service-list>a:hover,.choice:hover,.choice.selected,.goal:hover,.goal.selected{background:#eee6da!important}
+.hp46-answer,.journey-card,.account-box{border-color:#ded3c4!important}
+.journey-field input,.journey-field textarea,.intake-control,.field input,.field textarea,.field select{background:#fbf8f1!important;color:#343b3a!important;border-color:#ded3c4!important}
+.journey-progress{background:#ded3c4!important}
+.journey-progress i{background:#c58d70!important}
+.journey-next:disabled{opacity:.4}
+.hp46-portfolio-note,.hp46-scroll-note{border-color:#ded3c4!important}
+.hp46-footer .logo,.hp-footer .logo{color:#343b3a!important}
+.hp46-footer a,.hp46-footer p a{color:#607f8d}
+.account-box,.order-item,.account-grid>*,.journey-summary{border-color:#ded3c4!important}
+.pill{background:#e6e9e3!important;color:#607f8d!important}
+@media(max-width:850px){.navlinks{background:#f3ebdd!important;border-color:#ded3c4!important}}
