@@ -3,6 +3,7 @@ const {requireAdmin,json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const {countReceivedPayments,canDownloadDelivery}=require('./contract-policy');
 const {projectBelongsToAccount}=require('./client-project-access');
+const {hasLatestApprovedContent}=require('./content-approval-policy');
 const MAX_BYTES=4*1024*1024;
 const blobOptions=(name)=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const stores={
@@ -27,9 +28,9 @@ async function newestVisualQA(projectId){
   return latest;
 }
 async function hasClientContentApproval(projectId){
-  const r=await approvals().list({prefix:'approval-'});
-  for(const row of r.blobs||[]){const x=await approvals().get(row.key,{type:'json'}).catch(()=>null);if(x?.projectId===projectId&&x.kind==='content'&&x.status==='approved')return true;}
-  return false;
+  const r=await approvals().list({prefix:'approval-'}),items=[];
+  for(const row of r.blobs||[]){const x=await approvals().get(row.key,{type:'json'}).catch(()=>null);if(x)items.push(x);}
+  return hasLatestApprovedContent(items,projectId);
 }
 const clean=(v,n=200)=>String(v??'').trim().slice(0,n);
 async function list(store,prefix){const st=store(),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){const x=await st.get(b.key,{type:'json'}).catch(()=>null);if(x)out.push(x)}return out}
