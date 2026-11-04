@@ -5,6 +5,7 @@
     '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
   }[char]));
   const money = (value) => {
+    if (value === null || value === undefined || value === '') return '—';
     const n = Number(value);
     return Number.isFinite(n) ? n.toLocaleString('ar-IQ') + ' د.ع' : '—';
   };
@@ -74,9 +75,9 @@
     if (!Array.isArray(invoices) || !invoices.length) return empty('لا توجد فواتير مرتبطة بهذا المشروع حالياً.');
     return '<div class="cw-invoice-list">' + invoices.map((invoice) => {
       const title = invoice.number ? 'فاتورة ' + invoice.number : 'فاتورة المشروع';
-      return '<div class="cw-invoice"><strong>' + esc(title) + '</strong><small>' +
-        (invoice.dueDate ? 'الاستحقاق: ' + date(invoice.dueDate) : 'تاريخ الإضافة: ' + date(invoice.createdAt)) +
-        '</small><b>' + money(invoice.total) + '</b><span>' + tag(invoice.status) + '</span></div>';
+      const when = invoice.dueDate ? 'الاستحقاق: ' + date(invoice.dueDate) : 'تاريخ الإضافة: ' + date(invoice.createdAt);
+      return '<div class="cw-invoice"><div class="cw-invoice-head"><strong>' + esc(title) + '</strong>' + tag(invoice.status) + '</div>' +
+        '<div class="cw-invoice-meta"><small>' + when + '</small><b>' + money(invoice.total) + '</b></div></div>';
     }).join('') + '</div>';
   }
 
