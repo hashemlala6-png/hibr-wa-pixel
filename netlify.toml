@@ -36,3 +36,8 @@
   for = "/review-center.html"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/instagram.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
