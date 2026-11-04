@@ -47,7 +47,12 @@ textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display
     <textarea id="caption" class="field" maxlength="2200" required placeholder="اكتبي النص أو الصقي نتيجة الذكاء الاصطناعي هنا…"></textarea>
     <label class="small" for="mediaUrls">روابط الوسائط العامة — رابط واحد في كل سطر</label>
     <textarea id="mediaUrls" class="field" rows="3" placeholder="https://..."></textarea>
-    <div class="small">المنشور يقبل رابطاً واحداً، والكاروسيل يحتاج رابطين على الأقل. لا تُحمّل هذه الصفحة الصور أو الفيديوهات إلى الإنترنت.</div>
+    <div class="small">يمكن لصق رابط عام HTTPS أو رفع الملف من الهاتف إلى التخزين السحابي. المنشور يقبل رابطاً واحداً، والكاروسيل يحتاج رابطين أو أكثر.</div>
+    <div class="actions" style="margin-top:10px">
+      <input id="mediaFile" class="field" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" style="max-width:100%">
+      <button id="uploadMedia" type="button">رفع الوسيط إلى التخزين الآمن</button>
+    </div>
+    <div id="uploadStatus" class="small" role="status" aria-live="polite"></div>
     <div class="status" style="margin:12px 0">
       <b>فحص جودة التصميم بالذكاء الاصطناعي</b>
       <div class="small">ارفعي صورة المنشور أو شريحة واحدة من الكاروسيل لفحص النص العربي والتكوين والقص والوضوح. المقاس المستهدف 1080×1350. الصور فقط حالياً، وبحد أقصى 4MB.</div>
@@ -167,6 +172,41 @@ $('runVisualQA').onclick=async()=>{
  finally{$('runVisualQA').disabled=false;}
 };
 $('format').onchange=()=>{const imageMode=['IMAGE','CAROUSEL'].includes($('format').value);$('runVisualQA').disabled=!imageMode;$('qaResult').textContent=imageMode?'فحص الصور متاح لهذا النوع.':'فحص الصور متاح للمنشورات والكاروسيل فقط حالياً.';};
+$('uploadMedia').onclick=async()=>{
+ const status=$('uploadStatus'),file=$('mediaFile').files?.[0];
+ if(!file){status.textContent='اختاري صورة أو فيديو أولاً.';return;}
+ const format=$('format').value;
+ const isVideo=file.type.startsWith('video/');
+ if(['IMAGE','CAROUSEL'].includes(format)&&isVideo){status.textContent='المنشور والكاروسيل يحتاجان صورة. اختاري صورة.';return;}
+ if(format==='REEL'&&!isVideo){status.textContent='اختاري فيديو بصيغة MP4 أو MOV للـ Reel.';return;}
+ if(!isVideo&&!['image/jpeg','image/png','image/webp'].includes(file.type)){status.textContent='الصيغ المدعومة للصور: JPG وPNG وWEBP.';return;}
+ if(isVideo&&!['video/mp4','video/quicktime'].includes(file.type)){status.textContent='الصيغ المدعومة للفيديو: MP4 وMOV.';return;}
+ const urls=$('mediaUrls').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ if(format==='IMAGE'&&urls.length>=1){status.textContent='المنشور المفرد لديه رابط وسيط بالفعل. احذفي الرابط السابق أولاً إذا أردت استبداله.';return;}
+ if(['REEL','STORY'].includes(format)&&urls.length>=1){status.textContent='هذا النوع يقبل وسيطاً واحداً حالياً. احذفي الرابط السابق أولاً إذا أردت استبداله.';return;}
+ if(urls.length>=10){status.textContent='وصلتِ إلى الحد الأقصى للوسائط في المسودة.';return;}
+ $('uploadMedia').disabled=true;status.textContent='يجري تجهيز توقيع رفع آمن…';
+ try{
+  const signed=await api('instagram-media-signature',{method:'POST',body:JSON.stringify({resourceType:isVideo?'video':'image'})});
+  const form=new FormData();
+  form.append('file',file);
+  form.append('api_key',signed.apiKey);
+  form.append('timestamp',String(signed.timestamp));
+  form.append('folder',signed.folder);
+  form.append('public_id',signed.publicId);
+  form.append('overwrite','false');
+  form.append('signature',signed.signature);
+  status.textContent='يجري رفع الملف إلى التخزين السحابي…';
+  const response=await fetch(signed.uploadUrl,{method:'POST',body:form});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.secure_url)throw new Error(result.error?.message||'فشل رفع الملف إلى Cloudinary.');
+  const current=$('mediaUrls').value.trim();
+  $('mediaUrls').value=(current?current+'\n':'')+result.secure_url;
+  status.textContent='تم رفع الملف وحفظ رابطه العام في المسودة. المقاس: '+(result.width||'—')+'×'+(result.height||'—')+' · النوع: '+(result.resource_type||'—')+'. لم يتم نشر أي شيء.';
+  $('mediaFile').value='';
+ }catch(e){status.textContent='تعذر الرفع: '+e.message;}
+ finally{$('uploadMedia').disabled=false;}
+};
 $('clear').onclick=()=>{resetForm();$('formMsg').textContent='';};
 $('refresh').onclick=load;$('filter').onchange=render;
 $('posts').onclick=async e=>{
