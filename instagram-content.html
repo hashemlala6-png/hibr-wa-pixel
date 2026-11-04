@@ -56,6 +56,10 @@ textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display
     <div id="formMsg" class="small" role="status" aria-live="polite"></div>
   </form>
 </section>
+<section class="card" style="margin-top:15px">
+ <div class="posthead"><h2 style="margin:0">تقويم المحتوى القادم</h2><span class="small">يعرض المواعيد المخططة فقط — لا يوجد نشر تلقائي</span></div>
+ <div id="calendar" class="list" style="margin-top:12px"><div class="status">جارٍ تحميل المواعيد…</div></div>
+</section>
 <section class="card">
   <div class="posthead"><h2 style="margin:0">قائمة المحتوى</h2><button id="refresh">تحديث</button></div>
   <div class="actions"><select id="filter" class="field" style="max-width:220px;margin:0"><option value="all">كل الحالات</option><option value="draft">مسودات</option><option value="pending_approval">بانتظار الموافقة</option><option value="approved">معتمدة</option><option value="needs_changes">تحتاج تعديلاً</option><option value="rejected">مرفوضة</option></select><span id="listStatus" class="small"></span></div>
@@ -86,6 +90,13 @@ function fillForm(x){
  $('formTitle').textContent='تعديل المسودة';$('save').textContent='حفظ التعديلات';$('caption').focus();
 }
 function render(){
+ const calendarItems=ITEMS.filter(x=>x.plannedAt).sort((a,b)=>new Date(a.plannedAt)-new Date(b.plannedAt)).slice(0,12);
+ $('calendar').innerHTML=calendarItems.length?calendarItems.map(x=>{
+  const late=new Date(x.plannedAt).getTime()<Date.now()&&x.status!=='approved';
+  const when=new Date(x.plannedAt).toLocaleString('ar-IQ',{dateStyle:'medium',timeStyle:'short'});
+  return '<div class="post"><div class="posthead"><div><b>'+esc(x.title||'محتوى Instagram')+'</b><div class="small">'+esc(when)+' · '+esc(formatLabels[x.format]||x.format)+'</div></div><span class="pill '+esc(x.status)+'">'+esc(labels[x.status]||x.status)+'</span></div>'+
+  (x.status==='approved'?(x.reminderSentAt?'<div class="small">تم إرسال تذكير داخلي — بانتظار النشر اليدوي.</div>':'<div class="small">بانتظار تذكير وقت الموعد.</div>'):late?'<div class="small">الموعد مرّ، لكن المحتوى ليس معتمداً بعد.</div>':'')+'</div>';
+ }).join(''):'<div class="status">لا توجد مواعيد مقترحة محفوظة حالياً.</div>';
  const f=$('filter').value;const rows=ITEMS.filter(x=>f==='all'||x.status===f);
  $('nAll').textContent=ITEMS.length;$('nPending').textContent=ITEMS.filter(x=>x.status==='pending_approval').length;
  $('nApproved').textContent=ITEMS.filter(x=>x.status==='approved').length;$('nChanges').textContent=ITEMS.filter(x=>x.status==='needs_changes').length;
