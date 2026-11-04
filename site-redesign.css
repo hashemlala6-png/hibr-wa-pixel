@@ -299,3 +299,8 @@ body.hp44 header.hp-nav{width:100%;max-width:none;margin:0;padding-inline:max(24
  .brand-case-visual{height:285px}
  .brand-case-big{font-size:2.8rem}
 }
+
+.brand-more-link{margin:24px 0 0;text-align:left}
+.brand-more-link a{font-weight:800;color:var(--brand-green);border-bottom:1px solid rgba(36,77,66,.25);padding-bottom:5px;font-size:.83rem}
+.brand-more-link a span{color:var(--brand-orange);margin-inline-start:5px}
+.brand-more-link a:hover{color:var(--brand-orange)}
