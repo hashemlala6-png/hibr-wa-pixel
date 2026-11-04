@@ -132,7 +132,12 @@ exports.handler = async event => {
           return json(409, { error: 'لا يمكن تعديل هذه المسودة بعد اعتمادها أو أثناء انتظار المراجعة.' });
         }
         const payload = normalizePayload(body);
+        const previousPlannedAt = item.plannedAt || null;
         Object.assign(item, payload, { status: 'draft', decisionNote: '', updatedAt: now });
+        if (previousPlannedAt !== (item.plannedAt || null)) {
+          delete item.reminderSentAt;
+          delete item.reminderNotificationKey;
+        }
         await s.setJSON(id, item);
         return json(200, { item, message: 'تم تحديث المسودة وإعادتها إلى حالة المسودة.' });
       }
@@ -140,6 +145,8 @@ exports.handler = async event => {
       if (action === 'submit') {
         if (!['draft', 'needs_changes', 'rejected'].includes(item.status)) return json(409, { error: 'هذه المسودة ليست جاهزة لإرسالها للمراجعة.' });
         item.status = 'pending_approval';
+        delete item.reminderSentAt;
+        delete item.reminderNotificationKey;
         item.submittedAt = now;
         item.updatedAt = now;
         item.decisionNote = '';
