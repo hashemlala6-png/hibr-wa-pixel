@@ -115,3 +115,5 @@ button{cursor:pointer}
  .stat{min-height:98px;padding:13px}
  .stat strong{font-size:1.35rem}
 }
+
+.command-policy{max-width:690px;margin-top:13px!important;padding:9px 13px;border-inline-start:3px solid var(--accent);background:#ebe8dc;color:#5e6d62;font-size:.78rem!important;line-height:1.8!important;border-radius:4px}
