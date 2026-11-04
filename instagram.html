@@ -46,9 +46,9 @@ h1{font-size:clamp(25px,5vw,36px);margin:4px 0}.eyebrow{font-size:12px;color:var
     <div class="step"><b>1. إعداد التطبيق</b><span class="small">في Meta for Developers، أضيفي Instagram ثم Instagram Login، واجعلي التطبيق في وضع التطوير أثناء الاختبار.</span></div>
     <div class="step"><b>2. عنوان العودة OAuth Redirect URI</b><span class="small">انسخي العنوان أدناه وأضيفيه كما هو في إعدادات Business Login في Meta، ثم خزّنيه في Netlify باسم INSTAGRAM_REDIRECT_URI.</span><input id="redirectUri" class="field" readonly value="جارٍ التحميل…"><div class="actions"><button id="copyRedirect">نسخ عنوان العودة</button></div></div>
     <div class="step"><b>3. متغيرات Netlify السرية</b><span class="small">أضيفي INSTAGRAM_APP_ID وINSTAGRAM_APP_SECRET وINSTAGRAM_REDIRECT_URI وADMIN_SESSION_SECRET في Environment Variables. لا تضعي App Secret أو Access Token في ملفات GitHub.</span></div>
-    <div class="step"><b>4. حسابات الاختبار والصلاحيات</b><span class="small">أضيفي حساب Instagram الاحترافي كحساب اختبار/دور في التطبيق، وامنحي الصلاحيات المطلوبة. استخدام حسابات خارج أدوار التطبيق قد يتطلب Advanced Access ومراجعة Meta.</span></div>
+    <div class="step"><b>4. حسابات الاختبار والصلاحيات</b><span class="small">أضيفي حساب Instagram الاحترافي كحساب اختبار/دور في التطبيق، وامنحي صلاحيات النشر والتعليقات والرسائل والتحليلات. صلاحية التحليلات هي instagram_business_manage_insights. استخدام حسابات خارج أدوار التطبيق قد يتطلب Advanced Access ومراجعة Meta.</span></div><div class="step"><b>5. إعادة الربط بعد إضافة صلاحيات جديدة</b><span class="small">إذا كان الحساب مربوطاً قبل إضافة صلاحية التحليلات، افصليه ثم أعيدي ربطه حتى يطلب Instagram الموافقات الجديدة ويصدر رمزاً بالصلاحيات المحدّثة.</span></div>
   </div>
-  <div class="status warn">مهم: هذه المرحلة تربط الحساب وتتحقق من هويته وصلاحية الرمز فقط. لا تنشر منشورات أو Reels ولا ترسل رسائل أو ترد على تعليقات تلقائياً. كل نشر أو رد مستقبلي سيبقى داخل مسار مراجعة المالكة أولاً.</div>
+  <div class="status warn">مهم: الربط والتحليلات يقرآن بيانات الحساب فقط. لا تنشر الصفحة منشورات أو Reels ولا ترسل رسائل أو ترد على تعليقات تلقائياً. كل نشر أو رد مستقبلي سيبقى داخل مسار مراجعة المالكة أولاً.</div>
 </section>
 <section class="card">
   <h2 style="margin-top:0">ما الذي سيأتي بعد نجاح الربط؟</h2>
