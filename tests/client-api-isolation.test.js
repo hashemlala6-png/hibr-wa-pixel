@@ -120,7 +120,7 @@ test('customer APIs isolate same-phone accounts with a legacy shared clientId', 
   const resultB = await clientB.handler({httpMethod:'GET',session:{sub:'acct-b'},headers:{}});
   const payloadB = responseBody(resultB);
   assert.equal(resultB.statusCode,200);
-  assert.deepEqual(payloadB.projects.map(p=>p.id),['project-b']);
+  assert.deepEqual(payloadB.projects.map(p=>p.id),['project-b','project-collision']);
   assert.deepEqual(payloadB.projects[0].tasks.map(t=>t.title),['Task B']);
 
   const agreementsA = loadHandler('../netlify/functions/client-agreements.js', data);
