@@ -107,7 +107,7 @@ function render(){
   const late=new Date(x.plannedAt).getTime()<Date.now()&&x.status!=='approved';
   const when=new Date(x.plannedAt).toLocaleString('ar-IQ',{dateStyle:'medium',timeStyle:'short'});
   return '<div class="post"><div class="posthead"><div><b>'+esc(x.title||'محتوى Instagram')+'</b><div class="small">'+esc(when)+' · '+esc(formatLabels[x.format]||x.format)+'</div></div><span class="pill '+esc(x.status)+'">'+esc(labels[x.status]||x.status)+'</span></div>'+
-  (x.status==='approved'?(x.reminderSentAt?'<div class="small">تم إرسال تذكير داخلي — بانتظار النشر اليدوي.</div>':'<div class="small">بانتظار تذكير وقت الموعد.</div>'):late?'<div class="small">الموعد مرّ، لكن المحتوى ليس معتمداً بعد.</div>':'')+'</div>';
+  (x.publishStatus==='published'?'<div class="small">تم النشر على Instagram — '+esc(x.publishedAt||'')+'</div>':x.status==='approved'?(x.reminderSentAt?'<div class="small">تم إرسال تذكير داخلي — بانتظار النشر اليدوي.</div>':'<div class="small">بانتظار تذكير وقت الموعد.</div>'):late?'<div class="small">الموعد مرّ، لكن المحتوى ليس معتمداً بعد.</div>':'')+'</div>';
  }).join(''):'<div class="status">لا توجد مواعيد مقترحة محفوظة حالياً.</div>';
  const f=$('filter').value;const rows=ITEMS.filter(x=>f==='all'||x.status===f);
  $('nAll').textContent=ITEMS.length;$('nPending').textContent=ITEMS.filter(x=>x.status==='pending_approval').length;
@@ -122,7 +122,8 @@ function render(){
    '<div class="actions"><button type="button" data-copy="'+esc(x.id)+'">نسخ النص</button>'+
    (editable?'<button type="button" data-edit="'+esc(x.id)+'">تعديل</button><button type="button" data-submit="'+esc(x.id)+'" class="primary">إرسال للمراجعة</button><button type="button" data-delete="'+esc(x.id)+'" class="danger">حذف</button>':'')+
    (x.status==='pending_approval'?'<button type="button" data-approve="'+esc(x.id)+'" class="primary">اعتماد المسودة</button><button type="button" data-changes="'+esc(x.id)+'">طلب تعديل</button>':'')+
-   (x.status==='approved'&&x.publishStatus!=='published'&&x.publishStatus!=='publishing'&&x.publishStatus!=='publish_uncertain'?'<button type="button" data-publish="'+esc(x.id)+'" class="primary">'+(x.publishStatus==='processing'?'متابعة النشر':'بدء النشر')+'</button>':'')+
+   (x.status==='approved'&&x.format!=='STORY'&&x.publishStatus!=='published'&&x.publishStatus!=='publishing'&&x.publishStatus!=='publish_uncertain'?'<button type="button" data-publish="'+esc(x.id)+'" class="primary">'+(x.publishStatus==='processing'?'متابعة النشر':'بدء النشر')+'</button>':'')+
+   (x.status==='approved'&&x.format==='STORY'&&x.publishStatus!=='published'?'<div class="status warn">Stories محفوظة كمسودات فقط؛ نشرها غير مفعّل في هذا المسار.</div>':'')+
    (x.publishStatus==='published'?'<div class="status ok">نُشر على Instagram بتاريخ '+esc(x.publishedAt||'—')+(x.instagramPermalink?' · <a target="_blank" rel="noopener" href="'+esc(x.instagramPermalink)+'">فتح المنشور</a>':'')+'</div>':'')+
    (x.publishStatus==='processing'?'<div class="status warn">حاوية المحتوى قيد المعالجة لدى Instagram. استخدمي «متابعة النشر» عند جاهزيتها.</div>':'')+
    (x.publishStatus==='publish_uncertain'?'<div class="status bad">حالة النشر غير محسومة. تحققي من حساب Instagram يدوياً قبل إعادة المحاولة.</div>':'')+
