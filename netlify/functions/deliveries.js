@@ -2,6 +2,7 @@ const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const {countReceivedPayments,canDownloadDelivery}=require('./contract-policy');
+const {projectBelongsToAccount}=require('./client-project-access');
 const MAX_BYTES=4*1024*1024;
 const blobOptions=(name)=>{const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const stores={
@@ -40,11 +41,8 @@ async function isFullyPaid(project){
   return total>0&&paid>=total;
 }
 async function ownedByClient(project,account){
-  const ids=[account.id,account.clientId].filter(Boolean);
-  if(ids.includes(project.clientId)||ids.includes(project.accountId))return true;
-  if(account.email&&String(account.email).toLowerCase()===String(project.email||project.clientEmail||'').toLowerCase())return true;
-  if(project.leadId){const lead=await stores.leads().get(project.leadId,{type:'json'}).catch(()=>null);if(lead&&(ids.includes(lead.clientId)||(account.email&&String(lead.email||'').toLowerCase()===String(account.email).toLowerCase())))return true;}
-  return false;
+  const lead=project.leadId?await stores.leads().get(project.leadId,{type:'json'}).catch(()=>null):null;
+  return projectBelongsToAccount(project,account,lead);
 }
 exports.handler=async event=>{
   connectLambda(event);
