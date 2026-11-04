@@ -49,3 +49,8 @@
 
 [functions."instagram-reminders"]
   schedule = "*/15 * * * *"
+
+[[headers]]
+  for = "/instagram-insights.html"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
