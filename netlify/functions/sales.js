@@ -84,7 +84,8 @@ async function clientIdForRecord(record){
 
 async function ownershipReview(projects){
   const leads=stores.leads();
-  const listed=await leads.list({prefix:'lead-',limit:1000});
+  const listed=await leads.list({prefix:'lead-',limit:1000}).catch(()=>null);
+  if(!listed)return [{id:'ownership-review-unavailable',name:'تعذر فحص ربط العملاء',clientEmail:'',reason:'تعذر قراءة طلبات العملاء الآن. لم يتغير أي ربط؛ أعيدي الفحص لاحقاً.'}];
   const leadMap=new Map();
   for(const item of listed.blobs||[]){const lead=await leads.get(item.key,{type:'json'}).catch(()=>null);if(lead?.id)leadMap.set(lead.id,lead);}
   const accounts=await allAccounts().catch(()=>[]);
