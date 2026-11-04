@@ -2,6 +2,7 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const crypto = require('crypto');
 const { logActivity } = require('./client-activity');
+const {sameClientIdentity}=require('./client-identity');
 
 // Explicit credentials are supported for deployments where Netlify does not inject Blobs context.
 // Prefer the platform-injected context; fall back to server-side environment variables only.
@@ -16,19 +17,14 @@ const store = () => getStore(blobOptions('hbpx-leads'));
 const rateStore = () => getStore(blobOptions('hbpx-lead-rate'));
 const clientIndex = () => getStore(blobOptions('hbpx-lead-index'));
 const accountsStore = () => getStore(blobOptions('hbpx-client-accounts'));
-function normalizeEmail(v){return String(v||'').trim().toLowerCase();}
-function normalizePhone(v){return String(v||'').replace(/\D/g,'').replace(/^0/,'964');}
 async function findExistingAccountClientId(email,phone){
-  const targetEmail=normalizeEmail(email), targetPhone=normalizePhone(phone);
-  if(!targetEmail&&!targetPhone)return null;
+  if(!String(email||'').trim()||!String(phone||'').trim())return null;
   const r=await accountsStore().list({prefix:'email-'}).catch(()=>({blobs:[]}));
   let best=null;
   for(const b of r.blobs||[]){
     const a=await accountsStore().get(b.key,{type:'json'}).catch(()=>null);
     if(!a)continue;
-    const emailMatch=targetEmail&&normalizeEmail(a.email)===targetEmail;
-    const phoneMatch=targetPhone&&normalizePhone(a.whatsapp)===targetPhone;
-    if(emailMatch||phoneMatch){best=a;break;}
+    if(sameClientIdentity({email,whatsapp:phone},a)){best=a;break;}
   }
   return best?.clientId||best?.id||null;
 }
