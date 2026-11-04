@@ -1,7 +1,7 @@
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
-const {countReceivedPayments,canDownloadDelivery}=require('./contract-policy');
+const {countReceivedPayments,canDownloadDelivery ,signedContractBlockReason}=require('./contract-policy');
 const {projectBelongsToAccount}=require('./client-project-access');
 const {hasLatestApprovedContent}=require('./content-approval-policy');
 const MAX_BYTES=4*1024*1024;
@@ -9,6 +9,7 @@ const blobOptions=(name)=>{const options={name,consistency:'strong'};const siteI
 const stores={
   projects:()=>getStore(blobOptions('hbpx-projects')),
   payments:()=>getStore(blobOptions('hbpx-payments')),
+  contracts:()=>getStore(blobOptions('hbpx-contracts')),
   leads:()=>getStore(blobOptions('hbpx-leads')),
   accounts:()=>getStore(blobOptions('hbpx-client-accounts')),
   deliveries:()=>getStore(blobOptions('hbpx-deliveries')),
@@ -41,6 +42,10 @@ async function isFullyPaid(project){
   const total=Number(project.amount)||0;
   return total>0&&paid>=total;
 }
+async function hasValidSignedContract(project){
+  const contracts=await list(stores.contracts,'contract-');
+  return !signedContractBlockReason(project.id,contracts,Number(project.amount));
+}
 async function ownedByClient(project,account){
   const lead=project.leadId?await stores.leads().get(project.leadId,{type:'json'}).catch(()=>null):null;
   return projectBelongsToAccount(project,account,lead);
@@ -58,6 +63,7 @@ exports.handler=async event=>{
       if(!projectId||!title||!filename||!accessLevel||!['application/pdf','image/png','image/jpeg','image/webp'].includes(contentType))return json(400,{error:'اختاري مشروعاً واسماً ونوع ملف صحيحاً (PDF أو صورة).'});
       const project=await getProject(projectId);if(!project)return json(404,{error:'المشروع غير موجود.'});
       if(accessLevel==='final'){
+        if(!await hasValidSignedContract(project))return json(409,{error:'لا يمكن رفع النسخة النهائية دون عقد موقّع يطابق قيمة المشروع وجدول الدفعات.'});
         if(!await hasClientContentApproval(projectId))return json(409,{error:'لا يمكن رفع النسخة النهائية قبل موافقة العميل على المحتوى.'});
         const gate=await approvedFinalGate(projectId);
         if(!gate)return json(409,{error:'النسخة النهائية تنتظر اعتماد الفحص النهائي الشامل للجودة.'});
