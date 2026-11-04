@@ -54,3 +54,8 @@
   for = "/instagram-insights.html"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive"
+
+[[headers]]
+  for = "/instagram-content.html"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
