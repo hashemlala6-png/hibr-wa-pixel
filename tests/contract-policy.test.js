@@ -28,24 +28,24 @@ test('blocks activation if no signed contract exists', () => {
 });
 
 test('blocks activation if contract is signed but deposit is missing', () => {
-  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000 }];
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 90000 }];
   assert.match(activationBlockReason('p1', contracts, [], 100000), /العربون كاملاً/);
 });
 
 test('blocks activation if recorded deposit is short', () => {
-  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000 }];
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 90000 }];
   const payments = [{ projectId: 'p1', amount: 9999 }];
   assert.match(activationBlockReason('p1', contracts, payments, 100000), /العربون كاملاً/);
 });
 
 test('allows activation only after the full deposit is recorded', () => {
-  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000 }];
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 90000 }];
   const payments = [{ projectId: 'p1', amount: 6000 }, { projectId: 'p1', amount: 4000 }];
   assert.equal(activationBlockReason('p1', contracts, payments, 100000), null);
 });
 
 test('does not count pending or rejected payments toward the deposit', () => {
-  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000 }];
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 90000 }];
   const payments = [
     { projectId: 'p1', amount: 10000, status: 'pending' },
     { projectId: 'p1', amount: 10000, status: 'rejected' }
@@ -54,13 +54,13 @@ test('does not count pending or rejected payments toward the deposit', () => {
 });
 
 test('counts explicitly received payments', () => {
-  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000 }];
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 90000 }];
   const payments = [{ projectId: 'p1', amount: 10000, status: 'received' }];
   assert.equal(activationBlockReason('p1', contracts, payments, 100000), null);
 });
 
 test('ignores payments belonging to other projects', () => {
-  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000 }];
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 90000 }];
   const payments = [{ projectId: 'p2', amount: 10000 }];
   assert.match(activationBlockReason('p1', contracts, payments, 100000), /العربون كاملاً/);
 });
@@ -87,7 +87,7 @@ test('counts legacy payments without status and ignores invalid or negative amou
 });
 
 test('activation accepts paid and confirmed status for the deposit', () => {
-  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000 }];
+  const contracts = [{ projectId: 'p1', status: 'signed', signedAt: '2026-01-01', amount: 100000, depositAmount: 10000, balanceAmount: 90000 }];
   const payments = [
     { projectId: 'p1', amount: 4000, status: 'PAID' },
     { projectId: 'p1', amount: 6000, status: 'confirmed' }
