@@ -222,3 +222,5 @@
  .cw-no-project-mark{font-size:3.2rem}
  .cw-no-project h3{font-size:1.2rem}
 }
+
+.cw-project-service{margin-top:3px;color:var(--cw-orange);font-size:.7rem;font-weight:800}
