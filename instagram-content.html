@@ -150,7 +150,8 @@ function render(){
    (x.status==='approved'&&x.format==='STORY'&&x.publishStatus!=='published'?'<div class="status warn">Stories محفوظة كمسودات فقط؛ نشرها غير مفعّل في هذا المسار.</div>':'')+
    (x.publishStatus==='published'?'<div class="status ok">نُشر على Instagram بتاريخ '+esc(x.publishedAt||'—')+(x.instagramPermalink?' · <a target="_blank" rel="noopener" href="'+esc(x.instagramPermalink)+'">فتح المنشور</a>':'')+'</div>':'')+
    (x.publishStatus==='processing'?'<div class="status warn">حاوية المحتوى قيد المعالجة لدى Instagram. استخدمي «متابعة النشر» عند جاهزيتها.</div>':'')+
-   (x.publishStatus==='publish_uncertain'?'<div class="status bad">حالة النشر غير محسومة. تحققي من حساب Instagram يدوياً قبل إعادة المحاولة.</div>':'')+
+   (x.publishStatus==='publishing'?'<div class="status warn">أُرسل أمر النشر إلى Instagram. لا تضغطي مرة ثانية؛ حدّثي القائمة بعد قليل للتحقق من رابط المنشور.</div>':'')+
+   (x.publishStatus==='preparing'?'<div class="status warn">يجري تجهيز حاوية المحتوى لدى Instagram. انتظري قليلاً ثم حدّثي القائمة.</div>':'')+   (x.publishStatus==='publish_uncertain'?'<div class="status bad">حالة النشر غير محسومة. تحققي من حساب Instagram يدوياً قبل إعادة المحاولة.</div>':'')+
    (x.publishStatus==='failed'?'<div class="status bad">تعذر النشر: '+esc(x.publishError||'راجعي إعدادات الحساب والوسائط.')+'</div>':'')+
    '</div></article>';
  }).join(''):'<div class="status">لا توجد مسودات بهذه الحالة.</div>';
