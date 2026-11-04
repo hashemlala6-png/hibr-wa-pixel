@@ -304,3 +304,6 @@ body.hp44 header.hp-nav{width:100%;max-width:none;margin:0;padding-inline:max(24
 .brand-more-link a{font-weight:800;color:var(--brand-green);border-bottom:1px solid rgba(36,77,66,.25);padding-bottom:5px;font-size:.83rem}
 .brand-more-link a span{color:var(--brand-orange);margin-inline-start:5px}
 .brand-more-link a:hover{color:var(--brand-orange)}
+
+.brand-access-note{background:#e9eee5;border-inline-start:3px solid var(--brand-orange);padding:12px 15px;color:#53665a;font-size:.82rem;line-height:1.9;border-radius:4px;margin:-24px 0 24px}
+@media(max-width:700px){.brand-access-note{font-size:.77rem;margin-top:-17px}}
