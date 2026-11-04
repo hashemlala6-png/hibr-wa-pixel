@@ -4,6 +4,7 @@ const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
 const {countReceivedPayments}=require('./contract-policy');
+const {hasLatestApprovedContent}=require('./content-approval-policy');
 const projectStore=()=>getStore({name:'hbpx-projects',consistency:'strong'});
 const qualityStore=()=>getStore({name:'hbpx-quality-gates',consistency:'strong'});
 const vqaStore=()=>getStore({name:'hbpx-visual-qa',consistency:'strong'});
@@ -61,7 +62,7 @@ exports.handler=async e=>{
     if(!clean(b.projectId,120)||!clean(b.title,180)||!clean(b.url,2000))return json(400,{error:'المشروع والعنوان ورابط التسليم مطلوبة.'});
     let deliveryUrl;try{deliveryUrl=new URL(clean(b.url,2000));}catch{return json(400,{error:'رابط التسليم غير صالح.'});}
     if(deliveryUrl.protocol!=='https:'||deliveryUrl.username||deliveryUrl.password)return json(400,{error:'يجب أن يكون رابط التسليم آمناً ويبدأ بـ HTTPS.'});
-    const projectId=clean(b.projectId,120);const deliveryProject=await projectStore().get(projectId,{type:'json'}).catch(()=>null);if(!deliveryProject)return json(404,{error:'المشروع غير موجود.'});if(!await isFullyPaid(deliveryProject))return json(409,{error:'لا يمكن إتاحة رابط التسليم النهائي قبل استلام كامل قيمة المشروع.'});const approvalRows=await stores.approvals().list({prefix:'approval-'});let contentApproved=false;for(const row of approvalRows.blobs||[]){const approval=await stores.approvals().get(row.key,{type:'json'}).catch(()=>null);if(approval?.projectId===projectId&&approval.kind==='content'&&approval.status==='approved'){contentApproved=true;break;}}if(!contentApproved)return json(409,{error:'التسليم النهائي ينتظر موافقة العميل على المحتوى.'});const gate=await approvedGate(projectId);
+    const projectId=clean(b.projectId,120);const deliveryProject=await projectStore().get(projectId,{type:'json'}).catch(()=>null);if(!deliveryProject)return json(404,{error:'المشروع غير موجود.'});if(!await isFullyPaid(deliveryProject))return json(409,{error:'لا يمكن إتاحة رابط التسليم النهائي قبل استلام كامل قيمة المشروع.'});const approvalRows=await stores.approvals().list({prefix:'approval-'}),approvalItems=[];for(const row of approvalRows.blobs||[]){const approval=await stores.approvals().get(row.key,{type:'json'}).catch(()=>null);if(approval)approvalItems.push(approval);}if(!hasLatestApprovedContent(approvalItems,projectId))return json(409,{error:'التسليم النهائي ينتظر موافقة العميل على أحدث نسخة من المحتوى.'});const gate=await approvedGate(projectId);
     if(!gate)return json(409,{error:'التسليم مقفول حتى تعتمد الفحص النهائي الشامل للمشروع.'});
     const latest=await newestVQA(projectId);
     if(latest && new Date(latest.createdAt)>new Date(gate.approvedAt||gate.updatedAt))return json(409,{error:'تم فحص مخرج بصري بعد اعتماد بوابة الجودة. أعد الفحص النهائي واعتمد النسخة الأحدث قبل التسليم.'});
