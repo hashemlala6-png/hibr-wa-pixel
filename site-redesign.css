@@ -231,3 +231,13 @@ a{color:inherit}
  .footer{padding:24px 0}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Full-bleed sticky header on the homepage and a compact injected contact footer. */
+body.hp44 header.hp-nav{width:100%;max-width:none;margin:0;padding-inline:max(24px,calc((100vw - 1240px)/2))}
+.hp-contact-footer:not(.brand-footer) .site{display:flex;flex-wrap:wrap;align-items:center;gap:8px 28px}
+.hp-contact-footer:not(.brand-footer) .site h2{width:100%;margin-bottom:0}
+.hp-contact-footer:not(.brand-footer) .site p{margin:0}
+@media(max-width:700px){
+ body.hp44 header.hp-nav{padding-inline:14px}
+ .hp-contact-footer:not(.brand-footer) .site{display:grid;grid-template-columns:1fr;gap:7px}
+}
