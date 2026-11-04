@@ -47,7 +47,7 @@ function normalizePayload(body) {
   const format = normalizeFormat(body.format);
   const mediaUrls = normalizeMedia(body.mediaUrls);
   if (format === 'IMAGE' && mediaUrls.length > 1) throw new Error('المنشور المفرد يقبل رابط صورة واحداً فقط.');
-  if (format === 'CAROUSEL' && mediaUrls.length < 2) throw new Error('الكاروسيل يحتاج رابطين للوسائط على الأقل.');
+  if (format === 'CAROUSEL' && mediaUrls.length === 1) throw new Error('الكاروسيل يحتاج رابطين على الأقل عند إضافة الوسائط. يمكن حفظه الآن كمسودة نصية وإضافة الصور لاحقاً.');
   if (['REEL', 'STORY'].includes(format) && mediaUrls.length > 1) throw new Error('هذا النوع يقبل رابط وسيط واحداً في المسودة الحالية.');
   return {
     title: title || caption.split(/\r?\n/)[0].slice(0, 100) || 'مسودة Instagram',
