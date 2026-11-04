@@ -6,6 +6,7 @@ const {
   normalizePhoneForMatch,
   sameClientContact,
   clientIdentityKey,
+  resolveClientIdentity,
   ownsProject
 } = require('../netlify/functions/client-ownership');
 
@@ -76,4 +77,30 @@ test('unique account references and exact project contacts remain supported', ()
   assert.equal(ownsProject({accountId:'account-a'}, account), true);
   assert.equal(ownsProject({email:'A@example.com',whatsapp:'+9647712345678'}, account), true);
   assert.equal(ownsProject({clientId:'account-a'}, account), true);
+});
+
+test('sales identity resolves only one account with an exact email and WhatsApp pair', () => {
+  const accounts = [
+    {id:'account-a',email:'a@example.com',whatsapp:'07712345678'},
+    {id:'account-b',email:'b@example.com',whatsapp:'07712345678'}
+  ];
+  assert.deepEqual(
+    resolveClientIdentity({id:'lead-a',email:'A@example.com',whatsapp:'+9647712345678'},accounts),
+    {clientId:'account-a',accountId:'account-a',matchedAccount:true,ambiguousAccount:false}
+  );
+  const unregistered = resolveClientIdentity({id:'lead-c',email:'c@example.com',whatsapp:'07712345678'},accounts);
+  assert.equal(unregistered.accountId,null);
+  assert.equal(unregistered.clientId,clientIdentityKey({id:'lead-c',email:'c@example.com',whatsapp:'07712345678'}));
+  assert.equal(unregistered.matchedAccount,false);
+});
+
+test('duplicate accounts matching the same pair are treated as ambiguous', () => {
+  const account = {email:'a@example.com',whatsapp:'07712345678'};
+  const result = resolveClientIdentity({id:'lead-a',...account},[
+    {id:'account-a',...account},
+    {id:'account-b',...account}
+  ]);
+  assert.equal(result.accountId,null);
+  assert.equal(result.matchedAccount,false);
+  assert.equal(result.ambiguousAccount,true);
 });
