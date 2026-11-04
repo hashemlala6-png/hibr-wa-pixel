@@ -28,13 +28,15 @@ async function acquirePublishLock(itemId) {
   const current = await locks.getWithMetadata(key, { consistency: 'strong', type: 'json' });
   if (!current) {
     const created = await locks.setJSON(key, lock, { onlyIfNew: true });
-    return created.modified ? { acquired: true, key, token } : { acquired: false };
+    // Some SDK failure paths can report modified=true without a real ETag.
+    // A successful provider write must include its ETag; fail closed otherwise.
+    return created.modified && created.etag ? { acquired: true, key, token } : { acquired: false };
   }
   const data = current.data || {};
   if (Number(data.expiresAt) > now) return { acquired: false, expiresAt: data.expiresAt };
 
   const replaced = await locks.setJSON(key, lock, { onlyIfMatch: current.etag });
-  return replaced.modified ? { acquired: true, key, token } : { acquired: false };
+  return replaced.modified && replaced.etag ? { acquired: true, key, token } : { acquired: false };
 }
 
 async function releasePublishLock(lock) {
@@ -43,12 +45,15 @@ async function releasePublishLock(lock) {
     const locks = store('hbpx-instagram-publish-locks');
     const current = await locks.getWithMetadata(lock.key, { consistency: 'strong', type: 'json' });
     if (!current || current.data?.token !== lock.token) return;
-    await locks.setJSON(lock.key, {
+    const released = await locks.setJSON(lock.key, {
       token: '',
       acquiredAt: 0,
       expiresAt: 0,
       releasedAt: Date.now()
     }, { onlyIfMatch: current.etag });
+    if (released.modified && !released.etag) {
+      console.error('Instagram publish lock release was not confirmed by an ETag; the lease will expire naturally.');
+    }
   } catch (error) {
     console.error('Instagram publish lock release failed', error?.message || error);
   }
