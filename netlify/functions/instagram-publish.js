@@ -119,7 +119,7 @@ async function graph(path, token, method = 'GET', params = {}) {
   return data;
 }
 async function readContent(id) {
-  return store(CONTENT_STORE).get(id, { type: 'json' });
+  return store(CONTENT_STORE).get(id, { type: 'json', consistency: 'strong' });
 }
 async function saveContent(item) {
   item.updatedAt = new Date().toISOString();
@@ -221,7 +221,7 @@ exports.handler = async event => {
   if (!['start', 'continue'].includes(action)) return json(400, { error: 'الإجراء غير معروف.' });
 
   const contentStore = store(CONTENT_STORE);
-  let item = await contentStore.get(id, { type: 'json' });
+  let item = await contentStore.get(id, { type: 'json', consistency: 'strong' });
   if (!item) return json(404, { error: 'المسودة غير موجودة.' });
   if (item.status !== 'approved') return json(409, { error: 'لا يمكن النشر إلا بعد اعتماد المسودة من المالكة.' });
   if (item.publishedAt || item.publishStatus === 'published') return json(409, { item: publicResult(item), error: 'هذا المحتوى منشور بالفعل ولا يمكن نشره مرة ثانية.' });
@@ -238,7 +238,7 @@ exports.handler = async event => {
     if (!publishLock.acquired) {
       return json(409, { error: 'هناك طلب نشر آخر يعمل على هذا المحتوى. انتظري حتى ينتهي قبل الضغط مرة ثانية.' });
     }
-    const connection = await store(CONNECTION_STORE).get(CONNECTION_KEY, { type: 'json' });
+    const connection = await store(CONNECTION_STORE).get(CONNECTION_KEY, { type: 'json', consistency: 'strong' });
     if (!connection?.token || !connection?.profile?.userId) return json(409, { error: 'حساب Instagram غير مربوط. اربطي الحساب وتحققي منه أولاً.' });
     if (connection.expiresAt && new Date(connection.expiresAt).getTime() < Date.now()) return json(409, { error: 'انتهت صلاحية رمز Instagram. حدّثي الرمز أو أعيدي الربط قبل النشر.' });
     const token = decrypt(connection.token);
