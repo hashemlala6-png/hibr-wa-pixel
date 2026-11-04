@@ -31,7 +31,7 @@ function canDownloadDelivery(accessLevel, fullyPaid) {
 }
 
 function activationBlockReason(projectId, contracts, payments, projectAmount) {
-  const signed = contracts.find(c => c.projectId === projectId && c.status === 'signed' && c.signedAt);
+  const signed = contracts.filter(c => c.projectId === projectId && c.status === 'signed' && c.signedAt).sort((a, b) => new Date(b.signedAt) - new Date(a.signedAt))[0];
   if (!signed) return 'لا يمكن بدء المشروع قبل توقيع عقده من العميل.';
   const amount = Number(signed.amount);
   if (!Number.isSafeInteger(amount) || amount <= 0) return 'قيمة العقد غير صالحة. حدّث العقد قبل بدء التنفيذ.';
