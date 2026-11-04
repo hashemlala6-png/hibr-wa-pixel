@@ -24,7 +24,7 @@ test('rejects zero, negative, fractional and unsafe amounts', () => {
 });
 
 test('blocks activation if no signed contract exists', () => {
-  assert.match(activationBlockReason('p1', [], [], 100000), /توقيع عقده/);
+  assert.match(activationBlockReason('p1', [], [], 100000), /توقيع العقد/);
 });
 
 test('blocks activation if contract is signed but deposit is missing', () => {
