@@ -14,8 +14,9 @@
 ## المتغيرات المطلوبة
 ضع القيم السرية في Netlify Environment Variables فقط:
 
-- `ADMIN_PASSWORD`
-- `ADMIN_SESSION_SECRET` (مستحسن؛ إذا غاب يستخدم النظام `ADMIN_PASSWORD` كتوقيع جلسة احتياطي)
+- `ADMIN_PASSWORD` — كلمة مرور المالك في Production.
+- `ADMIN_PREVIEW_PASSWORD` — اختياري؛ كلمة مرور مستقلة لمعاينات Deploy Previews فقط. اضبطه في Netlify بسياق **Deploy Previews** ونطاق **Functions** فقط، ولا تضبطه كقيمة عامة أو Production.
+- `ADMIN_SESSION_SECRET` (مستحسن؛ إذا غاب يستخدم النظام كلمة مرور البيئة المناسبة كتوقيع جلسة احتياطي)
 - `CLIENT_SESSION_SECRET` (أو استخدام `ADMIN_SESSION_SECRET` كبديل)
 - `OPENAI_API_KEY` عند استخدام أدوات OpenAI
 - `ANTHROPIC_API_KEY` عند استخدام أدوات Anthropic
@@ -24,12 +25,13 @@
 
 ## تشخيص دخول المالك في Deploy Preview
 
-تسجيل دخول المالك يقارن كلمة المرور المدخلة مع متغير Netlify السري `ADMIN_PASSWORD` حرفياً. لا توجد كلمة مرور افتراضية أو كلمة مرور محفوظة داخل ملفات المستودع.
+في Production يقارن النظام كلمة المرور مع `ADMIN_PASSWORD`. في Deploy Previews، إذا كان `ADMIN_PREVIEW_PASSWORD` مضبوطاً، يستخدمه بدلاً من `ADMIN_PASSWORD` حتى لا تتأثر كلمة مرور الموقع الأساسي أو تتداخل قيمة المعاينة معها. لا توجد كلمة مرور افتراضية أو كلمة مرور محفوظة داخل ملفات المستودع.
 
-- `ADMIN_PASSWORD`: مطلوب فعلياً لقبول كلمة المرور.
+- `ADMIN_PASSWORD`: كلمة مرور Production.
+- `ADMIN_PREVIEW_PASSWORD`: كلمة مرور المعاينة؛ يجب ضبطها في Netlify على **Deploy Previews** فقط وبنطاق **Functions**. لا تضعها في `netlify.toml` أو كقيمة عامة.
 - `ADMIN_SESSION_SECRET`: يُفضّل ضبطه لتوقيع جلسة المالك؛ لا يُستخدم ككلمة مرور الدخول.
 - يجب أن تكون المتغيرات متاحة لنطاق **Functions** وأن تشمل سياق **Deploy Previews** عند اختبار رابط المعاينة.
-- إذا كان للمتغير قيمة منفصلة في Production وDeploy Previews، فيجب أن تكون قيمة المعاينة هي كلمة المرور التي ستُستخدم على رابط المعاينة.
+- إذا استخدمت `ADMIN_PREVIEW_PASSWORD` فلن تحتاج إلى تغيير `ADMIN_PASSWORD` أو إعداد قيمة فرعية له.
 - بعد تعديل المتغيرات في Netlify، أعد بناء/نشر المعاينة حتى تدخل التغييرات حيّز التنفيذ.
 
 رسائل التشخيص:
