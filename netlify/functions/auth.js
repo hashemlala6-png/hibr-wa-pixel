@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { createSession, sessionCookie, clearCookie, verifySession, json } = require('./auth-utils');
-const { env } = require('./session-core');
+const { adminPassword } = require('./session-core');
 
 const presenceStore = () => getStore({ name: 'hbpx-presence', consistency: 'strong' });
 const authStore = () => getStore({ name: 'hbpx-auth-rate', consistency: 'strong' });
@@ -52,7 +52,7 @@ exports.handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'بيانات الدخول غير صالحة.' }); }
   if (await limited(event.headers?.['x-forwarded-for'] || event.headers?.['client-ip'] || 'unknown')) return json(429, { error: 'محاولات كثيرة. حاول بعد دقائق.' });
-  const expected = env('ADMIN_PASSWORD');
+  const expected = adminPassword();
   if (!expected) return json(503, { error: 'إعداد دخول المالك ناقص في Netlify.' });
   const supplied = String(body.password || '');
   const a = Buffer.from(supplied), b = Buffer.from(expected);
