@@ -13,9 +13,14 @@ function env(name) {
   } catch { return ''; }
 }
 
+function adminPassword() {
+  // A Deploy Preview can use its own secret without changing Production.
+  return env('ADMIN_PREVIEW_PASSWORD') || env('ADMIN_PASSWORD');
+}
+
 function secretFor(role) {
   return role === 'admin'
-    ? (env('ADMIN_SESSION_SECRET') || env('ADMIN_PASSWORD'))
+    ? (env('ADMIN_SESSION_SECRET') || adminPassword())
     : env('CLIENT_SESSION_SECRET');
 }
 
@@ -77,4 +82,4 @@ function json(statusCode, body, extraHeaders = {}) {
   };
 }
 
-module.exports = { createSession, verifySession, cookie, clearCookie, parseCookies, json, env };
+module.exports = { createSession, verifySession, cookie, clearCookie, parseCookies, json, env, adminPassword };
