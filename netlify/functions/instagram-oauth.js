@@ -125,7 +125,7 @@ async function exchangeCode(code, redirectUri) {
     connectedAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + seconds * 1000).toISOString(),
     expiresIn: seconds, lastVerifiedAt: now.toISOString(),
-    lastRefreshedAt: null, grantedScopes: SCOPES
+    lastRefreshedAt: null, requestedScopes: SCOPES, permissionsVerified: false
   };
 }
 async function startConnect(event) {
@@ -157,7 +157,7 @@ async function startConnect(event) {
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('scope', SCOPES.join(','));
   url.searchParams.set('state', state);
-  return json(200, { authorizationUrl: url.toString(), redirectUri, scopes: SCOPES });
+  return json(200, { authorizationUrl: url.toString(), redirectUri, requestedPermissions: SCOPES });
 }
 async function callback(event) {
   const q = event.queryStringParameters || {};
@@ -186,7 +186,10 @@ async function status() {
   const configured = Boolean(env('INSTAGRAM_APP_ID') && env('INSTAGRAM_APP_SECRET') && env('ADMIN_SESSION_SECRET'));
   return json(200, {
     connected: Boolean(connection && connection.token && connection.profile),
-    configured, redirectUri, apiVersion: API_VERSION, permissions: SCOPES,
+    configured, redirectUri, apiVersion: API_VERSION, requestedPermissions: connection?.requestedScopes || SCOPES,
+    grantedPermissions: null,
+    permissionsVerified: false,
+    permissionNote: 'هذه الصلاحيات التي طلبها التطبيق؛ لا يتوفر تأكيد موثوق بمنحها جميعاً من رد التفويض وحده. يجب اختبار كل وظيفة بعد الربط.',
     account: connection ? connection.profile : null,
     connectedAt: connection ? connection.connectedAt : null,
     expiresAt: connection ? connection.expiresAt : null,

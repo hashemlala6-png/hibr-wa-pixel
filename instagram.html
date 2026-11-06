@@ -83,7 +83,7 @@ function showConnected(d){
   $('status').textContent='الحساب مربوط بنجاح عبر Instagram Login.';
   const a=d.account||{};
   $('account').classList.remove('hidden');
-  $('account').innerHTML='<div><b>@'+esc(a.username||'حساب Instagram')+'</b><div class="small">نوع الحساب: '+esc(a.accountType||'غير محدد')+' · المعرّف: '+esc(a.userId||'—')+'</div><div class="small">تاريخ الربط: '+esc(d.connectedAt||'—')+'</div><div class="small">تنتهي صلاحية الرمز: '+esc(d.expiresAt||'غير معروف')+'</div><div class="small">آخر تحقق: '+esc(d.lastVerifiedAt||'لم يُتحقق بعد')+'</div></div>';
+  $('account').innerHTML='<div><b>@'+esc(a.username||'حساب Instagram')+'</b><div class="small">نوع الحساب: '+esc(a.accountType||'غير محدد')+' · المعرّف: '+esc(a.userId||'—')+'</div><div class="small">تاريخ الربط: '+esc(d.connectedAt||'—')+'</div><div class="small">تنتهي صلاحية الرمز: '+esc(d.expiresAt||'غير معروف')+'</div><div class="small">آخر تحقق: '+esc(d.lastVerifiedAt||'لم يُتحقق بعد')+'</div><div class="small">الصلاحيات المطلوبة (وليست دليلاً على منحها): '+esc((d.requestedPermissions||[]).join('، '))+'</div><div class="small">حالة الصلاحيات: '+esc(d.permissionNote||'يلزم اختبار كل وظيفة بعد الربط؛ لا يوجد تأكيد مستقل لمنح جميع الصلاحيات.')+'</div></div>';
   $('connect').classList.add('hidden');$('verify').classList.remove('hidden');
   $('refreshToken').classList.remove('hidden');$('disconnect').classList.remove('hidden');
 }
