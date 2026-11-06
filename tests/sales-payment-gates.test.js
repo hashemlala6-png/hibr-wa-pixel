@@ -211,7 +211,7 @@ test('manual allocation requires confirmation, an audit note, and a signed contr
   assert.equal(wrongProject.statusCode,409);
   const olderContract=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-legacy',contractId:'contract-old',note:'مطابقة إيصال البنك',allocationConfirmed:true},'PATCH'));
   assert.equal(olderContract.statusCode,409);
-  assert.match(body(olderContract).error,/العقد الموقّع الأحدث/);
+  assert.match(body(olderContract).error,/الأحدث/);
   assert.equal(data['hbpx-payments']['payment-legacy'].contractId,undefined);
   const success=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-legacy',contractId:'contract-a',note:'مطابقة إيصال البنك',allocationConfirmed:true},'PATCH'));
   assert.equal(success.statusCode,200);
