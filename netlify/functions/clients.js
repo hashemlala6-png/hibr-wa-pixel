@@ -21,7 +21,17 @@ const stores = {
   accounts:()=>getStore(blobOptions('hbpx-client-accounts'))
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
-async function all(name,prefix){const r=await stores[name]().list({prefix});const out=[];for(const b of r.blobs||[]){try{const x=await stores[name]().get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out}
+async function all(name,prefix){
+ const st=stores[name](),out=[],seen=new Set();let cursor;
+ do{
+  const page=await st.list({prefix,limit:100,...(cursor?{cursor}:{})});
+  for(const b of page.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}
+  const next=page.cursor||null;
+  if(!next||next===cursor||seen.has(next))break;
+  seen.add(next);cursor=next;
+ }while(out.length<10000);
+ return out;
+}
 async function build(){
  const [leads,quotes,projects,payments,tasks,expenses,invoices,contracts,subscriptions,deliveries,resultPlans,activities,accounts]=await Promise.all([
   all('leads','lead-'),all('quotes','quote-'),all('projects','project-'),all('payments','payment-'),all('tasks','task-'),all('expenses','expense-'),all('invoices','invoice-'),all('contracts','contract-'),all('subscriptions','subscription-'),all('deliveries','delivery-'),all('resultPlans','result-'),all('activity','activity-'),all('accounts','')
