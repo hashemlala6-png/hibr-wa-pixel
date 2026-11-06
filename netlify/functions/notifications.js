@@ -1,8 +1,9 @@
 const { env } = require('./env');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {requireAdmin,json}=require('./auth-utils');
-const store=()=>getStore({name:'hbpx-owner-notifications',consistency:'strong'});
-const stateStore=()=>getStore({name:'hbpx-owner-notification-state',consistency:'strong'});
+const store=()=>getStore(blobOptions('hbpx-owner-notifications', 'strong'));
+const stateStore=()=>getStore(blobOptions('hbpx-owner-notification-state', 'strong'));
 async function list(limit=60){
   const out=[]; let cursor;
   do{
