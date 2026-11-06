@@ -15,8 +15,11 @@ test('every Lambda function using Netlify Blobs initializes its event context', 
     const source = fs.readFileSync(path.join(functionsDir, file), 'utf8');
     if (!/\bgetStore\s*\(/.test(source) || !/exports\.handler\s*=/.test(source)) continue;
 
-    const handler = source.match(/exports\.handler\s*=\s*async\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*\{([\s\S]{0,500})/);
-    if (!/\bconnectLambda\s*\(/.test(handler?.[1] || '')) missing.push(file);
+    const handler = source.match(/exports\.handler\s*=\s*async\s*(?:\(([^)]*)\)|([A-Za-z_$][\w$]*))\s*=>\s*\{([\s\S]{0,500})/);
+    const parameters = handler?.[1] || handler?.[2] || '';
+    const bodyStart = handler?.[3] || '';
+    const contextArg = bodyStart.match(/\bconnectLambda\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/)?.[1];
+    if (!contextArg || !new RegExp('\\\\b' + contextArg + '\\\\b').test(parameters)) missing.push(file);
   }
 
   assert.deepEqual(

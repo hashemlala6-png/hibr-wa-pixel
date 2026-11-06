@@ -29,7 +29,7 @@ async function listDue(now) {
   return due.slice(0, 100);
 }
 
-exports.handler = async () => {
+exports.handler = async event => {
   connectLambda(event);
   const now = Date.now();
   const content = store(CONTENT_STORE);

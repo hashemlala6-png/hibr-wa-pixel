@@ -4,7 +4,7 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 // Netlify Scheduled Function: runs once per day and asks the authenticated
 // integrations endpoint to sync every client that has a connected source.
 exports.config = { schedule: '@daily' };
-exports.handler = async () => {
+exports.handler = async event => {
   connectLambda(event);
   const secret = env('INTERNAL_SYNC_SECRET');
   if (!secret) return { statusCode: 500, body: JSON.stringify({error:'INTERNAL_SYNC_SECRET غير مضبوط'}) };
