@@ -1,8 +1,7 @@
 const { env } = require('./env');
 const { requestText } = require('./ai-provider');
 const { connectLambda } = require('@netlify/blobs');
-// Netlify Function: يولّد وصف شرائح الكاروسيل عبر Claude، ثم صور فعلية
-// لكل شريحة عبر DALL-E (OpenAI). المفاتيح تُقرأ من متغيرات البيئة فقط.
+// Netlify Function: تخطّط الشرائح عبر مزوّد النصوص ثم تولّد صوراً عمودية فعلية عبر GPT Image.
 
 const { requireAdmin, json } = require('./auth-utils');
 const { getAIContext, contextPrompt, saveAIHistory } = require('./ai-context');
@@ -126,11 +125,12 @@ ${contextPrompt(clientContext)}`;
           Authorization: `Bearer ${openaiKey}`,
         },
         body: JSON.stringify({
-          model: "dall-e-3",
+          model: env("OPENAI_IMAGE_MODEL") || "gpt-image-2",
           prompt: imagePrompt,
           n: 1,
-          size: "1024x1024",
-          response_format: "b64_json",
+          size: "1024x1280",
+          quality: "high",
+          output_format: "jpeg",
         }),
       });
 
@@ -151,7 +151,10 @@ ${contextPrompt(clientContext)}`;
       results.push({
         slide: slide.slide,
         overlay_text_arabic: slide.overlay_text_arabic,
-        image_base64: b64 ? `data:image/png;base64,${b64}` : null,
+        image_base64: b64 ? `data:image/jpeg;base64,${b64}` : null,
+        image_model: env("OPENAI_IMAGE_MODEL") || "gpt-image-2",
+        output_format: "jpeg",
+        size: "1024x1280",
       });
     } catch (err) {
       results.push({ slide: slide.slide, error: err.message });
@@ -159,8 +162,8 @@ ${contextPrompt(clientContext)}`;
   }
 
   if (clientId) {
-    await saveAIHistory({ clientId, mode: 'carousel', topic, input: JSON.stringify({ activity, audience, colors, font, slideCount }), output: JSON.stringify(slidesPlan), metadata: { generatedImages: true, slideCount: results.length, continuedFromMemory: true, planningProvider } });
-    await logActivity(clientId, 'ai', 'AI — كاروسيل + صور', { topic: String(topic).slice(0,500), mode:'carousel', generatedImages:true, memoryApplied:!!clientContext });
+    await saveAIHistory({ clientId, mode: 'carousel', topic, input: JSON.stringify({ activity, audience, colors, font, slideCount }), output: JSON.stringify(slidesPlan), metadata: { generatedImages: results.some(x => x.image_base64), requestedSlides: count, generatedSlides: results.filter(x => x.image_base64).length, failedSlides: results.filter(x => !x.image_base64).length, continuedFromMemory: true, planningProvider, imageModel: env('OPENAI_IMAGE_MODEL') || 'gpt-image-2' } });
+    await logActivity(clientId, 'ai', 'AI — تخطيط كاروسيل وتوليد صور عمودية', { topic: String(topic).slice(0,500), mode:'carousel', generatedImages:results.some(x => x.image_base64), requestedSlides:count, generatedSlides:results.filter(x => x.image_base64).length, imageModel:env('OPENAI_IMAGE_MODEL') || 'gpt-image-2', memoryApplied:!!clientContext });
   }
 
   return {

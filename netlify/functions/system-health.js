@@ -26,6 +26,8 @@ function configuration() {
     },
     aiImages: {
       state: imageConfigured ? 'configured' : 'missing',
+      model: env('OPENAI_IMAGE_MODEL') || 'gpt-image-2',
+      targetSize: '1024x1280 (4:5)',
       note: imageConfigured ? 'مفتاح OpenAI موجود؛ لم يُختبر توليد صورة حقيقية.' : 'توليد الصور يحتاج OPENAI_API_KEY.'
     },
     instagram: {

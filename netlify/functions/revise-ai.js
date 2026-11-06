@@ -66,8 +66,8 @@ async function reviseImage({apiKey,imageBase64,instruction,clientContext}){
  if(bytes.length>7*1024*1024)throw Error('حجم الصورة كبير جداً للتعديل. استخدم صورة أصغر من 7MB.');
  const plan=await parseEditInstruction({instruction, clientContext, kind:'image'});
  const form=new FormData();
- form.append('model','gpt-image-1');
- form.append('image',new Blob([bytes],{type:mime}),'source.'+(mime.includes('jpeg')||mime.includes('jpg')?'jpg':'png'));
+ form.append('model',env('OPENAI_IMAGE_MODEL')||'gpt-image-2');
+ form.append('image[]',new Blob([bytes],{type:mime}),'source.'+(mime.includes('jpeg')||mime.includes('jpg')?'jpg':'png'));
  const changes=(plan.changes||[]).map((x,i)=>`${i+1}. ${x}`).join('\n');
  const preserve=(plan.preserve||[]).map((x,i)=>`${i+1}. ${x}`).join('\n');
  const prompt=`EDIT THE PROVIDED IMAGE. This is a precision edit, NOT a redesign.
