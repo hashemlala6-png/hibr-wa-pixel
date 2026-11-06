@@ -156,6 +156,8 @@ async function startConnect(event) {
   url.searchParams.set('client_id', appId);
   url.searchParams.set('redirect_uri', redirectUri);
   url.searchParams.set('response_type', 'code');
+  // Keep the flow on Instagram Login; do not offer or fall back to Facebook Login.
+  url.searchParams.set('enable_fb_login', '0');
   url.searchParams.set('scope', SCOPES.join(','));
   url.searchParams.set('state', state);
   return json(200, { authorizationUrl: url.toString(), redirectUri, requestedPermissions: SCOPES });
