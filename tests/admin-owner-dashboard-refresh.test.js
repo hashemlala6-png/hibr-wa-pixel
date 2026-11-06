@@ -501,3 +501,38 @@ test('owner logout keeps the owner informed and does not reload when server stil
   assert.equal(button.disabled, false);
   assert.equal(button.textContent, 'خروج');
 });
+
+
+test('AI Studio serializes generation and draft actions and always unlocks controls', async () => {
+  const selectors = ['#aiGenerate','#resultGenerate','#reviseText','#saveInstagramDraft','#sendAIReview','#aiClient','#aiMode','#aiTopic','#aiTone','#aiTextType','#aiCarouselSlideCount','#resultObjective','#resultOffer','#revInstruction','#revMode'];
+  const controls = Object.fromEntries(selectors.map(key => [key, { disabled: false }]));
+  const reviewStatus = { textContent: '' }, busyStatus = { textContent: '' }, output = { textContent: 'previous result' };
+  const context = {
+    AI_STUDIO_BUSY: false,
+    $: selector => selector === '#aiReviewStatus' ? reviewStatus : selector === '#aiBusy' ? busyStatus : selector === '#aiOutput' ? output : controls[selector],
+    setAIBusy: message => { busyStatus.textContent = message || ''; output.textContent = ''; }
+  };
+  const helpers = vm.runInNewContext(functionSource('beginAIStudioAction') + '\n' + functionSource('endAIStudioAction') + '\n({beginAIStudioAction,endAIStudioAction})', context);
+  assert.equal(helpers.beginAIStudioAction('جاري التوليد…', true), true);
+  assert.equal(context.AI_STUDIO_BUSY, true);
+  assert.equal(output.textContent, '');
+  assert.equal(selectors.every(selector => controls[selector].disabled), true);
+  assert.equal(helpers.beginAIStudioAction('عملية ثانية', false), false);
+  assert.match(reviewStatus.textContent, /هناك عملية أخرى قيد التنفيذ/);
+  helpers.endAIStudioAction();
+  assert.equal(context.AI_STUDIO_BUSY, false);
+  assert.equal(selectors.every(selector => controls[selector].disabled === false), true);
+});
+
+test('AI Studio lock preserves the current result during upload and owner review', () => {
+  const controls = Object.fromEntries(['#aiGenerate','#resultGenerate','#reviseText','#saveInstagramDraft','#sendAIReview'].map(key => [key,{disabled:false}]));
+  const output = {textContent:'approved draft'}, busy = {textContent:''};
+  const context = {
+    AI_STUDIO_BUSY:false,
+    $: selector => selector==='#aiOutput'?output:selector==='#aiBusy'?busy:controls[selector],
+    setAIBusy: () => { output.textContent=''; }
+  };
+  const begin = vm.runInNewContext(functionSource('beginAIStudioAction')+'\nbeginAIStudioAction',context);
+  assert.equal(begin('جارٍ الحفظ…',false),true);
+  assert.equal(output.textContent,'approved draft');
+});
