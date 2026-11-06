@@ -1,9 +1,10 @@
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {requireAdmin,json}=require('./auth-utils');
 const stores={
- leads:()=>getStore({name:'hbpx-leads',consistency:'strong'}),
- projects:()=>getStore({name:'hbpx-projects',consistency:'strong'}),
- payments:()=>getStore({name:'hbpx-payments',consistency:'strong'})
+ leads:()=>getStore(blobOptions('hbpx-leads', 'strong')),
+ projects:()=>getStore(blobOptions('hbpx-projects', 'strong')),
+ payments:()=>getStore(blobOptions('hbpx-payments', 'strong'))
 };
 async function all(store,prefix){const r=await store().list({prefix});const out=[];for(const x of r.blobs||[]){try{const v=await store().get(x.key,{type:'json'});if(v)out.push(v)}catch{}}return out}
 const num=v=>Number(v||0)||0;
