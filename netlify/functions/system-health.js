@@ -68,11 +68,47 @@ function configuration() {
 async function checkPersistentState() {
   const checkedAt = new Date().toISOString();
   let storage;
+  const storageChecks = { read: false, write: false, delete: false };
+  let probeKey = '';
+  const leadsStore = getStore(blobOptions('hbpx-leads', 'strong'));
   try {
-    const page = await getStore(blobOptions('hbpx-leads', 'eventual')).list({ prefix: 'lead-', limit: 1 });
-    storage = { state: 'operational', checkedAt, note: 'نجح اتصال Netlify Blobs وقراءة فهرس الطلبات.' , sampleCount: (page.blobs || []).length };
+    const page = await leadsStore.list({ prefix: 'lead-', limit: 1 });
+    storageChecks.read = true;
+
+    // Use a non-lead key and always try to remove it; the health probe must
+    // never appear in the owner's customer lead list.
+    probeKey = 'health-probe-' + require('node:crypto').randomUUID();
+    const probe = { purpose: 'storage-health-check', probeKey, checkedAt };
+    await leadsStore.setJSON(probeKey, probe);
+    storageChecks.write = true;
+
+    const savedProbe = await leadsStore.get(probeKey, { type: 'json' });
+    if (!savedProbe || savedProbe.probeKey !== probeKey) {
+      throw new Error('تعذّر التحقق من قراءة سجل اختبار التخزين بعد كتابته.');
+    }
+
+    await leadsStore.delete(probeKey);
+    const remainingProbe = await leadsStore.get(probeKey, { type: 'json' });
+    if (remainingProbe) throw new Error('تعذّر حذف سجل اختبار التخزين.');
+    storageChecks.delete = true;
+
+    storage = {
+      state: 'operational',
+      checkedAt,
+      checks: storageChecks,
+      note: 'نجحت قراءة مخزن الطلبات وكتابة سجل اختبار مؤقت وقراءته ثم حذفه.',
+      sampleCount: (page.blobs || []).length
+    };
   } catch (error) {
-    storage = { state: 'error', checkedAt, note: 'تعذر الوصول إلى مخزن الطلبات: ' + clean(error.message, 160) };
+    if (probeKey) {
+      try { await leadsStore.delete(probeKey); } catch {}
+    }
+    storage = {
+      state: 'error',
+      checkedAt,
+      checks: storageChecks,
+      note: 'تعذر إكمال فحص القراءة/الكتابة/الحذف لمخزن الطلبات: ' + clean(error.message, 160)
+    };
   }
 
   let instagram;
