@@ -707,3 +707,20 @@ test('review gate identity fields are optional and bounded', async () => {
   assert.equal(item.clientId,null);
   assert.equal(item.clientName,null);
 });
+
+
+test('owner sales tab surfaces unallocated contract payments and their affected projects', () => {
+  const source = functionSource('renderSales');
+  assert.match(source, /financialSummary/);
+  assert.match(source, /unallocatedPaid/);
+  assert.match(source, /unallocatedProjects/);
+  assert.match(source, /لا يتم نقلها آلياً/);
+});
+
+test('owner agreements screen explains and quantifies payments outside the current contract', () => {
+  const agreements = fs.readFileSync(path.join(__dirname, '..', 'admin-agreements.html'), 'utf8');
+  assert.match(agreements, /unallocatedPaid/);
+  assert.match(agreements, /unallocatedPaymentCount/);
+  assert.match(agreements, /لم تدخل في حساب العربون أو المتبقي/);
+  assert.match(agreements, /contractId/);
+});

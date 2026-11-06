@@ -4,7 +4,7 @@ const { blobOptions } = require('./blob-config');
 const { requireAdmin, json } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
 const { resolveClientIdentity } = require('./client-ownership');
-const { getProjectFinancials } = require('./project-financials');
+const { getProjectFinancials, readProjectFinancialData } = require('./project-financials');
 const stores = {
   quotes: () => getStore(blobOptions('hbpx-quotes')),
   projects: () => getStore(blobOptions('hbpx-projects')),
@@ -121,8 +121,15 @@ exports.handler=async event=>{
  const auth=requireAdmin(event);if(auth)return auth;
  try{
   if(event.httpMethod==='GET'){
-   const [quotes,projects,payments]=await Promise.all([all('quotes'),all('projects'),all('payments')]);
-   return json(200,{quotes,projects,payments,ownershipReview:await ownershipReview(projects)});
+   const [quotes,projects,financialData]=await Promise.all([all('quotes'),all('projects'),readProjectFinancialData()]);
+   const payments=financialData.payments||[];
+   const projectFinancials=await Promise.all(projects.filter(project=>project?.id).map(async project=>{
+    const financial=await getProjectFinancials(project.id,project.amount,financialData);
+    return {projectId:project.id,projectName:clean(project.name||project.title||'مشروع',160),contractId:financial.contractId,total:financial.total,paid:financial.paid,remaining:financial.remaining,contractSigned:financial.contractSigned,depositMet:financial.depositMet,fullyPaid:financial.fullyPaid,unallocatedPaid:financial.unallocatedPaid,unallocatedPaymentCount:financial.unallocatedPaymentCount};
+   }));
+   const unallocatedProjects=projectFinancials.filter(item=>item.unallocatedPaid>0||item.unallocatedPaymentCount>0);
+   const financialSummary={projectCount:projectFinancials.length,unallocatedPaid:unallocatedProjects.reduce((sum,item)=>sum+item.unallocatedPaid,0),unallocatedPaymentCount:unallocatedProjects.reduce((sum,item)=>sum+item.unallocatedPaymentCount,0),unallocatedProjects};
+   return json(200,{quotes,projects,payments,financialSummary,ownershipReview:await ownershipReview(projects)});
   }
   let b={};try{b=JSON.parse(event.body||'{}')}catch{return json(400,{error:'بيانات غير صالحة'})}
   if(event.httpMethod==='POST'){

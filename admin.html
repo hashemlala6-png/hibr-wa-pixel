@@ -441,9 +441,12 @@ function renderSales(){
  $('#ordersTable').innerHTML=ORDERS_ERROR
   ?'<tr><td colspan="6" class="danger-txt">تعذر تحميل الطلبات التجارية: '+esc(ORDERS_ERROR)+'</td></tr>'
   :(ORDERS||[]).slice(0,40).map(o=>`<tr><td><b>${esc(o.name||o.email||'—')}</b><div class="meta">${esc(o.email||'')}</div></td><td>${esc(o.service||'—')}</td><td>${esc(o.budget||'—')}</td><td><select class="select" onchange="orderStatus(${jsArg(o.id)},this.value)">${['new','reviewing','quoted','approved','in_progress','completed','cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select></td><td>${dt(o.createdAt)}</td><td></td></tr>`).join('')||'<tr><td colspan="6">لا توجد طلبات تجارية حالياً.</td></tr>';
+ const finance=SALES?.financialSummary||{};
+ const unallocatedProjects=Array.isArray(finance.unallocatedProjects)?finance.unallocatedProjects:[];
  $('#salesData').innerHTML=SALES_ERROR
   ?'<p class="note danger-txt">بيانات التحصيل والمشاريع غير متاحة حالياً.</p>'
-  :`<div class="row"><span>إجمالي المشاريع المحجوزة</span><b>${fmt(c.booked)} د.ع</b></div><div class="row"><span>المبالغ المتبقية</span><b>${fmt(c.receivable)} د.ع</b></div>`;
+  :`<div class="row"><span>إجمالي المشاريع المحجوزة</span><b>${fmt(c.booked)} د.ع</b></div><div class="row"><span>المبالغ المتبقية</span><b>${fmt(c.receivable)} د.ع</b></div><div class="row"><span>دفعات خارج العقد الحالي وتحتاج مراجعة</span><b>${fmt(finance.unallocatedPaid||0)} د.ع</b></div>`+
+   (unallocatedProjects.length?'<p class="note danger-txt">هذه المبالغ محفوظة ولم تُحتسب ضمن رصيد العقود الحالية. راجعي العقد والإيصالات قبل تخصيصها؛ لا يتم نقلها آلياً.</p>'+unallocatedProjects.slice(0,20).map(p=>'<div class="row"><div><b>'+esc(p.projectName||p.projectId)+'</b><div class="meta">'+fmt(p.unallocatedPaymentCount)+' دفعة غير مخصصة · '+esc(p.projectId)+'</div></div><b>'+fmt(p.unallocatedPaid)+' د.ع</b></div>').join('')+(unallocatedProjects.length>20?'<p class="meta">توجد مشاريع إضافية ضمن التقرير.</p>':''):'<p class="note">لا توجد دفعات غير مخصصة لعقد حالي وفق السجلات المتاحة.</p>');
 }
 async function orderStatus(id,status){
  try{

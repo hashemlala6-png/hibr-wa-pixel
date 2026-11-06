@@ -129,3 +129,29 @@ test('payment amount keeps decimal precision and binds the payment to the active
   assert.equal(body(response).item.amount, 1000.5);
   assert.equal(body(response).item.contractId, 'contract-a');
 });
+
+
+test('owner sales summary separates payments belonging to an older signed contract', async () => {
+  const data = fixture({ contract: {} });
+  data['hbpx-contracts']['contract-old'] = {
+    id: 'contract-old', projectId: 'project-a', amount: 100000,
+    status: 'signed', signedAt: '2026-10-01T10:00:00.000Z'
+  };
+  data['hbpx-payments']['payment-old'] = {
+    id: 'payment-old', projectId: 'project-a', contractId: 'contract-old', amount: 90000,
+    createdAt: '2026-10-02T10:00:00.000Z'
+  };
+  data['hbpx-payments']['payment-current'] = {
+    id: 'payment-current', projectId: 'project-a', contractId: 'contract-a', amount: 5000,
+    createdAt: '2026-11-06T11:00:00.000Z'
+  };
+  const service = loadSales(data);
+  const response = await service.handler({ httpMethod: 'GET', headers: {} });
+  const result = body(response);
+  assert.equal(response.statusCode, 200);
+  assert.equal(result.financialSummary.unallocatedPaid, 90000);
+  assert.equal(result.financialSummary.unallocatedPaymentCount, 1);
+  assert.deepEqual(result.financialSummary.unallocatedProjects.map(x => x.projectId), ['project-a']);
+  assert.equal(result.financialSummary.unallocatedProjects[0].paid, 5000);
+  assert.equal(result.financialSummary.unallocatedProjects[0].fullyPaid, false);
+});
