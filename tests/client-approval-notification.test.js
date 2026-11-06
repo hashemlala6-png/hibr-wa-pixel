@@ -276,3 +276,14 @@ test('retry only sends notification channels that have not already succeeded', a
     assert.match(calls[0], /graph\.facebook\.com/);
   });
 });
+
+
+test('public lead intake rejects a populated anti-bot honeypot field', async () => {
+  await withEnv({}, async () => {
+    const service = loadLeads(baseData('07712345678'));
+    const { response, body } = await submitLead(service.handler, validLeadPayload({ website: 'https://spam.example/bot' }), '192.0.2.13');
+    assert.equal(response.statusCode, 400);
+    assert.match(body.error, /تعذر معالجة الطلب/);
+    assert.equal(Object.keys(service.stores['hbpx-leads']).length, 1);
+  });
+});
