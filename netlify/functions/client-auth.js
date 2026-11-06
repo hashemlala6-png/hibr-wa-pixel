@@ -36,11 +36,25 @@ async function safeActivity(...args){try{const {logActivity}=require('./client-a
 async function safeMetric(...args){try{const {record}=require('./platform-analytics'); await record(...args);}catch{}}
 function hasSessionSecret(){return Boolean(env('CLIENT_SESSION_SECRET'))}
 function normalizePhone(v){let d=String(v||'').replace(/\D/g,'');if(d.startsWith('00964'))d=d.slice(5);else if(d.startsWith('964'))d=d.slice(3);if(d.startsWith('0'))d=d.slice(1);return d;}
+async function listBlobs(store, prefix, pageSize = 100) {
+  const rows = [], seen = new Set();
+  let cursor;
+  do {
+    const page = await store.list({ prefix, limit: pageSize, ...(cursor ? { cursor } : {}) });
+    rows.push(...(page.blobs || []));
+    const next = page.cursor || null;
+    if (!next || next === cursor || seen.has(next)) break;
+    seen.add(next);
+    cursor = next;
+  } while (rows.length < 10000);
+  return rows;
+}
 async function hasApprovedLead(email,phone){
   try{
-    const r=await leads().list({prefix:'lead-',limit:1000});
-    for(const item of r.blobs||[]){
-      const lead=await leads().get(item.key,{type:'json'}).catch(()=>null);
+    const st=leads();
+    const records=await listBlobs(st,'lead-');
+    for(const item of records){
+      const lead=await st.get(item.key,{type:'json'}).catch(()=>null);
       if(lead&&lead.status==='approved'&&sameClientContact(lead,{email,whatsapp:phone}))return true;
     }
     return false;
@@ -50,21 +64,22 @@ async function hasApprovedLead(email,phone){
 // Bind only leads whose email AND WhatsApp both match this account.
 // Legacy records sharing a phone number are deliberately not pulled into the account.
 async function linkApprovedLeads(email,phone,accountId){
-  const r=await leads().list({prefix:'lead-',limit:1000});
+  const st=leads(), index=leadIndex();
+  const records=await listBlobs(st,'lead-');
   let linked=0;
-  for(const item of r.blobs||[]){
-    const lead=await leads().get(item.key,{type:'json'}).catch(()=>null);
+  for(const item of records){
+    const lead=await st.get(item.key,{type:'json'}).catch(()=>null);
     if(!lead||!sameClientContact(lead,{email,whatsapp:phone}))continue;
     const previous=String(lead.clientId||lead.id);
     if(previous!==accountId){
       lead.clientId=accountId;
-      await leads().setJSON(lead.id,lead);
+      await st.setJSON(lead.id,lead);
     }
     // Rebuild the exact account index even when the lead already carries this ID.
-    try{await leadIndex().setJSON(`client-${accountId}-${lead.id}`,{leadId:lead.id,clientId:accountId,createdAt:lead.createdAt||new Date().toISOString()});}
+    try{await index.setJSON(`client-${accountId}-${lead.id}`,{leadId:lead.id,clientId:accountId,createdAt:lead.createdAt||new Date().toISOString()});}
     catch(err){console.warn('client lead index update failed',err?.message||err);}
     if(previous&&previous!==accountId){
-      try{await leadIndex().delete(`client-${previous}-${lead.id}`);}catch{}
+      try{await index.delete(`client-${previous}-${lead.id}`);}catch{}
     }
     linked++;
   }
@@ -78,8 +93,8 @@ exports.handler=async e=>{
   const action=e.queryStringParameters?.action||'me';
   if(e.httpMethod==='GET'&&action==='admin'){
     const auth=requireAdmin(e); if(auth)return auth;
-    const r=await accounts().list({prefix:'email-'}); const items=[];
-    for(const item of r.blobs||[]){try{const a=await accounts().get(item.key,{type:'json'});if(a)items.push({id:a.id,name:a.name,email:a.email,whatsapp:a.whatsapp,createdAt:a.createdAt,updatedAt:a.updatedAt,lastLoginAt:a.lastLoginAt||null});}catch{}}
+    const accountStore=accounts(), records=await listBlobs(accountStore,'email-'); const items=[];
+    for(const item of records){try{const a=await accountStore.get(item.key,{type:'json'});if(a)items.push({id:a.id,name:a.name,email:a.email,whatsapp:a.whatsapp,createdAt:a.createdAt,updatedAt:a.updatedAt,lastLoginAt:a.lastLoginAt||null});}catch{}}
     items.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
     return json(200,{accounts:items});
   }
