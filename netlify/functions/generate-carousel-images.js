@@ -8,7 +8,7 @@ const { requireAdmin, json } = require('./auth-utils');
 const { getAIContext, contextPrompt, saveAIHistory } = require('./ai-context');
 const { logActivity } = require('./client-activity');
 
-exports.handler = async function (event) {
+exports.handler = async event => {
   connectLambda(event);
   const corsHeaders = {
     "Access-Control-Allow-Origin": "same-origin",
