@@ -1,6 +1,7 @@
 const crypto=require('crypto');
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
+const { blobOptions } = require('./blob-config');
 const defs={
  projects:['hbpx-projects','project-'],payments:['hbpx-payments','payment-'],expenses:['hbpx-expenses','expense-'],
  leads:['hbpx-leads','lead-'],tasks:['hbpx-tasks','task-'],subscriptions:['hbpx-subscriptions','subscription-'],
@@ -8,7 +9,7 @@ const defs={
  snapshots:['hbpx-monitor-snapshots','snapshot-'],decisions:['hbpx-monitor-decisions','decision-'],
  growthSnapshots:['hbpx-growth-snapshots','snapshot-'],growthBaselines:['hbpx-growth-baselines','baseline-']
 };
-const blobOptions=name=>{const options={name,consistency:'eventual'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID;const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
+
 const st=n=>getStore(blobOptions(defs[n][0]));
 const clean=(v,n=500)=>String(v??'').trim().slice(0,n);
 const num=v=>{const x=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(x)?x:0};
