@@ -1,8 +1,9 @@
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { requireAdmin, json } = require('./auth-utils');
 const crypto = require('crypto');
-const analyticsStore = () => getStore({name:'hbpx-platform-analytics', consistency:'strong'});
-const store = () => getStore({name:'hbpx-funnel', consistency:'strong'});
+const analyticsStore = () => getStore(blobOptions('hbpx-platform-analytics', 'strong'));
+const store = () => getStore(blobOptions('hbpx-funnel', 'strong'));
 const clean=(v,n=300)=>String(v??'').trim().slice(0,n);
 function hashId(v){return crypto.createHash('sha256').update(String(v||'')).digest('hex').slice(0,24)}
 exports.handler=async event=>{
