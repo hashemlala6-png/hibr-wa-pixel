@@ -118,7 +118,7 @@ test('owner refresh renders cross-dependent views after every section settles', 
   assert.match(status.textContent, /اكتمل التحديث جزئياً/);
   assert.match(status.textContent, /طلبات العملاء/);
   assert.equal(status.style.color, '#a94b4b');
-  assert.deepEqual(calls.slice(-7), [
+  assert.deepEqual(calls.filter(item => typeof item === 'string').slice(-7), [
     'renderOverview', 'renderCustomers', 'renderSales', 'renderProjects',
     'renderGrowth', 'renderIntelligence', 'renderActivity'
   ]);
