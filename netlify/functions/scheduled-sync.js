@@ -1,4 +1,5 @@
 const { env } = require('./env');
+const { blobOptions } = require('./blob-config');
 const { getStore, connectLambda } = require('@netlify/blobs');
 
 // Netlify Scheduled Function: runs once per day and asks the authenticated
@@ -8,10 +9,9 @@ exports.handler = async event => {
   connectLambda(event);
   const secret = env('INTERNAL_SYNC_SECRET');
   if (!secret) return { statusCode: 500, body: JSON.stringify({error:'INTERNAL_SYNC_SECRET غير مضبوط'}) };
-  const siteID = env('NETLIFY_SITE_ID') || env('SITE_ID') || '76bd352d-826a-49dc-8f0f-5f576610b1ae';
   const token = env('NETLIFY_AUTH_TOKEN');
   if (!token) return { statusCode: 500, body: JSON.stringify({error:'NETLIFY_AUTH_TOKEN غير مضبوط في إعدادات Netlify'}) };
-  const store = getStore({name:'hbpx-integrations', siteID, token, consistency:'strong'});
+  const store = getStore(blobOptions('hbpx-integrations', 'strong'));
   const listed = await store.list({prefix:'client-'});
   const base = env('URL') || env('DEPLOY_PRIME_URL');
   if (!base) return {statusCode:500,body:JSON.stringify({error:'عنوان الموقع غير متاح للـscheduled function'})};
