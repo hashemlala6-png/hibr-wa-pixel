@@ -6,7 +6,7 @@
 .concept-lab-heading>p{max-width:460px;color:#69766d;font-size:.9rem;line-height:2.1;margin:0 0 5px}
 .concept-lab{--concept-ink:#3a3019;--concept-accent:#c65d3f;--concept-paper:#e6ddcb;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:0;border:1px solid #d9d2c5;background:#f8f5ed;min-height:590px}
 .concept-lab[data-concept="care"]{--concept-ink:#4b3f23;--concept-accent:#b77a63;--concept-paper:#e8e5dd}
-.concept-lab[data-concept="retail"]{--concept-ink:#262f2d;--concept-accent:#be5b3e;--concept-paper:#eadbb9}
+.concept-lab[data-concept="retail"]{--concept-ink:#2f2c26;--concept-accent:#be5b3e;--concept-paper:#eadbb9}
 .concept-selector{padding:28px 27px;display:flex;flex-direction:column;justify-content:space-between}
 .concept-selector-label{font:800 .58rem Arial,sans-serif;letter-spacing:.15em;color:#a06a51}
 .concept-tabs{display:grid;border-top:1px solid #d9d2c5;margin-top:26px}
@@ -51,7 +51,7 @@
 .brand-service-section .brand-offer h2{grid-column:1;grid-row:2;font:900 clamp(2.2rem,4vw,4.25rem)/1.12 Cairo,sans-serif;letter-spacing:-.08em;margin:0}
 .brand-service-section .brand-offer h2 em{font-style:normal;color:#c65d3f}
 .brand-service-section .brand-offer>p{grid-column:2;grid-row:2;color:#69766d;font-size:.88rem;line-height:2;margin:0 0 16px;max-width:520px}
-.brand-service-section .brand-offer ul{grid-column:2;grid-row:3;margin:0 0 17px;padding:0 18px 0 0;color:#56675d;font-size:.82rem;line-height:2.15;columns:2;column-gap:28px}
+.brand-service-section .brand-offer ul{grid-column:2;grid-row:3;margin:0 0 17px;padding:0 18px 0 0;color:#676256;font-size:.82rem;line-height:2.15;columns:2;column-gap:28px}
 .brand-service-section .brand-offer-link{grid-column:2;grid-row:4;justify-self:start;font-size:.82rem;font-weight:800}
 .brand-service-section .brand-offer-design{background:#ebe8e1!important}
 .brand-service-section .brand-bundle{display:flex;justify-content:space-between;align-items:center;gap:25px;margin-top:0!important;border-radius:0!important;background:#3d3219!important;padding:32px 35px!important}
