@@ -1,22 +1,39 @@
 const crypto = require('crypto');
 
 function env(name) {
-  // Netlify Functions expose process.env reliably at runtime.
-  // Keep Netlify.env as a secondary compatibility path.
+  // Standard Netlify Node.js Functions expose runtime variables through process.env.
+  // Netlify.env is the Edge Functions API and is not needed for this Lambda handler.
   try {
-    const value = process?.env?.[name];
-    if (value !== undefined && value !== null && String(value).length) return String(value);
-  } catch {}
-  try {
-    const value = globalThis.Netlify?.env?.get?.(name);
+    const value = process.env?.[name];
     return value === undefined || value === null ? '' : String(value);
-  } catch { return ''; }
+  } catch {
+    return '';
+  }
 }
 
-function secretFor(role) {
-  return role === 'admin'
-    ? (env('ADMIN_SESSION_SECRET') || env('ADMIN_PASSWORD'))
-    : env('CLIENT_SESSION_SECRET');
+function isDeployPreview(event) {
+  const headers = event?.headers || {};
+  const rawHost = headers.host || headers.Host || headers['x-forwarded-host'] || '';
+  const rawUrl = event?.rawUrl || '';
+  let host = String(rawHost).split(',')[0].trim().toLowerCase();
+  if (!host && rawUrl) {
+    try { host = new URL(rawUrl).hostname.toLowerCase(); } catch {}
+  }
+  host = host.replace(/:\d+$/, '');
+  return /^deploy-preview-\d+--[a-z0-9-]+\.netlify\.app$/.test(host);
+}
+
+function adminPassword(_event) {
+  // Production and Deploy Previews use the existing owner password.
+  // No separate ADMIN_PREVIEW_PASSWORD variable is required.
+  return env('ADMIN_PASSWORD');
+}
+
+function secretFor(role, event) {
+  if (role !== 'admin') return env('CLIENT_SESSION_SECRET');
+  const baseSecret = env('ADMIN_SESSION_SECRET') || adminPassword(event);
+  // Keep preview sessions isolated without changing existing Production signatures.
+  return isDeployPreview(event) ? `${baseSecret}:deploy-preview` : baseSecret;
 }
 
 function b64(value) { return Buffer.from(value).toString('base64url'); }
@@ -39,15 +56,15 @@ function timingSafe(a, b) {
   } catch { return false; }
 }
 
-function createSession(role, subject, maxAge) {
-  const secret = secretFor(role);
+function createSession(role, subject, maxAge, event) {
+  const secret = secretFor(role, event);
   if (!secret) throw new Error(`${role === 'admin' ? 'ADMIN_PASSWORD / ADMIN_SESSION_SECRET' : 'CLIENT_SESSION_SECRET / ADMIN_SESSION_SECRET'} غير مضبوط في Netlify.`);
   const payload = JSON.stringify({ sub: subject || role, role, exp: Date.now() + maxAge * 1000 });
   return `${b64(payload)}.${sign(payload, secret)}`;
 }
 
 function verifySession(event, role, cookieName) {
-  const secret = secretFor(role);
+  const secret = secretFor(role, event);
   if (!secret) return null;
   const cookies = parseCookies(event.headers?.cookie || event.headers?.Cookie || '');
   const token = cookies[cookieName];
@@ -77,4 +94,4 @@ function json(statusCode, body, extraHeaders = {}) {
   };
 }
 
-module.exports = { createSession, verifySession, cookie, clearCookie, parseCookies, json, env };
+module.exports = { createSession, verifySession, cookie, clearCookie, parseCookies, json, env, adminPassword, isDeployPreview };

@@ -2,6 +2,7 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const crypto = require('crypto');
 const { logActivity } = require('./client-activity');
+const { resolveClientIdentity } = require('./client-ownership');
 
 // Explicit credentials are supported for deployments where Netlify does not inject Blobs context.
 // Prefer the platform-injected context; fall back to server-side environment variables only.
@@ -16,22 +17,23 @@ const store = () => getStore(blobOptions('hbpx-leads'));
 const rateStore = () => getStore(blobOptions('hbpx-lead-rate'));
 const clientIndex = () => getStore(blobOptions('hbpx-lead-index'));
 const accountsStore = () => getStore(blobOptions('hbpx-client-accounts'));
-function normalizeEmail(v){return String(v||'').trim().toLowerCase();}
-function normalizePhone(v){return String(v||'').replace(/\D/g,'').replace(/^0/,'964');}
-async function findExistingAccountClientId(email,phone){
-  const targetEmail=normalizeEmail(email), targetPhone=normalizePhone(phone);
-  if(!targetEmail&&!targetPhone)return null;
-  const r=await accountsStore().list({prefix:'email-'}).catch(()=>({blobs:[]}));
-  let best=null;
+async function listClientAccounts(){
+  const r=await accountsStore().list({prefix:'email-',limit:1000});
+  const out=[];
   for(const b of r.blobs||[]){
-    const a=await accountsStore().get(b.key,{type:'json'}).catch(()=>null);
-    if(!a)continue;
-    const emailMatch=targetEmail&&normalizeEmail(a.email)===targetEmail;
-    const phoneMatch=targetPhone&&normalizePhone(a.whatsapp)===targetPhone;
-    if(emailMatch||phoneMatch){best=a;break;}
+    const account=await accountsStore().get(b.key,{type:'json'}).catch(()=>null);
+    if(account)out.push(account);
   }
-  return best?.clientId||best?.id||null;
+  return out;
 }
+async function resolveLeadIdentity(lead){
+  const accounts=await listClientAccounts().catch(err=>{
+    console.error('account identity lookup failed',err?.message||err);
+    return [];
+  });
+  return resolveClientIdentity(lead,accounts);
+}
+
 const requestIp = (event) => String(event.headers?.['x-nf-client-connection-ip'] || event.headers?.['x-forwarded-for'] || 'unknown').split(',')[0].trim().slice(0,120);
 async function rateLimit(ip){
   const key='ip-'+crypto.createHash('sha256').update(ip).digest('hex').slice(0,32);
@@ -111,7 +113,7 @@ async function notifyClientApproval(lead) {
     } catch (e) { result.email = 'failed'; console.error('client approval email failed', e.message || e); }
   } else if (!lead.email) result.email = 'no_customer_email';
   const token = process.env.WHATSAPP_ACCESS_TOKEN, phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID, template = process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_NAME;
-  const phone = normalizePhone(lead.whatsapp);
+  const phone = normalizePhoneForMatch(lead.whatsapp).replace(/^964/, '');
   if (token && phoneId && template && phone) {
     try {
       const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone, type: 'template', template: { name: template, language: { code: process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_LANGUAGE || 'ar' }, components: [{ type: 'body', parameters: [{ type: 'text', text: String(lead.name || 'عميل').slice(0,200) }, { type: 'text', text: String(lead.service || 'الخدمة المطلوبة').slice(0,200) }] }] } }) });
@@ -146,9 +148,10 @@ exports.handler = async (event) => {
     if (!name || !whatsapp) return json(400, { error: 'الاسم ورقم واتساب مطلوبان.' });
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: 'البريد الإلكتروني غير صحيح.' });
     const id = `lead-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const normalizedPhone = whatsapp.replace(/\D/g,'').replace(/^0/,'964');
-    const existingAccountClientId = await findExistingAccountClientId(email, whatsapp).catch(err=>{console.error('account identity lookup failed',err?.message||err);return null;});
-    const clientId = existingAccountClientId || ('client-' + crypto.createHash('sha256').update(normalizedPhone).digest('hex').slice(0,24));
+    // Resolve an account only when exactly one account matches BOTH normalized contacts.
+    // If none (or multiple) match, keep this lead under its own pair-specific identity.
+    const identity = await resolveLeadIdentity({id,email,whatsapp});
+    const clientId = identity.clientId;
     const lead = {
       id, clientId, name, whatsapp,
       email, service, budget, details,
@@ -214,7 +217,8 @@ exports.handler = async (event) => {
     else if (b.lossReason !== undefined) current.lossReason = clean(b.lossReason, 160);
     current.updatedAt = new Date().toISOString();
     await store().setJSON(b.id, current);
-    await logActivity(current.clientId||b.id,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
+    const identity = await resolveLeadIdentity(current);
+    await logActivity(identity.clientId,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
     let customerNotifications = null;
     if (current.status === 'approved' && previousStatus !== 'approved') customerNotifications = await notifyClientApproval(current);
     return json(200, { lead: current, customerNotifications });

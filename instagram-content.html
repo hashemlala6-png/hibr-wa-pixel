@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>استوديو محتوى Instagram | حبر وبكسل</title>
+<style>
+:root{--bg:#f7f5ef;--card:#fff;--ink:#24313a;--muted:#687780;--line:#e4e2da;--blue:#245d83;--green:#159bd0;--red:#a44848;--gold:#d8a83b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}button,a,input,textarea,select{font:inherit}
+button{cursor:pointer;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);padding:10px 13px}.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700}.danger{color:var(--red)}
+.wrap{max-width:1180px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(25px,5vw,36px);margin:4px 0}.eyebrow{font-size:12px;color:var(--blue);font-weight:800;letter-spacing:.08em}
+.muted{color:var(--muted);line-height:1.8}.small{font-size:12px;color:var(--muted);line-height:1.8}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1.2fr);gap:14px;margin-top:15px}.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:18px;min-width:0}
+.field{display:block;width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;background:#fff;margin:6px 0 12px;color:var(--ink)}
+textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.status{padding:12px;border-radius:11px;background:#f0f4f5;line-height:1.7;margin:11px 0}.ok{background:#eaf5ee;color:var(--green)}.bad{background:#fff0ed;color:var(--red)}.warn{background:#fff6df;color:#765812}
+.list{display:grid;gap:10px}.post{border:1px solid var(--line);border-radius:13px;padding:13px}.posthead{display:flex;justify-content:space-between;align-items:start;gap:9px}.pill{font-size:11px;padding:5px 9px;border-radius:20px;background:#eef2f4;white-space:nowrap}.pill.approved{background:#eaf5ee;color:var(--green)}.pill.pending_approval{background:#fff4d9;color:#765812}.pill.needs_changes,.pill.rejected{background:#fff0ed;color:var(--red)}
+.caption{white-space:pre-wrap;line-height:1.7;overflow-wrap:anywhere;margin:10px 0;max-height:160px;overflow:auto}.counts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.count{background:#fafaf7;border:1px solid var(--line);border-radius:11px;padding:10px}.count b{display:block;font-size:21px}
+.hidden{display:none!important}.back{display:inline-block;padding:10px 13px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);text-decoration:none}
+@media(max-width:850px){.grid{grid-template-columns:1fr}}@media(max-width:560px){.wrap{padding:12px}.card{padding:14px}.counts{grid-template-columns:repeat(2,1fr)}}
+
+/* H&P shared dashboard palette */
+:root{--bg:#f4f9fd;--card:#fff;--ink:#20394d;--muted:#647b8c;--line:#dce9f1;--blue:#168fbe;--green:#168fbe;--red:#a44848;--gold:#f2c84b}
+body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif!important;background:linear-gradient(145deg,#f7fbff,#eef7fc)!important;color:#20394d!important}
+h1{font-family:Cairo,'IBM Plex Sans Arabic',sans-serif!important;font-size:clamp(1.55rem,3.2vw,2.15rem)!important;line-height:1.35!important;letter-spacing:-.025em}
+.card{border-color:#dce9f1!important;border-radius:14px!important;box-shadow:0 8px 24px rgba(35,103,139,.055)!important}
+button,.back,.field{border-radius:9px!important}
+.primary{background:linear-gradient(110deg,#159fd1,#32b9e5)!important;border-color:#159fd1!important}
+.eyebrow{color:#168fbe!important}
+.status,.ok{background:#eaf5fb!important;color:#28698e!important}
+.warn{background:#fff8df!important;color:#99721a!important}
+@media(max-width:650px){.wrap{padding:14px!important}h1{font-size:1.55rem!important}.card{padding:15px!important}}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div><div class="eyebrow">HIBR & PIXEL · CONTENT STUDIO</div><h1>استوديو محتوى Instagram</h1><div class="muted">مسودات المحتوى، ترتيب المواعيد، وموافقة المالكة قبل أي إجراء خارجي.</div></div>
+  <div class="actions"><a class="back" href="/instagram.html">ربط الحساب</a><a class="back" href="/admin.html">لوحة الإدارة</a><a class="back" href="/instagram-insights.html">تحليلات الحساب</a></div>
+</header>
+<div class="status warn"><b>سياسة النشر:</b> اعتماد المسودة لا ينشرها. بعد الاعتماد يظهر إجراء مستقل باسم «بدء النشر»، ولا يُرسل الأمر إلى Instagram إلا بعد ضغط المالكة وتأكيدها. مواعيد التقويم تذكيرات وليست جدولة تلقائية. Stories تبقى مسودات في هذه النسخة.</div>
+<div id="igAccountStatus" class="status warn">جارٍ التحقق من اتصال حساب Instagram…</div>
+<section class="counts" id="counts">
+  <div class="count"><span class="small">كل المسودات</span><b id="nAll">—</b></div>
+  <div class="count"><span class="small">تحتاج مراجعة</span><b id="nPending">—</b></div>
+  <div class="count"><span class="small">معتمدة</span><b id="nApproved">—</b></div>
+  <div class="count"><span class="small">تحتاج تعديلاً</span><b id="nChanges">—</b></div>
+</section>
+<div class="grid">
+<section class="card">
+  <h2 id="formTitle" style="margin-top:0">إنشاء مسودة محتوى</h2>
+  <p class="small">يمكن حفظ النص من استوديو الذكاء الاصطناعي أو إنشاء مسودة يدوية. أضيفي روابط الوسائط العامة عند توفر استضافة مناسبة.</p>
+  <form id="form">
+    <label class="small" for="title">عنوان داخلي للمحتوى</label>
+    <input id="title" class="field" maxlength="180" placeholder="مثلاً: منشور تعريف بالخدمة">
+    <label class="small" for="format">نوع المحتوى</label>
+    <select id="format" class="field"><option value="IMAGE">منشور صورة</option><option value="CAROUSEL">كاروسيل</option><option value="REEL">Reel</option><option value="STORY">Story</option></select>
+    <label class="small" for="caption">نص المنشور / الوصف</label>
+    <textarea id="caption" class="field" maxlength="2200" required placeholder="اكتبي النص أو الصقي نتيجة الذكاء الاصطناعي هنا…"></textarea>
+    <label class="small" for="mediaUrls">روابط الوسائط العامة — رابط واحد في كل سطر</label>
+    <textarea id="mediaUrls" class="field" rows="3" placeholder="https://..."></textarea>
+    <div class="small">يمكن لصق رابط عام HTTPS أو رفع الملف من الهاتف إلى التخزين السحابي. المنشور يقبل رابطاً واحداً، والكاروسيل يحتاج رابطين أو أكثر.</div>
+    <div class="actions" style="margin-top:10px">
+      <input id="mediaFile" class="field" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" style="max-width:100%">
+      <button id="uploadMedia" type="button">رفع الوسيط إلى التخزين الآمن</button>
+    </div>
+    <div id="uploadStatus" class="small" role="status" aria-live="polite"></div>
+    <div class="status" style="margin:12px 0">
+      <b>فحص جودة التصميم بالذكاء الاصطناعي</b>
+      <div class="small">ارفعي صورة المنشور أو شريحة واحدة من الكاروسيل لفحص النص العربي والتكوين والقص والوضوح. المقاس المستهدف 1080×1350. الصور فقط حالياً، وبحد أقصى 4MB.</div>
+      <input id="visualFile" class="field" type="file" accept="image/png,image/jpeg,image/webp">
+      <div class="actions"><button id="runVisualQA" type="button">فحص جودة الصورة</button></div>
+      <div id="qaResult" class="small" role="status" aria-live="polite"></div>
+    </div>
+    <label class="small" for="altText">وصف بديل للصورة (اختياري)</label>
+    <input id="altText" class="field" maxlength="1000" placeholder="وصف مختصر للصورة لقابلية الوصول">
+    <label class="small" for="plannedAt">موعد النشر المقترح (اختياري)</label>
+    <input id="plannedAt" class="field" type="datetime-local">
+    <div class="actions"><button id="save" class="primary" type="submit">حفظ المسودة</button><button id="clear" type="button">مسودة جديدة</button></div>
+    <div id="formMsg" class="small" role="status" aria-live="polite"></div>
+  </form>
+</section>
+<section class="card" style="margin-top:15px">
+ <div class="posthead"><h2 style="margin:0">تقويم المحتوى القادم</h2><span class="small">يعرض المواعيد المخططة فقط — لا يوجد نشر تلقائي</span></div>
+ <div id="calendar" class="list" style="margin-top:12px"><div class="status">جارٍ تحميل المواعيد…</div></div>
+</section>
+<section class="card">
+  <div class="posthead"><h2 style="margin:0">قائمة المحتوى</h2><button id="refresh">تحديث</button></div>
+  <div class="actions"><select id="filter" class="field" style="max-width:220px;margin:0"><option value="all">كل الحالات</option><option value="draft">مسودات</option><option value="pending_approval">بانتظار الموافقة</option><option value="approved">معتمدة</option><option value="needs_changes">تحتاج تعديلاً</option><option value="rejected">مرفوضة</option></select><span id="listStatus" class="small"></span></div>
+  <div id="posts" class="list" style="margin-top:12px"><div class="status">جارٍ تحميل المسودات…</div></div>
+</section>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);let ITEMS=[];let editingId=null;
+const labels={draft:'مسودة',needs_changes:'تحتاج تعديلاً',pending_approval:'بانتظار موافقة المالكة',approved:'معتمدة — لم تُنشر',rejected:'مرفوضة'};
+const formatLabels={IMAGE:'منشور صورة',CAROUSEL:'كاروسيل',REEL:'Reel',STORY:'Story'};
+let IG_ACCOUNT=null;
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function mediaReady(x){
+ const urls=Array.isArray(x.mediaUrls)?x.mediaUrls:[];
+ const isJpeg=u=>{try{return /\.jpe?g$/i.test(new URL(u).pathname)}catch{return false}};
+ const isVideo=u=>{try{return /\.(mp4|mov|m4v)$/i.test(new URL(u).pathname)}catch{return false}};
+ if(String(x.caption||'').length>2200)return false;
+ if(x.format==='IMAGE')return urls.length===1&&isJpeg(urls[0]);
+ if(x.format==='CAROUSEL')return urls.length>=2&&urls.length<=10&&urls.every(isJpeg);
+ if(x.format==='REEL')return urls.length===1&&isVideo(urls[0]);
+ return false;
+}
+function renderMedia(x){
+ const urls=Array.isArray(x.mediaUrls)?x.mediaUrls:[];
+ return urls.map((u,i)=>{
+  let video=false;try{video=/\.(mp4|mov|m4v)$/i.test(new URL(u).pathname)}catch{}
+  return video
+   ?'<video controls preload="none" playsinline style="width:min(100%,320px);max-height:220px;border-radius:10px;background:#eee" src="'+esc(u)+'"></video>'
+   :'<img loading="lazy" alt="وسيط '+(i+1)+'" src="'+esc(u)+'" style="width:min(100%,220px);max-height:220px;object-fit:contain;border-radius:10px;background:#f2f2f2">';
+ }).join('');
+}
+
+async function api(path,opt){
+ const r=await fetch('/.netlify/functions/'+path,{credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json',...((opt&&opt.headers)||{})},...(opt||{})});
+ const d=await r.json().catch(()=>({}));
+ if(r.status===401){location.href='/admin.html';throw new Error('انتهت جلسة المالك.')}
+ if(!r.ok)throw new Error(d.error||'تعذر الاتصال بالخادم.');
+ return d;
+}
+function resetForm(){
+ editingId=null;$('form').reset();$('formTitle').textContent='إنشاء مسودة محتوى';$('save').textContent='حفظ المسودة';
+}
+function fillForm(x){
+ editingId=x.id;$('title').value=x.title||'';$('format').value=x.format||'IMAGE';$('caption').value=x.caption||'';
+ $('mediaUrls').value=(x.mediaUrls||[]).join('\n');$('altText').value=x.altText||'';
+ if(x.plannedAt){const d=new Date(x.plannedAt);const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);$('plannedAt').value=local.toISOString().slice(0,16);}
+ else $('plannedAt').value='';
+ $('formTitle').textContent='تعديل المسودة';$('save').textContent='حفظ التعديلات';$('caption').focus();
+}
+function render(){
+ const calendarItems=ITEMS.filter(x=>x.plannedAt).sort((a,b)=>new Date(a.plannedAt)-new Date(b.plannedAt)).slice(0,12);
+ $('calendar').innerHTML=calendarItems.length?calendarItems.map(x=>{
+  const late=new Date(x.plannedAt).getTime()<Date.now()&&x.status!=='approved';
+  const when=new Date(x.plannedAt).toLocaleString('ar-IQ',{dateStyle:'medium',timeStyle:'short'});
+  return '<div class="post"><div class="posthead"><div><b>'+esc(x.title||'محتوى Instagram')+'</b><div class="small">'+esc(when)+' · '+esc(formatLabels[x.format]||x.format)+'</div></div><span class="pill '+esc(x.status)+'">'+esc(labels[x.status]||x.status)+'</span></div>'+
+  (x.publishStatus==='published'?'<div class="small">تم النشر على Instagram — '+esc(x.publishedAt||'')+'</div>':x.status==='approved'?(x.reminderSentAt?'<div class="small">تم إرسال تذكير داخلي — بانتظار النشر اليدوي.</div>':'<div class="small">بانتظار تذكير وقت الموعد.</div>'):late?'<div class="small">الموعد مرّ، لكن المحتوى ليس معتمداً بعد.</div>':'')+'</div>';
+ }).join(''):'<div class="status">لا توجد مواعيد مقترحة محفوظة حالياً.</div>';
+ const f=$('filter').value;const rows=ITEMS.filter(x=>f==='all'||x.status===f);
+ $('nAll').textContent=ITEMS.length;$('nPending').textContent=ITEMS.filter(x=>x.status==='pending_approval').length;
+ $('nApproved').textContent=ITEMS.filter(x=>x.status==='approved').length;$('nChanges').textContent=ITEMS.filter(x=>x.status==='needs_changes').length;
+ $('posts').innerHTML=rows.length?rows.map(x=>{
+  const editable=['draft','needs_changes','rejected'].includes(x.status);
+  const mediaCount=(x.mediaUrls||[]).length;
+  const schedule=x.plannedAt?new Date(x.plannedAt).toLocaleString('ar-IQ'):'غير محدد';
+  return '<article class="post"><div class="posthead"><div><b>'+esc(x.title||'مسودة Instagram')+'</b><div class="small">'+esc(formatLabels[x.format]||x.format)+' · '+esc(new Date(x.updatedAt||x.createdAt).toLocaleString('ar-IQ'))+'</div></div><span class="pill '+esc(x.status)+'">'+esc(labels[x.status]||x.status)+'</span></div>'+
+   '<div class="caption">'+esc(x.caption)+'</div><div class="small">الوسائط: '+mediaCount+' · الموعد المقترح: '+esc(schedule)+'</div>'+(mediaCount?'<div class="actions" style="margin-top:8px">'+renderMedia(x)+'</div>':'')+
+   (x.decisionNote?'<div class="status warn">ملاحظة المالكة: '+esc(x.decisionNote)+'</div>':'')+
+   '<div class="actions"><button type="button" data-copy="'+esc(x.id)+'">نسخ النص</button>'+
+   (editable?'<button type="button" data-edit="'+esc(x.id)+'">تعديل</button><button type="button" data-submit="'+esc(x.id)+'" class="primary">إرسال للمراجعة</button><button type="button" data-delete="'+esc(x.id)+'" class="danger">حذف</button>':'')+
+   (x.status==='pending_approval'?'<button type="button" data-approve="'+esc(x.id)+'" class="primary">اعتماد المسودة</button><button type="button" data-changes="'+esc(x.id)+'">طلب تعديل</button>':'')+
+   (x.status==='approved'&&x.format!=='STORY'&&x.publishStatus!=='published'&&x.publishStatus!=='publishing'&&x.publishStatus!=='publish_uncertain'&&mediaReady(x)?'<button type="button" data-publish="'+esc(x.id)+'" class="primary">'+(x.publishStatus==='processing'?'متابعة النشر':'بدء النشر')+'</button>':'')+
+   (x.status==='approved'&&x.format!=='STORY'&&x.publishStatus!=='published'&&!mediaReady(x)?'<div class="status warn">المسودة معتمدة، لكنها تحتاج وسيطاً صالحاً للنشر: JPEG للصور/الكاروسيل أو MP4/MOV للـ Reel.</div>':'')+
+   (x.status==='approved'&&x.format==='STORY'&&x.publishStatus!=='published'?'<div class="status warn">Stories محفوظة كمسودات فقط؛ نشرها غير مفعّل في هذا المسار.</div>':'')+
+   (x.publishStatus==='published'?'<div class="status ok">نُشر على Instagram بتاريخ '+esc(x.publishedAt||'—')+(x.instagramPermalink?' · <a target="_blank" rel="noopener" href="'+esc(x.instagramPermalink)+'">فتح المنشور</a>':'')+'</div>':'')+
+   (x.publishStatus==='processing'?'<div class="status warn">حاوية المحتوى قيد المعالجة لدى Instagram. استخدمي «متابعة النشر» عند جاهزيتها.</div>':'')+
+   (x.publishStatus==='publishing'?'<div class="status warn">أُرسل أمر النشر إلى Instagram. لا تضغطي مرة ثانية؛ حدّثي القائمة بعد قليل للتحقق من رابط المنشور.</div>':'')+
+   (x.publishStatus==='preparing'?'<div class="status warn">يجري تجهيز حاوية المحتوى لدى Instagram. انتظري قليلاً ثم حدّثي القائمة.</div>':'')+   (x.publishStatus==='publish_uncertain'?'<div class="status bad">حالة النشر غير محسومة. تحققي من حساب Instagram يدوياً قبل إعادة المحاولة.</div>':'')+
+   (x.publishStatus==='failed'?'<div class="status bad">تعذر النشر: '+esc(x.publishError||'راجعي إعدادات الحساب والوسائط.')+'</div>':'')+
+   '</div></article>';
+ }).join(''):'<div class="status">لا توجد مسودات بهذه الحالة.</div>';
+}
+async function load(){
+ $('listStatus').textContent='جارٍ التحميل…';
+ try{
+  const [d,connection]=await Promise.all([
+   api('instagram-content'),
+   api('instagram-oauth?action=status').catch(error=>({connected:false,error:error.message}))
+  ]);
+  ITEMS=d.items||[];
+  IG_ACCOUNT=connection.connected?connection.account:null;
+  $('igAccountStatus').className='status '+(connection.connected?'ok':'warn');
+  $('igAccountStatus').textContent=connection.connected
+   ?'الحساب المرتبط: @'+(IG_ACCOUNT?.username||'Instagram')+' — أي نشر يتطلب موافقة منفصلة وتأكيداً منك.'
+   :'لا يوجد حساب Instagram موثّق بعد. يمكنك تجهيز المسودات، لكن النشر لن يعمل قبل ربط الحساب والتحقق منه.'+(connection.error?' ('+connection.error+')':'');
+  render();$('listStatus').textContent='تم تحميل '+ITEMS.length+' عنصر.';
+ }catch(e){$('listStatus').textContent=e.message;$('posts').innerHTML='<div class="status bad">تعذر تحميل القائمة.</div>';}
+}
+$('form').onsubmit=async e=>{
+ e.preventDefault();$('save').disabled=true;$('formMsg').textContent='جارٍ الحفظ…';
+ const payload={title:$('title').value,format:$('format').value,caption:$('caption').value,mediaUrls:$('mediaUrls').value,altText:$('altText').value,plannedAt:$('plannedAt').value};
+ try{
+  if(editingId){await api('instagram-content',{method:'PATCH',body:JSON.stringify({id:editingId,action:'update',...payload})});$('formMsg').textContent='تم تحديث المسودة.';}
+  else{await api('instagram-content',{method:'POST',body:JSON.stringify(payload)});$('formMsg').textContent='تم حفظ المسودة.';}
+  resetForm();await load();
+ }catch(e){$('formMsg').textContent=e.message;}
+ finally{$('save').disabled=false;}
+};
+$('runVisualQA').onclick=async()=>{
+ const status=$('qaResult'),file=$('visualFile').files?.[0];
+ if(!file){status.textContent='اختاري صورة أولاً.';return;}
+ if(!['image/png','image/jpeg','image/webp'].includes(file.type)){status.textContent='الصيغ المدعومة: PNG وJPG وWEBP.';return;}
+ if(file.size>4*1024*1024){status.textContent='الصورة أكبر من 4MB. اختاري نسخة أصغر.';return;}
+ $('runVisualQA').disabled=true;status.textContent='يجري فحص المقاس والنص والتكوين والوضوح…';
+ try{
+  const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('تعذر قراءة الصورة من الجهاز.'));reader.readAsDataURL(file);});
+  const dimensions=await new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve({width:img.naturalWidth,height:img.naturalHeight});img.onerror=()=>reject(new Error('تعذر فتح الصورة.'));img.src=dataUrl;});
+  const d=await api('visual-qa',{method:'POST',body:JSON.stringify({
+   projectId:'instagram-content',
+   name:$('title').value.trim()||'Instagram content draft',
+   spec:'صورة لمنشور أو شريحة كاروسيل على حساب Instagram احترافي. يجب أن يكون المقاس الدقيق 1080×1350 بكسل بنسبة 4:5. افحص النص العربي حرفياً، سلامة الحروف، عدم التداخل أو التشوه، وضوح النص، القص، الهوامش الآمنة، التوازن البصري، التباين، النظافة، وغياب العناصر غير المطلوبة. لا تخمّن النص إذا لم يكن واضحاً.',
+   imageBase64:dataUrl,
+   expectedWidth:1080,expectedHeight:1350,
+   actualWidth:dimensions.width,actualHeight:dimensions.height,
+   fileName:file.name,fileType:file.type,fileSize:file.size
+  })});
+  const x=d.inspection?.result||{};
+  const checks=Array.isArray(x.checks)?x.checks:[];
+  const fixes=Array.isArray(x.must_fix)?x.must_fix:[];
+  const opportunities=Array.isArray(x.wow_opportunities)?x.wow_opportunities:[];
+  const escList=arr=>arr.map(v=>'<li>'+esc(typeof v==='string'?v:JSON.stringify(v))+'</li>').join('');
+  status.innerHTML='<div class="status '+(x.passed?'ok':'bad')+'"><b>'+(x.passed?'اجتاز الفحص':'لم يجتز الفحص')+'</b> · الدرجة '+Number(x.score||0)+'/100 · ملاحظات حرجة '+Number(x.criticalCount||0)+'<div>'+esc(x.summary||'')+'</div></div>'+
+   '<div class="small">المقاس المكتشف: '+dimensions.width+'×'+dimensions.height+' · رقم الفحص: '+esc(d.inspection?.id||'')+'</div>'+
+   (checks.length?'<b>نتائج الفحص</b><ul>'+checks.map(z=>'<li>'+esc(z.name||'')+' — '+esc(z.status||'')+': '+esc(z.evidence||z.action||'')+'</li>').join('')+'</ul>':'')+
+   (fixes.length?'<b>ما يجب إصلاحه</b><ul>'+escList(fixes)+'</ul>':'')+
+   (opportunities.length?'<b>فرص التحسين</b><ul>'+escList(opportunities)+'</ul>':'');
+ }catch(e){status.textContent='تعذر الفحص: '+e.message;}
+ finally{$('runVisualQA').disabled=false;}
+};
+$('format').onchange=()=>{const imageMode=['IMAGE','CAROUSEL'].includes($('format').value);$('runVisualQA').disabled=!imageMode;$('qaResult').textContent=imageMode?'فحص الصور متاح لهذا النوع.':'فحص الصور متاح للمنشورات والكاروسيل فقط حالياً.';};
+$('uploadMedia').onclick=async()=>{
+ const status=$('uploadStatus'),file=$('mediaFile').files?.[0];
+ if(!file){status.textContent='اختاري صورة أو فيديو أولاً.';return;}
+ const format=$('format').value;
+ const isVideo=file.type.startsWith('video/');
+ if(['IMAGE','CAROUSEL'].includes(format)&&isVideo){status.textContent='المنشور والكاروسيل يحتاجان صورة. اختاري صورة.';return;}
+ if(format==='REEL'&&!isVideo){status.textContent='اختاري فيديو بصيغة MP4 أو MOV للـ Reel.';return;}
+ if(!isVideo&&!['image/jpeg','image/png','image/webp'].includes(file.type)){status.textContent='الصيغ المدعومة للصور: JPG وPNG وWEBP.';return;}
+ if(isVideo&&!['video/mp4','video/quicktime'].includes(file.type)){status.textContent='الصيغ المدعومة للفيديو: MP4 وMOV.';return;}
+ const urls=$('mediaUrls').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ if(format==='IMAGE'&&urls.length>=1){status.textContent='المنشور المفرد لديه رابط وسيط بالفعل. احذفي الرابط السابق أولاً إذا أردت استبداله.';return;}
+ if(['REEL','STORY'].includes(format)&&urls.length>=1){status.textContent='هذا النوع يقبل وسيطاً واحداً حالياً. احذفي الرابط السابق أولاً إذا أردت استبداله.';return;}
+ if(urls.length>=10){status.textContent='وصلتِ إلى الحد الأقصى للوسائط في المسودة.';return;}
+ $('uploadMedia').disabled=true;status.textContent='يجري تجهيز توقيع رفع آمن…';
+ try{
+  const signed=await api('instagram-media-signature',{method:'POST',body:JSON.stringify({resourceType:isVideo?'video':'image'})});
+  let uploadFile=file;
+  if(!isVideo&&file.type!=='image/jpeg'){
+   status.textContent='يجري تحويل الصورة إلى JPEG مناسب للنشر على Instagram…';
+   const objectUrl=URL.createObjectURL(file);
+   try{
+    const img=await new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('تعذر فتح الصورة للتحويل.'));image.src=objectUrl;});
+    const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
+    const context=canvas.getContext('2d');if(!context)throw new Error('تعذر تجهيز الصورة للتحويل.');
+    context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(img,0,0);
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.92));
+    if(!blob)throw new Error('تعذر تحويل الصورة إلى JPEG.');
+    uploadFile=new File([blob],file.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'});
+   }finally{URL.revokeObjectURL(objectUrl);}
+  }
+  const form=new FormData();
+  form.append('file',uploadFile);
+  form.append('api_key',signed.apiKey);
+  form.append('timestamp',String(signed.timestamp));
+  form.append('folder',signed.folder);
+  form.append('public_id',signed.publicId);
+  form.append('overwrite','false');
+  form.append('signature',signed.signature);
+  status.textContent='يجري رفع الملف إلى التخزين السحابي…';
+  const response=await fetch(signed.uploadUrl,{method:'POST',body:form});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.secure_url)throw new Error(result.error?.message||'فشل رفع الملف إلى Cloudinary.');
+  const current=$('mediaUrls').value.trim();
+  $('mediaUrls').value=(current?current+'\n':'')+result.secure_url;
+  status.textContent='تم رفع الملف وحفظ رابطه العام في المسودة. المقاس: '+(result.width||'—')+'×'+(result.height||'—')+' · النوع: '+(result.resource_type||'—')+'. لم يتم نشر أي شيء.';
+  $('mediaFile').value='';
+ }catch(e){status.textContent='تعذر الرفع: '+e.message;}
+ finally{$('uploadMedia').disabled=false;}
+};
+$('clear').onclick=()=>{resetForm();$('formMsg').textContent='';};
+$('refresh').onclick=load;$('filter').onchange=render;
+$('posts').onclick=async e=>{
+ const b=e.target.closest('button');if(!b)return;
+ const id=b.dataset.copy||b.dataset.edit||b.dataset.submit||b.dataset.delete||b.dataset.approve||b.dataset.changes;
+ const item=ITEMS.find(x=>x.id===id);if(!item)return;
+ try{
+  if(b.dataset.copy){await navigator.clipboard.writeText(item.caption||'');$('listStatus').textContent='تم نسخ نص المنشور.';return;}
+  if(b.dataset.edit){fillForm(item);return;}
+  if(b.dataset.publish){
+   const isContinue=item.publishStatus==='processing';
+   const handle=IG_ACCOUNT?.username?'@'+IG_ACCOUNT.username:'حساب Instagram المرتبط';
+   const message=isContinue?'متابعة فحص جاهزية المحتوى وإرسال أمر النشر إذا أصبح جاهزاً إلى '+handle+'؟':'تأكيد نشر «'+(item.title||'المحتوى')+'» على '+handle+'؟\n\n'+(item.caption||'').slice(0,450)+'\n\nسيتم إرسال هذا المحتوى خارج النظام.';
+   if(!confirm(message))return;
+   $('listStatus').textContent=isContinue?'يجري التحقق من جاهزية المحتوى…':'يجري إنشاء حاوية المحتوى لدى Instagram…';
+   try{
+    const result=await api('instagram-publish',{method:'POST',body:JSON.stringify({id,action:isContinue?'continue':'start'})});
+    $('listStatus').textContent=result.message||result.item?.message||'تم تحديث حالة النشر.';
+   }catch(err){$('listStatus').textContent=err.message;}
+   await load();return;
+  }
+  if(b.dataset.submit){if(!confirm('إرسال هذه المسودة إلى مراجعة المالكة؟ لن يتم النشر.'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'submit'})});}
+  if(b.dataset.approve){if(!confirm('اعتماد هذه المسودة؟ الاعتماد يسجل موافقتك فقط ولا ينشر المحتوى.'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'approve'})});}
+  if(b.dataset.changes){const note=prompt('ما التعديلات المطلوبة؟','');if(note===null)return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'request_changes',note})});}
+  if(b.dataset.delete){if(!confirm('حذف هذه المسودة نهائياً؟'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'delete'})});}
+  await load();
+ }catch(e){$('listStatus').textContent=e.message;}
+};
+const params=new URLSearchParams(location.search);
+if(params.get('draft')==='1')$('formMsg').textContent='وصلتِ من استوديو الذكاء الاصطناعي. أكملي التفاصيل واحفظي المسودة.';
+load();
+</script>
+</body></html>

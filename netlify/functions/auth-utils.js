@@ -1,7 +1,7 @@
 const { createSession, verifySession, cookie, clearCookie, json } = require('./session-core');
 const COOKIE_NAME = 'hbpx_admin';
 const MAX_AGE = 60 * 60 * 24;
-function createAdminSession() { return createSession('admin', 'admin', MAX_AGE); }
+function createAdminSession(event) { return createSession('admin', 'admin', MAX_AGE, event); }
 function verifyAdmin(event) { return Boolean(verifySession(event, 'admin', COOKIE_NAME)); }
 function sessionCookie(value) { return cookie(COOKIE_NAME, value, MAX_AGE, 'Lax'); }
 function clearAdminCookie() { return clearCookie(COOKIE_NAME, 'Lax'); }

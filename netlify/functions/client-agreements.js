@@ -1,6 +1,7 @@
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
+const {ownsProject}=require('./client-ownership');
 const stores={
  accounts:()=>getStore({name:'hbpx-client-accounts',consistency:'eventual'}),
  projects:()=>getStore({name:'hbpx-projects',consistency:'eventual'}),
@@ -13,9 +14,8 @@ async function list(store,prefix){const st=stores[store](),r=await st.list({pref
 async function ownedProjects(account){
  const all=await list('projects','project-'),out=[];
  for(const p of all){
-  const ids=[account.id,account.clientId].filter(Boolean);
   const lead=p.leadId?await stores.leads().get(p.leadId,{type:'json'}).catch(()=>null):null;
-  if(ids.includes(p.clientId)||ids.includes(p.accountId)||String(p.email||'').toLowerCase()===String(account.email||'').toLowerCase()||(lead&&ids.includes(lead.clientId)))out.push(p);
+  if(ownsProject(p,account,lead))out.push(p);
  }
  return out;
 }

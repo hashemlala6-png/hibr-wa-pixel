@@ -1,4 +1,5 @@
 const { getStore } = require('@netlify/blobs');
+const { sameClientContact } = require('./client-ownership');
 
 const stores = {
   clients: () => getStore({ name: 'hbpx-clients', consistency: 'strong' }),
@@ -11,6 +12,7 @@ const stores = {
   leadIndex: () => getStore({ name: 'hbpx-lead-index', consistency: 'strong' }),
   resultIndex: () => getStore({ name: 'hbpx-result-client-index', consistency: 'strong' }),
   accounts: () => getStore({ name: 'hbpx-client-accounts', consistency: 'strong' }),
+  projects: () => getStore({ name: 'hbpx-projects', consistency: 'strong' }),
 };
 
 const clean = (v, n = 5000) => String(v ?? '').trim().slice(0, n);
@@ -63,14 +65,32 @@ async function getAIContext(clientId) {
     }
   }
 
-  const [leads, activities, results, aiHistory] = await Promise.all([
-    indexedLeads.length ? indexedLeads : listJSON(stores.leads(), 'lead-').then(xs=>xs.filter(x=>x.clientId===clientId||x.id===clientId)),
-    indexedActivities.length ? indexedActivities : listJSON(stores.activity(), 'activity-').then(xs=>xs.filter(x=>x.clientId===clientId)),
-    indexedResults.length ? indexedResults : listJSON(stores.results(), 'result-').then(xs=>xs.filter(x=>x.clientId===clientId||x.leadId===clientId)),
-    indexedAI.length ? indexedAI : listJSON(stores.aiHistory(), 'ai-').then(xs=>xs.filter(x=>x.clientId===clientId)),
-  ]);
+  const allLeadRecords = indexedLeads.length ? [] : await listJSON(stores.leads(), 'lead-').catch(()=>[]);
+  const fallbackLeads = allLeadRecords.filter(x =>
+    x.clientId===clientId || x.id===clientId || (account && sameClientContact(x,account))
+  );
+  const leadMap = new Map();
+  [...indexedLeads, ...fallbackLeads].forEach(x=>{if(x?.id)leadMap.set(x.id,x);});
+  const leads = Array.from(leadMap.values());
+  const leadIds = new Set(leads.map(x=>x.id));
 
-  const lead = leads.filter(x => x.id === clientId || x.clientId === clientId).sort((a,b) => new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))[0] || null;
+  const [allProjects, allActivities, allResults, fallbackAI] = await Promise.all([
+    listJSON(stores.projects(), 'project-').catch(()=>[]),
+    indexedActivities.length ? Promise.resolve([]) : listJSON(stores.activity(), 'activity-').catch(()=>[]),
+    indexedResults.length ? Promise.resolve([]) : listJSON(stores.results(), 'result-').catch(()=>[]),
+    indexedAI.length ? Promise.resolve([]) : listJSON(stores.aiHistory(), 'ai-').catch(()=>[])
+  ]);
+  const projectIds = new Set(allProjects.filter(p=>leadIds.has(p.leadId)).map(p=>p.id));
+  const activities = indexedActivities.length ? indexedActivities :
+    allActivities.filter(x=>x.clientId===clientId || leadIds.has(x.clientId));
+  const resultsMap = new Map();
+  [...indexedResults, ...allResults.filter(x =>
+    x.clientId===clientId || x.leadId===clientId || leadIds.has(x.leadId) || (x.projectId && projectIds.has(x.projectId))
+  )].forEach(x=>{if(x?.id)resultsMap.set(x.id,x);});
+  const results = Array.from(resultsMap.values());
+  const aiHistory = indexedAI.length ? indexedAI : fallbackAI.filter(x=>x.clientId===clientId);
+
+  const lead = leads.slice().sort((a,b) => new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))[0] || null;
   const effectiveClient = profile || lead || (account ? {id:account.id,name:account.name,email:account.email,whatsapp:account.whatsapp} : { id: clientId });
 
   const activityItems = activities

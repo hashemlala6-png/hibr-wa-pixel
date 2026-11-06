@@ -1,2 +1,61 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>دخول العميل — حبر وبكسل</title><link rel="stylesheet" href="public.css?v=43"></head><body><div class="site"><header class="site nav"><a class="logo" href="index.html">حبر وبكسل<i></i></a><nav class="navlinks"><a href="index.html">الرئيسية</a><a href="services.html">الخدمات</a><a href="portfolio.html">الأعمال</a><a href="contact.html">تواصل</a></nav><div class="nav-actions"><button class="menu" aria-label="القائمة">☰</button></div></header>
-</div><main><section class="section" style="padding-top:65px"><div class="site" style="max-width:520px"><div class="kicker">CLIENT ACCESS</div><h1 style="font:800 clamp(2.5rem,6vw,4.5rem)/1.08 var(--display);letter-spacing:-.06em;margin:0">مساحتك.<br><span style="color:var(--blue-deep)">مشاريعك.</span></h1><p class="intro">سجّل الدخول لمتابعة الطلبات والمشاريع، أو أنشئ حساباً جديداً.</p><div class="account-box"><div style="display:flex;gap:5px;margin-bottom:20px"><button id="lt" class="solid-btn" style="flex:1">دخول</button><button id="rt" class="outline-btn" style="flex:1">حساب جديد</button></div><form id="lf"><div class="field"><label>البريد الإلكتروني</label><input id="le" type="email" autocomplete="email" required></div><div class="field" style="margin-top:12px"><label>كلمة المرور</label><input id="lp" type="password" autocomplete="current-password" minlength="8" required></div><button id="lb" class="solid-btn" style="margin-top:18px;width:100%">دخول</button></form><form id="rf" hidden><div class="field"><label>الاسم</label><input id="rn" autocomplete="name" required></div><div class="field" style="margin-top:12px"><label>البريد الإلكتروني</label><input id="re" type="email" autocomplete="email" required></div><div class="field" style="margin-top:12px"><label>واتساب</label><input id="rw" autocomplete="tel" required></div><div class="field" style="margin-top:12px"><label>كلمة المرور</label><input id="rp" type="password" minlength="8" autocomplete="new-password" required></div><button class="solid-btn" style="margin-top:18px;width:100%">إنشاء الحساب</button></form><div id="msg" class="message"></div></div></div></section></main><script src="public.js?v=43"></script><script>(async()=>{const qs=new URLSearchParams(location.search),next=qs.get('next')||'account';const $=id=>document.getElementById(id);const lt=$('lt'),rt=$('rt'),lf=$('lf'),rf=$('rf'),msg=$('msg');function out(t,ok=false){msg.style.color=ok?'#3f8a63':'#c45b5b';msg.textContent=t}function dest(){location.href=next==='order'?'order.html':next==='contact'?'contact.html':'account.html'}async function request(action,payload){const r=await fetch('/.netlify/functions/client-auth?action='+action,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'تعذر تسجيل الدخول');if(d.authenticated!==true)throw Error('الخادم لم ينشئ جلسة للحساب.');const verify=await fetch('/.netlify/functions/client-auth?action=me',{credentials:'include',cache:'no-store'});const v=await verify.json().catch(()=>({}));if(!v.authenticated)throw Error('تم التحقق من البيانات لكن جلسة المتصفح لم تُحفظ. إذا كنت على Netlify تأكد أن الموقع يعمل عبر HTTPS وأن CLIENT_SESSION_SECRET مضبوط.');return v}lt.onclick=()=>{lt.className='solid-btn';rt.className='outline-btn';lf.hidden=false;rf.hidden=true;out('')};rt.onclick=()=>{rt.className='solid-btn';lt.className='outline-btn';lf.hidden=true;rf.hidden=false;out('')};lf.onsubmit=async e=>{e.preventDefault();$('lb').disabled=true;out('جارٍ التحقق…');try{await request('login',{email:$('le').value.trim(),password:$('lp').value});out('تم تسجيل الدخول ✓',true);setTimeout(dest,150)}catch(x){out(x.message)}finally{$('lb').disabled=false}};rf.onsubmit=async e=>{e.preventDefault();const b=rf.querySelector('button');b.disabled=true;out('جارٍ إنشاء الحساب…');try{await request('register',{name:$('rn').value.trim(),email:$('re').value.trim(),whatsapp:$('rw').value.trim(),password:$('rp').value});out('تم إنشاء الحساب ✓',true);setTimeout(dest,150)}catch(x){out(x.message)}finally{b.disabled=false}};try{const d=await (await fetch('/.netlify/functions/client-auth?action=me',{credentials:'include',cache:'no-store'})).json();if(d.authenticated)dest()}catch{}})();</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <meta name="description" content="دخول العملاء ومتابعة المشاريع والطلبات الخاصة بحبر وبكسل.">
+ <meta name="theme-color" content="#f2eee5">
+ <title>مساحة العميل — حبر وبكسل</title>
+ <link rel="icon" type="image/svg+xml" href="favicon.svg">
+ <link rel="stylesheet" href="public.css?v=47">
+ <link rel="stylesheet" href="site-redesign.css?v=4">
+ <link rel="stylesheet" href="experience.css?v=13">
+</head>
+<body class="xp-auth-page">
+<header class="site nav hp-tabs-nav">
+ <a class="logo" href="index.html" aria-label="حبر وبكسل">حبر <span>&</span> بكسل<i></i></a>
+ <nav class="navlinks hp-page-tabs" aria-label="التنقل الرئيسي">
+ <a href="index.html">الرئيسية</a><a href="services.html">الخدمات</a><a href="portfolio.html">الأعمال</a><a href="process.html">آلية العمل</a>
+ </nav>
+ <div class="nav-actions">
+  <a class="solid-btn hp-start-tab" href="onboarding.html">ابدأ مشروعك</a>
+  <a class="outline-btn hp-login-tab" data-client-link href="login.html?next=account" aria-current="page">دخول العميل</a>
+  <button class="menu" type="button" aria-label="فتح القائمة" aria-expanded="false">☰</button>
+ </div>
+</header>
+<main class="xp-auth-main">
+ <div class="xp-auth-layout">
+  <section class="xp-auth-copy" aria-labelledby="authTitle">
+   <div class="xp-auth-kicker">H&P / CLIENT ACCESS</div>
+   <h1 id="authTitle">شغلك محفوظ،<br><em>ومسارك واضح.</em></h1>
+   <p>ادخل إلى مساحة عملك حتى تتابع الطلبات والمشاريع والاتفاقات والتسليمات من مكان واحد. كل حساب يشوف ملفاته المرتبطة به فقط.</p>
+   <div class="xp-auth-points" aria-label="مزايا مساحة العميل">
+    <span><b>01</b> متابعة مراحل المشروع والمهام</span>
+    <span><b>02</b> مراجعة العقود والتسليمات والدفعات</span>
+    <span><b>03</b> الاحتفاظ بتاريخ طلباتك في حسابك</span>
+   </div>
+  </section>
+  <section class="xp-auth-card" aria-label="دخول أو إنشاء حساب العميل">
+   <div class="xp-auth-card-head"><small>PRIVATE CLIENT SPACE / 01</small><strong>أهلاً بعودتك</strong></div>
+   <div class="brand-access-note">الحساب الجديد يتاح بعد موافقة حبر وبكسل على طلب المشروع، وباستخدام نفس البريد الإلكتروني ورقم واتساب المسجّل بالطلب.</div>
+   <div class="xp-auth-tabs" role="group" aria-label="نوع الدخول">
+    <button id="lt" class="solid-btn" type="button" aria-pressed="true">دخول</button>
+    <button id="rt" class="outline-btn" type="button" aria-pressed="false">حساب جديد</button>
+   </div>
+   <form id="lf">
+    <div class="field"><label for="le">البريد الإلكتروني</label><input id="le" type="email" autocomplete="email" required></div>
+    <div class="field" style="margin-top:13px"><label for="lp">كلمة المرور</label><input id="lp" type="password" autocomplete="current-password" minlength="8" required></div>
+    <button id="lb" class="solid-btn" type="submit" style="margin-top:19px;width:100%">دخول إلى مساحة العمل</button>
+   </form>
+   <form id="rf" hidden>
+    <div class="field"><label for="rn">الاسم</label><input id="rn" autocomplete="name" required></div>
+    <div class="field" style="margin-top:12px"><label for="re">البريد الإلكتروني</label><input id="re" type="email" autocomplete="email" required></div>
+    <div class="field" style="margin-top:12px"><label for="rw">واتساب</label><input id="rw" type="tel" autocomplete="tel" inputmode="tel" required placeholder="077xxxxxxxx"></div>
+    <div class="field" style="margin-top:12px"><label for="rp">كلمة المرور</label><input id="rp" type="password" minlength="8" autocomplete="new-password" required></div>
+    <button class="solid-btn" type="submit" style="margin-top:19px;width:100%">إنشاء حسابي</button>
+   </form>
+   <div id="msg" class="message" role="status" aria-live="polite"></div>
+  </section>
+ </div>
+</main>
+<script src="public.js?v=45"></script><script>(async()=>{const qs=new URLSearchParams(location.search),next=qs.get('next')||'account';const $=id=>document.getElementById(id);const lt=$('lt'),rt=$('rt'),lf=$('lf'),rf=$('rf'),msg=$('msg');function out(t,ok=false){msg.style.color=ok?'#9b7a2e':'#c45b5b';msg.textContent=t}function dest(){location.href=next==='order'?'order.html':next==='contact'?'contact.html':'account.html'}async function request(action,payload){const r=await fetch('/.netlify/functions/client-auth?action='+action,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'تعذر تسجيل الدخول');if(d.authenticated!==true)throw Error('الخادم لم ينشئ جلسة للحساب.');const verify=await fetch('/.netlify/functions/client-auth?action=me',{credentials:'include',cache:'no-store'});const v=await verify.json().catch(()=>({}));if(!v.authenticated)throw Error('تم التحقق من البيانات لكن جلسة المتصفح لم تُحفظ. إذا كنت على Netlify تأكد أن الموقع يعمل عبر HTTPS وأن CLIENT_SESSION_SECRET مضبوط.');return v}lt.onclick=()=>{lt.className='solid-btn';rt.className='outline-btn';lt.setAttribute('aria-pressed','true');rt.setAttribute('aria-pressed','false');lf.hidden=false;rf.hidden=true;out('')};rt.onclick=()=>{rt.className='solid-btn';lt.className='outline-btn';rt.setAttribute('aria-pressed','true');lt.setAttribute('aria-pressed','false');lf.hidden=true;rf.hidden=false;out('')};lf.onsubmit=async e=>{e.preventDefault();$('lb').disabled=true;out('جارٍ التحقق…');try{await request('login',{email:$('le').value.trim(),password:$('lp').value});out('تم تسجيل الدخول ✓',true);setTimeout(dest,150)}catch(x){out(x.message)}finally{$('lb').disabled=false}};rf.onsubmit=async e=>{e.preventDefault();const b=rf.querySelector('button');b.disabled=true;out('جارٍ إنشاء الحساب…');try{await request('register',{name:$('rn').value.trim(),email:$('re').value.trim(),whatsapp:$('rw').value.trim(),password:$('rp').value});out('تم إنشاء الحساب ✓',true);setTimeout(dest,150)}catch(x){out(x.message)}finally{b.disabled=false}};try{const d=await (await fetch('/.netlify/functions/client-auth?action=me',{credentials:'include',cache:'no-store'})).json();if(d.authenticated)dest()}catch{}})();</script></body></html>

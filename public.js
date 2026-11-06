@@ -1,6 +1,6 @@
 (function(){
 const WA='https://wa.me/9647721971156';
-function nav(){const n=document.querySelector('.navlinks'),b=document.querySelector('.menu');if(b&&n){b.onclick=()=>n.classList.toggle('open');n.querySelectorAll('a').forEach(a=>a.onclick=()=>n.classList.remove('open'))}}
+function nav(){const n=document.querySelector('.navlinks'),b=document.querySelector('.menu');if(b&&n){b.setAttribute('aria-expanded','false');b.onclick=()=>{const open=n.classList.toggle('open');b.setAttribute('aria-expanded',String(open));b.setAttribute('aria-label',open?'إغلاق القائمة':'فتح القائمة')};n.querySelectorAll('a').forEach(a=>a.onclick=()=>{n.classList.remove('open');b.setAttribute('aria-expanded','false');b.setAttribute('aria-label','فتح القائمة')})}}
 async function auth(){try{const r=await fetch('/.netlify/functions/client-auth?action=me',{credentials:'same-origin',cache:'no-store'});return await r.json()}catch{return {authenticated:false}}}
 async function clientLink(){const a=document.querySelector('[data-client-link]');if(!a)return;const d=await auth();a.href=d.authenticated?'account.html':'login.html?next=account';a.textContent=d.authenticated?'حسابي':'دخول العميل'}
 function motion(){const els=document.querySelectorAll('.reveal');const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});els.forEach(e=>io.observe(e))}

@@ -3,9 +3,11 @@ const crypto=require('crypto');
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {json,requireAdmin}=require('./auth-utils');
 const {createClientSession,getClientSession,sessionCookie,clearCookie}=require('./client-auth-utils');
+const {sameClientContact}=require('./client-ownership');
 const blobOptions=(name)=>{const options={name,consistency:'eventual'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID;const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const accounts=()=>getStore(blobOptions('hbpx-client-accounts'));
 const leads=()=>getStore(blobOptions('hbpx-leads'));
+const leadIndex=()=>getStore(blobOptions('hbpx-lead-index'));
 const rate=()=>getStore(blobOptions('hbpx-client-auth-rate'));
 const memoryRate = new Map();
 function memoryLimited(e,kind){ const k=kind+'-'+crypto.createHash('sha256').update(ip(e)).digest('hex').slice(0,32), now=Date.now(), win=10*60*1000, max=12; const cur=memoryRate.get(k); if(!cur||now-cur.startedAt>win){memoryRate.set(k,{startedAt:now,count:1});return true;} if(Number(cur.count||0)>=max)return false; cur.count=Number(cur.count||0)+1; return true; }
@@ -38,27 +40,35 @@ async function hasApprovedLead(email,phone){
   try{
     const r=await leads().list({prefix:'lead-',limit:1000});
     for(const item of r.blobs||[]){
-      const l=await leads().get(item.key,{type:'json'}).catch(()=>null);
-      if(!l)continue;
-      if(l.status==='approved' && emailNorm(l.email)===emailNorm(email) && normalizePhone(l.whatsapp)===normalizePhone(phone))return true;
+      const lead=await leads().get(item.key,{type:'json'}).catch(()=>null);
+      if(lead&&lead.status==='approved'&&sameClientContact(lead,{email,whatsapp:phone}))return true;
     }
     return false;
   }catch(err){console.error('approved lead lookup unavailable',err?.message||err);throw err;}
 }
-async function findExistingClientId(email,phone){
-  try{
-    const r=await leads().list({prefix:'lead-',limit:1000});
-    let best=null;
-    for(const item of r.blobs||[]){
-      const l=await leads().get(item.key,{type:'json'}).catch(()=>null); if(!l)continue;
-      const sameEmail=email&&emailNorm(l.email)===email;
-      const samePhone=phone&&normalizePhone(l.whatsapp)===phone;
-      if(sameEmail||samePhone){
-        if(!best||new Date(l.createdAt||0)>new Date(best.createdAt||0))best=l;
-      }
+
+// Bind only leads whose email AND WhatsApp both match this account.
+// Legacy records sharing a phone number are deliberately not pulled into the account.
+async function linkApprovedLeads(email,phone,accountId){
+  const r=await leads().list({prefix:'lead-',limit:1000});
+  let linked=0;
+  for(const item of r.blobs||[]){
+    const lead=await leads().get(item.key,{type:'json'}).catch(()=>null);
+    if(!lead||!sameClientContact(lead,{email,whatsapp:phone}))continue;
+    const previous=String(lead.clientId||lead.id);
+    if(previous!==accountId){
+      lead.clientId=accountId;
+      await leads().setJSON(lead.id,lead);
     }
-    return best?.clientId||null;
-  }catch(err){console.warn('client identity lookup unavailable',err?.message||err);return null}
+    // Rebuild the exact account index even when the lead already carries this ID.
+    try{await leadIndex().setJSON(`client-${accountId}-${lead.id}`,{leadId:lead.id,clientId:accountId,createdAt:lead.createdAt||new Date().toISOString()});}
+    catch(err){console.warn('client lead index update failed',err?.message||err);}
+    if(previous&&previous!==accountId){
+      try{await leadIndex().delete(`client-${previous}-${lead.id}`);}catch{}
+    }
+    linked++;
+  }
+  return linked;
 }
 exports.handler=async e=>{
   connectLambda(e);
@@ -76,7 +86,7 @@ exports.handler=async e=>{
   if(e.httpMethod==='GET'&&action==='me'){
     const s=getClientSession(e); if(!s)return json(200,{authenticated:false});
     const a=await accounts().get(s.sub,{type:'json'}).catch(()=>null); if(!a)return json(200,{authenticated:false});
-    return json(200,{authenticated:true,client:{id:a.id,clientId:a.clientId||a.id,name:a.name,email:a.email,whatsapp:a.whatsapp}});
+    return json(200,{authenticated:true,client:{id:a.id,clientId:a.id,name:a.name,email:a.email,whatsapp:a.whatsapp}});
   }
   if(e.httpMethod==='POST'&&action==='logout') return json(200,{authenticated:false},{'Set-Cookie':clearCookie()});
   if(e.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
@@ -91,9 +101,10 @@ exports.handler=async e=>{
     const name=clean(b.name,120), whatsapp=normalizePhone(b.whatsapp);
     if(!name||whatsapp.length<10)return json(400,{error:'الاسم ورقم واتساب مطلوبان.'});
     if(!await hasApprovedLead(email,whatsapp).catch(()=>null))return json(403,{error:'إنشاء الحساب متاح بعد موافقة حبر وبكسل على طلب مشروعك، وباستخدام نفس البريد ورقم واتساب.'});
-    const pw=makePassword(password); const now=new Date().toISOString(); const clientId=await findExistingClientId(email,whatsapp)||id; const account={id,name,email,whatsapp,clientId,passwordHash:pw.hash,salt:pw.salt,createdAt:now,updatedAt:now,lastLoginAt:null};
+    await linkApprovedLeads(email,whatsapp,id);
+    const pw=makePassword(password); const now=new Date().toISOString(); const clientId=id; const account={id,name,email,whatsapp,clientId,passwordHash:pw.hash,salt:pw.salt,createdAt:now,updatedAt:now,lastLoginAt:null};
     await accounts().setJSON(id,account);
-    await safeActivity(clientId,'client-account','تم إنشاء حساب عميل جديد',{name,email,whatsapp});
+    await safeActivity(id,'client-account','تم إنشاء حساب عميل جديد',{name,email,whatsapp});
     await safeMetric('client-register',{clientId:id});
     const token=createClientSession(id);
     return json(201,{authenticated:true,client:{id,clientId,name,email,whatsapp}},{'Set-Cookie':sessionCookie(token)});
@@ -101,9 +112,11 @@ exports.handler=async e=>{
   if(action==='login'){
     const a=await accounts().get(id,{type:'json'}).catch(()=>null);
     if(!a||!a.passwordHash||!checkPassword(password,a))return json(401,{error:'البريد أو كلمة المرور غير صحيحة.'});
-    if(!a.clientId){a.clientId=await findExistingClientId(a.email,normalizePhone(a.whatsapp))||a.id;}
+    await linkApprovedLeads(a.email,a.whatsapp,a.id);
+    // Account IDs are email-specific; never reuse a legacy phone-only group key.
+    a.clientId=a.id;
     a.lastLoginAt=new Date().toISOString(); a.updatedAt=a.lastLoginAt; await accounts().setJSON(id,a);
-    await safeActivity(a.clientId||a.id,'client-login','تم تسجيل دخول عميل',{email:a.email});
+    await safeActivity(a.id,'client-login','تم تسجيل دخول عميل',{email:a.email});
     await safeMetric('client-login',{clientId:a.id});
     const token=createClientSession(a.id);
     return json(200,{authenticated:true,client:{id:a.id,clientId:a.clientId||a.id,name:a.name,email:a.email,whatsapp:a.whatsapp}},{'Set-Cookie':sessionCookie(token)});
