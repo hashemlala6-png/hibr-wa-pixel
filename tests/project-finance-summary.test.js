@@ -81,7 +81,7 @@ test('project financial summary distinguishes final files ready from actual hand
     financialOverride: financial,
     deliveries: [
       { id: 'preview', projectId: 'project-a', stage: 'preview', createdAt: '2026-11-03T10:00:00.000Z', clientApproval: { decision: 'approved' } },
-      { id: 'final-ready', projectId: 'project-a', stage: 'final', status: 'ready', fullQuality: true, watermarked: false, rightsTransferred: true, createdAt: '2026-11-04T10:00:00.000Z' }
+      { id: 'delivery-final-ready', projectId: 'project-a', stage: 'final', status: 'ready', fullQuality: true, watermarked: false, rightsTransferred: true, createdAt: '2026-11-04T10:00:00.000Z' }
     ]
   });
   const ready = body(await readyHandler({ httpMethod: 'GET', headers: {}, queryStringParameters: { projectId: 'project-a' } }));
@@ -93,7 +93,7 @@ test('project financial summary distinguishes final files ready from actual hand
     financialOverride: financial,
     deliveries: [
       { id: 'preview', projectId: 'project-a', stage: 'preview', createdAt: '2026-11-03T10:00:00.000Z', clientApproval: { decision: 'approved' } },
-      { id: 'final-delivered', projectId: 'project-a', stage: 'final', status: 'delivered', fullQuality: true, watermarked: false, rightsTransferred: true, createdAt: '2026-11-04T10:00:00.000Z' }
+      { id: 'delivery-final-delivered', projectId: 'project-a', stage: 'final', status: 'delivered', fullQuality: true, watermarked: false, rightsTransferred: true, createdAt: '2026-11-04T10:00:00.000Z' }
     ]
   });
   const delivered = body(await deliveredHandler({ httpMethod: 'GET', headers: {}, queryStringParameters: { projectId: 'project-a' } }));
