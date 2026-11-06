@@ -9,11 +9,26 @@ const store = () => getStore(blobOptions('hbpx-leads'));
 const rateStore = () => getStore(blobOptions('hbpx-lead-rate'));
 const clientIndex = () => getStore(blobOptions('hbpx-lead-index'));
 const accountsStore = () => getStore(blobOptions('hbpx-client-accounts'));
+async function listAllBlobs(storeInstance, prefix, pageSize = 100) {
+  const blobs = [];
+  const seen = new Set();
+  let cursor;
+  do {
+    const page = await storeInstance.list({ prefix, limit: pageSize, ...(cursor ? { cursor } : {}) });
+    blobs.push(...(page.blobs || []));
+    const next = page.cursor || null;
+    if (!next || next === cursor || seen.has(next)) break;
+    seen.add(next);
+    cursor = next;
+  } while (blobs.length < 10000);
+  return blobs;
+}
 async function listClientAccounts(){
-  const r=await accountsStore().list({prefix:'email-',limit:1000});
+  const st = accountsStore();
+  const records = await listAllBlobs(st, 'email-');
   const out=[];
-  for(const b of r.blobs||[]){
-    const account=await accountsStore().get(b.key,{type:'json'}).catch(()=>null);
+  for(const b of records){
+    const account=await st.get(b.key,{type:'json'}).catch(()=>null);
     if(account)out.push(account);
   }
   return out;
@@ -204,10 +219,11 @@ exports.handler = async (event) => {
   if (auth) return auth;
 
   if (event.httpMethod === 'GET') {
-    const result = await store().list({ prefix: 'lead-' });
+    const leadStore = store();
+    const records = await listAllBlobs(leadStore, 'lead-');
     const leads = [];
-    for (const item of result.blobs || []) {
-      try { const lead = await store().get(item.key, { type: 'json' }); if (lead) leads.push(lead); } catch {}
+    for (const item of records) {
+      try { const lead = await leadStore.get(item.key, { type: 'json' }); if (lead) leads.push(lead); } catch {}
     }
     leads.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
     return json(200, { leads });
