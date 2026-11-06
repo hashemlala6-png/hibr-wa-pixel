@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { env } = require('./env');
 const { json } = require('./auth-utils');
 
@@ -12,10 +13,10 @@ const MAX_BODY_BYTES = 1024 * 1024;
 const clean = (value, max = 4000) => String(value == null ? '' : value).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max);
 
 function eventStore() {
-  return getStore({ name: STORE, consistency: 'strong' });
+  return getStore(blobOptions(STORE, 'strong'));
 }
 function webhookStatusStore() {
-  return getStore({ name: STATUS_STORE, consistency: 'strong' });
+  return getStore(blobOptions(STATUS_STORE, 'strong'));
 }
 function configFingerprint(value) {
   return value ? crypto.createHash('sha256').update(String(value)).digest('hex') : '';
