@@ -291,11 +291,15 @@ $('posts').onclick=async e=>{
    const message=isContinue?'متابعة فحص جاهزية المحتوى وإرسال أمر النشر إذا أصبح جاهزاً إلى '+handle+'؟':'تأكيد نشر «'+(item.title||'المحتوى')+'» على '+handle+'؟\n\n'+(item.caption||'').slice(0,450)+'\n\nسيتم إرسال هذا المحتوى خارج النظام.';
    if(!confirm(message))return;
    $('listStatus').textContent=isContinue?'يجري التحقق من جاهزية المحتوى…':'يجري إنشاء حاوية المحتوى لدى Instagram…';
+   let publishFeedback='';
    try{
     const result=await api('instagram-publish',{method:'POST',body:JSON.stringify({id,action:isContinue?'continue':'start'})});
-    $('listStatus').textContent=result.message||result.item?.message||'تم تحديث حالة النشر.';
-   }catch(err){$('listStatus').textContent=err.message;}
-   await load();return;
+    publishFeedback=result.message||result.item?.message||'تم تحديث حالة النشر.';
+   }catch(err){publishFeedback=err.message;}
+   await load();
+   // The refreshed list must not overwrite the provider's final result or error.
+   if(publishFeedback)$('listStatus').textContent=publishFeedback;
+   return;
   }
   if(b.dataset.submit){if(!confirm('إرسال هذه المسودة إلى مراجعة المالكة؟ لن يتم النشر.'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'submit'})});}
   if(b.dataset.approve){if(!confirm('اعتماد هذه المسودة؟ الاعتماد يسجل موافقتك فقط ولا ينشر المحتوى.'))return;await api('instagram-content',{method:'PATCH',body:JSON.stringify({id,action:'approve'})});}
