@@ -9,6 +9,8 @@ function loadHealth({ env = {}, connection = null, textResult = null, textError 
   delete require.cache[resolved];
   const originalLoad = Module._load;
   const writes = [];
+  const deletes = [];
+  const probeRows = new Map();
   const calls = [];
   const blobs = {
     connectLambda(event) { calls.push({ type: 'connectLambda', event }); },
@@ -19,11 +21,19 @@ function loadHealth({ env = {}, connection = null, textResult = null, textError 
           return { blobs: [] };
         },
         async get(key) {
+          if (name === 'hbpx-leads' && key.startsWith('health-probe-')) return probeRows.get(key) || null;
           if (name === 'hbpx-instagram-login' && key === 'agency-instagram') return connection;
           if (name === 'hbpx-system-health' && key === 'latest-ai-text-test') return null;
           return null;
         },
-        async setJSON(key, value) { writes.push({ name, key, value }); }
+        async setJSON(key, value) {
+          writes.push({ name, key, value });
+          if (name === 'hbpx-leads') probeRows.set(key, value);
+        },
+        async delete(key) {
+          deletes.push({ name, key });
+          if (name === 'hbpx-leads') probeRows.delete(key);
+        }
       };
     }
   };
@@ -53,7 +63,7 @@ function loadHealth({ env = {}, connection = null, textResult = null, textError 
     return originalLoad.call(this, request, parent, isMain);
   };
   try {
-    return { handler: require(resolved).handler, calls, writes };
+    return { handler: require(resolved).handler, calls, writes, deletes, probeRows };
   } finally {
     Module._load = originalLoad;
     delete require.cache[resolved];
@@ -96,6 +106,9 @@ test('system health reports configuration separately from tested operational sta
   assert.equal(result.configuration.email.state, 'configured');
   assert.equal(result.configuration.ownerWhatsApp.state, 'configured');
   assert.equal(result.persistent.storage.state, 'operational');
+  assert.deepEqual(result.persistent.storage.checks, { read: true, write: true, delete: true });
+  assert.equal(service.probeRows.size, 0, 'storage health probe must be removed after verification');
+  assert.equal(service.deletes.filter(x => x.name === 'hbpx-leads').length, 1);
   assert.equal(result.persistent.instagram.state, 'linked_unverified');
   assert.equal(result.policy.secretsReturned, false);
   const serialized = JSON.stringify(result);
