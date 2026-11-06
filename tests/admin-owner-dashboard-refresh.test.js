@@ -434,3 +434,70 @@ test('pricing save keeps entered values and clearly reports an unconfirmed save 
   assert.match(status.textContent, /لم يتم تأكيد حفظ الأسعار: storage unavailable/);
   assert.equal(button.disabled, false);
 });
+
+
+test('owner dashboard boot is idempotent when session check and manual login finish together', async () => {
+  const calls = [];
+  const lock = { classList: { add: name => calls.push(['lock', name]) } };
+  const app = { classList: { remove: name => calls.push(['app', name]) } };
+  const clock = { textContent: '' };
+  const context = {
+    ownerBootPromise: null,
+    $: selector => selector === '#lock' ? lock : selector === '#app' ? app : selector === '#clock' ? clock : null,
+    loadAll: async () => { calls.push('loadAll'); await Promise.resolve(); },
+    heartbeat: () => calls.push('heartbeat'),
+    loadPresence: () => calls.push('presence'),
+    loadUniverse: () => calls.push('universe'),
+    setInterval: (fn, ms) => { calls.push(['interval', ms]); return calls.length; },
+    dt: () => 'now'
+  };
+  const show = vm.runInNewContext(functionSource('show') + '\\nshow', context);
+  await Promise.all([show(), show()]);
+  assert.equal(calls.filter(item => item === 'loadAll').length, 1);
+  assert.equal(calls.filter(item => Array.isArray(item) && item[0] === 'interval').length, 4);
+  assert.equal(calls.filter(item => item === 'heartbeat').length, 1);
+});
+
+test('owner logout verifies the session is gone before reloading the dashboard', async () => {
+  const calls = [];
+  const button = { disabled: false, textContent: 'خروج' };
+  const status = { textContent: '', style: {} };
+  const context = {
+    $: selector => selector === '#logout' ? button : selector === '#loadStatus' ? status : null,
+    fetch: async url => {
+      calls.push(url);
+      return { ok: true, json: async () => url.includes('action=logout') ? { authenticated: false } : { authenticated: false } };
+    },
+    location: { reload: () => calls.push('reload') }
+  };
+  const logoutOwner = vm.runInNewContext(functionSource('logoutOwner') + '\\nlogoutOwner', context);
+  await logoutOwner();
+  assert.deepEqual(calls, [
+    '/.netlify/functions/auth?action=logout',
+    '/.netlify/functions/auth?action=me',
+    'reload'
+  ]);
+  assert.equal(button.disabled, false);
+  assert.equal(button.textContent, 'خروج');
+});
+
+test('owner logout keeps the owner informed and does not reload when server still reports an active session', async () => {
+  const calls = [];
+  const button = { disabled: false, textContent: 'خروج' };
+  const status = { textContent: '', style: {} };
+  const context = {
+    $: selector => selector === '#logout' ? button : selector === '#loadStatus' ? status : null,
+    fetch: async url => {
+      calls.push(url);
+      return { ok: true, json: async () => url.includes('action=logout') ? { authenticated: false } : { authenticated: true } };
+    },
+    location: { reload: () => calls.push('reload') }
+  };
+  const logoutOwner = vm.runInNewContext(functionSource('logoutOwner') + '\\nlogoutOwner', context);
+  await logoutOwner();
+  assert.equal(calls.includes('reload'), false);
+  assert.match(status.textContent, /لم يتم تأكيد إغلاق الجلسة/);
+  assert.equal(status.style.color, '#a94b4b');
+  assert.equal(button.disabled, false);
+  assert.equal(button.textContent, 'خروج');
+});
