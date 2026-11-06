@@ -99,7 +99,7 @@ test('Instagram profile verification sends access token as Bearer header, never 
   } finally {
     global.fetch = originalFetch;
   }
-}
+});
 
 function loadInsights(connection) {
   const resolved = require.resolve('../netlify/functions/instagram-insights');
@@ -184,4 +184,4 @@ test('Instagram insights sends every graph request with Bearer auth and does not
   } finally {
     global.fetch = originalFetch;
   }
-}
+});
