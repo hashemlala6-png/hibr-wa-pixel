@@ -63,7 +63,7 @@ async function notifyOwner(lead, channels = ['email', 'whatsapp']) {
     'التفاصيل: ' + (lead.details || '—'),
     'المصدر: ' + lead.source,
     'رقم الطلب: ' + lead.id
-  ].join('\\n');
+  ].join('\n');
   const results = {};
   if (channels.includes('email')) {
     results.email = 'not_configured';
