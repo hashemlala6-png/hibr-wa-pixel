@@ -1,16 +1,17 @@
 const {getStore,connectLambda}=require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const {ownsProject}=require('./client-ownership');
 const s={
-  leads:()=>getStore({name:'hbpx-leads',consistency:'eventual'}),
-  projects:()=>getStore({name:'hbpx-projects',consistency:'eventual'}),
-  payments:()=>getStore({name:'hbpx-payments',consistency:'eventual'}),
-  tasks:()=>getStore({name:'hbpx-tasks',consistency:'eventual'}),
-  resultPlans:()=>getStore({name:'hbpx-result-plans',consistency:'eventual'}),
-  invoices:()=>getStore({name:'hbpx-invoices',consistency:'eventual'}),
-  contracts:()=>getStore({name:'hbpx-contracts',consistency:'eventual'}),
-  deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'eventual'})
+  leads:()=>getStore(blobOptions('hbpx-leads', 'eventual')),
+  projects:()=>getStore(blobOptions('hbpx-projects', 'eventual')),
+  payments:()=>getStore(blobOptions('hbpx-payments', 'eventual')),
+  tasks:()=>getStore(blobOptions('hbpx-tasks', 'eventual')),
+  resultPlans:()=>getStore(blobOptions('hbpx-result-plans', 'eventual')),
+  invoices:()=>getStore(blobOptions('hbpx-invoices', 'eventual')),
+  contracts:()=>getStore(blobOptions('hbpx-contracts', 'eventual')),
+  deliveries:()=>getStore(blobOptions('hbpx-deliveries', 'eventual'))
 };
 async function listByProject(storeName,prefix,projectId,map){
   const st=s[storeName](),out=[];let cursor;
@@ -28,7 +29,7 @@ exports.handler=async e=>{
   try{
     const session=getClientSession(e);
     if(!session)return json(401,{error:'يجب تسجيل الدخول أولاً.',code:'LOGIN_REQUIRED'});
-    const account=await getStore({name:'hbpx-client-accounts',consistency:'eventual'}).get(session.sub,{type:'json'}).catch(()=>null);
+    const account=await getStore(blobOptions('hbpx-client-accounts', 'eventual')).get(session.sub,{type:'json'}).catch(()=>null);
     if(!account)return json(401,{error:'انتهت جلسة الحساب. سجّل الدخول من جديد.',code:'LOGIN_REQUIRED'});
     const projectsStore=s.projects(),projects=[];
     let projectCursor;
