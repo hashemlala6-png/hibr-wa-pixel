@@ -145,3 +145,63 @@ test('client registration finds an approved lead beyond the first Blobs page and
     else process.env.CLIENT_SESSION_SECRET = originalSecret;
   }
 });
+
+
+test('owner client registry aggregates customers beyond the first Blobs page', async () => {
+  const leads = {};
+  for (let i = 0; i < 205; i++) {
+    const id = 'lead-' + String(i).padStart(4, '0');
+    leads[id] = {
+      id,
+      name: 'Client ' + i,
+      email: 'client' + i + '@example.com',
+      whatsapp: '96477' + String(10000000 + i),
+      status: 'new',
+      createdAt: new Date(2026, 0, 1 + i).toISOString()
+    };
+  }
+  const service = loadHandler('../netlify/functions/clients', { 'hbpx-leads': leads });
+  const response = await service.handler({ httpMethod: 'GET', headers: {} });
+  const result = body(response);
+  assert.equal(response.statusCode, 200);
+  assert.equal(result.clients.length, 205);
+});
+
+test('client registration is denied when either contact differs from the approved lead', async () => {
+  const originalSecret = process.env.CLIENT_SESSION_SECRET;
+  process.env.CLIENT_SESSION_SECRET = 'test-client-session-secret-with-enough-entropy';
+  try {
+    const service = loadHandler('../netlify/functions/client-auth', {
+      'hbpx-leads': {
+        'lead-approved': {
+          id: 'lead-approved',
+          name: 'Approved customer',
+          email: 'approved@example.com',
+          whatsapp: '9647712345678',
+          status: 'approved'
+        }
+      },
+      'hbpx-client-accounts': {},
+      'hbpx-lead-index': {},
+      'hbpx-client-auth-rate': {}
+    });
+    const response = await service.handler({
+      httpMethod: 'POST',
+      queryStringParameters: { action: 'register' },
+      headers: { 'x-forwarded-for': '192.0.2.81' },
+      body: JSON.stringify({
+        name: 'Someone else',
+        email: 'other@example.com',
+        whatsapp: '+964 771 234 5678',
+        password: 'secure-pass-123'
+      })
+    });
+    assert.equal(response.statusCode, 403);
+    assert.match(body(response).error, /نفس البريد/);
+    assert.equal(Object.keys(service.stores['hbpx-client-accounts']).length, 0);
+    assert.equal(service.writes.some(write => write.store === 'hbpx-lead-index'), false);
+  } finally {
+    if (originalSecret === undefined) delete process.env.CLIENT_SESSION_SECRET;
+    else process.env.CLIENT_SESSION_SECRET = originalSecret;
+  }
+});
