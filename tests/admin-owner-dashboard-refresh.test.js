@@ -86,6 +86,7 @@ test('owner refresh renders cross-dependent views after every section settles', 
   const calls = [];
   const status = { textContent: '', style: {} };
   const context = {
+    UNIVERSE_ERROR: '',
     $: selector => selector === '#loadStatus' ? status : null,
     console: { error: (...args) => calls.push(['error', ...args]) },
     loadUniverse: async () => calls.push('loadUniverse'),
@@ -387,7 +388,7 @@ test('strict owner universe refresh propagates errors to the all-sections refres
   const loadUniverse = vm.runInNewContext(functionSource('loadUniverse') + '\nloadUniverse', context);
   await assert.rejects(() => loadUniverse({ propagate: true }), /owner API down/);
   assert.match(status.textContent, /آخر نسخة ناجحة/);
-  assert.match(functionSource('loadAll'), /\\(\\)=>loadUniverse\\(\\{propagate:true\\}\\)/);
+  assert.ok(functionSource('loadAll').includes("['بيانات الإدارة',()=>loadUniverse({propagate:true})]"));
   assert.match(functionSource('loadAll'), /بيانات الرؤية تعرض آخر نسخة ناجحة/);
 });
 
