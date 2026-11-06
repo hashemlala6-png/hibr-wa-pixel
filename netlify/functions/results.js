@@ -1,13 +1,14 @@
 const { env } = require('./env');
 const crypto = require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { requireAdmin, json } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
 const { getAIContext, contextPrompt, saveAIHistory } = require('./ai-context');
 
-const store = () => getStore({ name: 'hbpx-result-plans', consistency: 'strong' });
-const clientStore = () => getStore({ name: 'hbpx-clients', consistency: 'strong' });
-const clientPlanIndex = () => getStore({ name: 'hbpx-result-client-index', consistency: 'strong' });
+const store = () => getStore(blobOptions('hbpx-result-plans', 'strong'));
+const clientStore = () => getStore(blobOptions('hbpx-clients', 'strong'));
+const clientPlanIndex = () => getStore(blobOptions('hbpx-result-client-index', 'strong'));
 const clean = (v, n = 900) => String(v ?? '').trim().slice(0, n);
 
 function extractJSON(text) {
