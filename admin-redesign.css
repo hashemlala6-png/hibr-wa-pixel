@@ -117,3 +117,17 @@ button{cursor:pointer}
 }
 
 .command-policy{max-width:690px;margin-top:13px!important;padding:9px 13px;border-inline-start:3px solid var(--accent);background:#ebe8dc;color:#6d695e;font-size:.78rem!important;line-height:1.8!important;border-radius:4px}
+
+
+/* OWNER SHELL COLOR + TYPE ALIGNMENT */
+:root{--paper:#f4f9fd;--ink:#20394d;--muted:#647b8c;--line:#dce9f1;--card:#fff;--blue:#168fbe;--blue2:#176c91;--accent:#f2c84b;--shadow:0 12px 32px rgba(35,103,139,.075)}
+html,body{background:#f4f9fd!important;color:#20394d!important;font-family:'IBM Plex Sans Arabic',Arial,sans-serif!important}
+.lockbox,.panel,.stat,.search-item{background:#fff!important;border:1px solid #dce9f1!important;border-radius:13px!important;box-shadow:0 7px 22px rgba(35,103,139,.045)!important}
+.primary{background:linear-gradient(110deg,#159fd1,#32b9e5)!important;border:0!important;border-radius:9px!important}
+.brand h1{font-size:1.2rem!important}
+.today h2{font-size:clamp(1.9rem,3.4vw,2.8rem)!important;line-height:1.25!important;letter-spacing:-.035em!important}
+.stat strong{font-size:1.35rem!important}
+.panel h3{font-size:.98rem!important}
+.nav button.active{color:#168fbe!important;border-color:#19a9dc!important}
+.badge{background:#e7f4fb!important;color:#247da3!important;border-radius:7px!important}
+
