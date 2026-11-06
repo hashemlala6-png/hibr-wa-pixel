@@ -58,8 +58,8 @@ test('deposit payments can be split but cannot exceed the 10 percent limit befor
   const service = loadSales(data);
   const deposit = await service.handler({ httpMethod:'POST', body:JSON.stringify({type:'payment',projectId:'project-a',amount:5000,method:'cash',receivedConfirmed:true}) });
   assert.equal(deposit.statusCode,201);
-  const excess = await service.handler({ httpMethod:'POST', body:JSON.stringify({type:'payment',projectId:'project-a',amount:1,method:'cash',receivedConfirmed:true}) });
-  assert.equal(excess.statusCode,201); // still below the 10 percent cap
+  const remainingDeposit = await service.handler({ httpMethod:'POST', body:JSON.stringify({type:'payment',projectId:'project-a',amount:5000,method:'cash',receivedConfirmed:true}) });
+  assert.equal(remainingDeposit.statusCode,201);
   const beyond = await service.handler({ httpMethod:'POST', body:JSON.stringify({type:'payment',projectId:'project-a',amount:1,method:'cash',receivedConfirmed:true}) });
   assert.equal(beyond.statusCode,409);
 });
