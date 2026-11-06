@@ -1,4 +1,4 @@
-const { env } = require('./env');
+const { requestText } = require('./ai-provider');
 // Netlify Function: يحمي مفتاح Claude API بالكامل عن الزوار
 // المفتاح يُقرأ من متغير بيئة (Environment Variable) مخزّن بإعدادات Netlify، وليس بالكود
 
@@ -23,15 +23,6 @@ exports.handler = async function (event) {
 
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: "Method not allowed" }) };
-  }
-
-  const apiKey = env('ANTHROPIC_API_KEY');
-  if (!apiKey) {
-    return {
-      statusCode: 500,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: "المفتاح غير مضبوط بإعدادات السيرفر (Environment Variables)" }),
-    };
   }
 
   let payload;
@@ -160,42 +151,22 @@ ${topic}
   const finalSystemPrompt = `${baseSystemPrompt}${memoryBlock}`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: mode === "carousel" ? 1200 : mode === "analysis" ? 900 : 500,
-        system: finalSystemPrompt,
-        messages: [{ role: "user", content: buildUserMessage() }],
-      }),
+    const completion = await requestText({
+      systemPrompt: finalSystemPrompt,
+      userPrompt: buildUserMessage(),
+      maxTokens: mode === "carousel" ? 1200 : mode === "analysis" ? 900 : 500
     });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      return {
-        statusCode: response.status,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: `خطأ من Anthropic: ${response.status}`, details: errText }),
-      };
-    }
-
-    const data = await response.json();
-    const text = (data.content || []).map((b) => b.text || "").join("\n");
+    const text = completion.text;
 
     if (clientId) {
-      await saveAIHistory({ clientId, mode, topic, input: JSON.stringify({ activity, audience, tone, textType, colors: effectiveColors, font: effectiveFont, slideCount }), output: text, metadata: { continuedFromMemory: true } });
+      await saveAIHistory({ clientId, mode, topic, input: JSON.stringify({ activity, audience, tone, textType, colors: effectiveColors, font: effectiveFont, slideCount }), output: text, metadata: { continuedFromMemory: true, provider: completion.provider, model: completion.model } });
       await logActivity(clientId, 'ai', `AI — ${mode === 'writing' ? 'كتابة محتوى' : mode === 'design' ? 'وصف تصميم' : mode === 'analysis' ? 'تحليل حساب' : 'كاروسيل'}`, { topic: String(topic).slice(0,500), mode, memoryApplied: !!clientContext });
     }
 
     return {
       statusCode: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify({ text, clientId, memoryApplied: !!clientContext }),
+      body: JSON.stringify({ text, clientId, memoryApplied: !!clientContext, provider: completion.provider, model: completion.model, fallbackUsed: completion.fallbackUsed }),
     };
   } catch (err) {
     return {

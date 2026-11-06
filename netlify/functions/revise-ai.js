@@ -1,4 +1,5 @@
 const { env } = require('./env');
+const { requestText } = require('./ai-provider');
 const { requireAdmin, json } = require('./auth-utils');
 const { getAIContext, contextPrompt, saveAIHistory } = require('./ai-context');
 const crypto = require('crypto');
@@ -13,7 +14,7 @@ async function saveDNA(clientId, item) {
 
 const clean=(v,n=12000)=>String(v??'').trim().slice(0,n);
 
-async function reviseText({apiKey,mode,clientContext,instruction,currentOutput,topic}){
+async function reviseText({mode,clientContext,instruction,currentOutput,topic}){
  const system=`أنت محرر ومخرج إبداعي محترف. المطلوب تنفيذ تعديل حقيقي على النتيجة الحالية، وليس اقتراح تعديل.
 
 ${contextPrompt(clientContext)}
@@ -34,11 +35,11 @@ ${clean(instruction,3000)}
 - لا تعيد كتابة النتيجة من الصفر إذا كان المطلوب تعديلاً جزئياً.
 نوع الأداة: ${mode}
 الموضوع: ${clean(topic,1000)}`;
- const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1600,system,messages:[{role:'user',content:`طبّق التعديل الآن. أريد الناتج النهائي المعدّل فقط.`}]})});
- if(!r.ok)throw Error(`خطأ من Claude: ${r.status}`);const d=await r.json();return (d.content||[]).map(x=>x.text||'').join('\n').trim();
+ const completion=await requestText({systemPrompt:system,userPrompt:'طبّق التعديل الآن. أريد الناتج النهائي المعدّل فقط.',maxTokens:1600});
+ return completion;
 }
 
-async function parseEditInstruction({apiKey, instruction, clientContext, kind='image'}) {
+async function parseEditInstruction({instruction,clientContext,kind='image'}) {
  const system=`أنت مدير تنفيذ ومراقبة جودة. حوّل تعليمات المالك إلى خطة تغييرات دقيقة وقابلة للتنفيذ.
 أعد JSON فقط بهذا الشكل:
 {"changes":["..."],"preserve":["..."],"scope":"...","priority":"..."}
@@ -53,10 +54,8 @@ async function parseEditInstruction({apiKey, instruction, clientContext, kind='i
 ${contextPrompt(clientContext)}
 تعليمات المالك:
 ${clean(instruction,3000)}`;
- const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:700,system,messages:[{role:'user',content:'حوّل التعليمات إلى خطة تنفيذ JSON فقط.'}]})});
- if(!r.ok) throw Error(`خطأ تحليل تعليمات التعديل: ${r.status}`);
- const d=await r.json();
- const raw=(d.content||[]).map(x=>x.text||'').join('').replace(/```json|```/g,'').trim();
+ const completion=await requestText({systemPrompt:system,userPrompt:'حوّل التعليمات إلى خطة تنفيذ JSON فقط.',maxTokens:700});
+ const raw=completion.text.replace(/```json|```/g,'').trim();
  try{return JSON.parse(raw)}catch{return {changes:[clean(instruction,3000)],preserve:['كل ما لم يُطلب تغييره'],scope:'حسب التعليمات',priority:'strict'}}
 }
 
@@ -65,7 +64,7 @@ async function reviseImage({apiKey,imageBase64,instruction,clientContext}){
  const mime=(imageBase64.match(/^data:(image\/[^;]+);/)||[])[1]||'image/png';
  const bytes=Buffer.from(imageBase64.split(',')[1],'base64');
  if(bytes.length>7*1024*1024)throw Error('حجم الصورة كبير جداً للتعديل. استخدم صورة أصغر من 7MB.');
- const plan=await parseEditInstruction({apiKey, instruction, clientContext, kind:'image'});
+ const plan=await parseEditInstruction({instruction, clientContext, kind:'image'});
  const form=new FormData();
  form.append('model','gpt-image-1');
  form.append('image',new Blob([bytes],{type:mime}),'source.'+(mime.includes('jpeg')||mime.includes('jpg')?'jpg':'png'));
@@ -127,12 +126,13 @@ exports.handler=async event=>{
      const verification=await verifyImageEdit({apiKey:env('OPENAI_API_KEY'),originalBase64:p.imageBase64,editedBase64:image.image,plan:image.plan});
      return json(200,{image:image.image,clientId,memoryApplied:!!ctx,revisionId,editPlan:image.plan,verification});
    }
-   if(!env('ANTHROPIC_API_KEY'))return json(500,{error:'مفتاح ANTHROPIC_API_KEY غير مضبوط.'});
+   
    if (!clean(p.currentOutput,1)) return json(400,{error:'لا توجد نتيجة أصلية قابلة للتعديل.'});
-   const text=await reviseText({apiKey:env('ANTHROPIC_API_KEY'),mode,clientContext:ctx,instruction,currentOutput:p.currentOutput,topic:p.topic});
-   await saveAIHistory({clientId,mode:`${mode}-revision`,topic:p.topic||'مراجعة',input:instruction,output:text,metadata:{kind:'text',continuedFromMemory:true,revision:true}});
+   const completion=await reviseText({mode,clientContext:ctx,instruction,currentOutput:p.currentOutput,topic:p.topic});
+   const text=completion.text;
+   await saveAIHistory({clientId,mode:`${mode}-revision`,topic:p.topic||'مراجعة',input:instruction,output:text,metadata:{kind:'text',continuedFromMemory:true,revision:true,provider:completion.provider,model:completion.model}});
    await saveDNA(clientId,{action:'text-revision',instruction,whatChanged:text.slice(0,1800),reason:'تنفيذ تعديل فعلي',approved:false,metadata:{kind:'text',mode}});
    await logActivity(clientId,'ai-edit',`AI — تعديل ${mode}`,{instruction:instruction.slice(0,500),revision:true});
-   return json(200,{text,clientId,memoryApplied:!!ctx});
+   return json(200,{text,clientId,memoryApplied:!!ctx,provider:completion.provider,model:completion.model,fallbackUsed:completion.fallbackUsed});
  }catch(err){return json(500,{error:err.message})}
 };

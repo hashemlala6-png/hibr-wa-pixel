@@ -1,4 +1,5 @@
 const { env } = require('./env');
+const { requestText } = require('./ai-provider');
 // Netlify Function: يولّد وصف شرائح الكاروسيل عبر Claude، ثم صور فعلية
 // لكل شريحة عبر DALL-E (OpenAI). المفاتيح تُقرأ من متغيرات البيئة فقط.
 
@@ -24,18 +25,12 @@ exports.handler = async function (event) {
     return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  const anthropicKey = env('ANTHROPIC_API_KEY');
   const openaiKey = env('OPENAI_API_KEY');
-
-  if (!anthropicKey || !openaiKey) {
+  if (!openaiKey) {
     return {
-      statusCode: 500,
+      statusCode: 503,
       headers: corsHeaders,
-      body: JSON.stringify({
-        error: !openaiKey
-          ? "مفتاح OPENAI_API_KEY غير مضبوط بإعدادات السيرفر"
-          : "مفتاح ANTHROPIC_API_KEY غير مضبوط بإعدادات السيرفر",
-      }),
+      body: JSON.stringify({ error: "مفتاح OPENAI_API_KEY غير مضبوط؛ يلزم لتوليد صور الشرائح." }),
     };
   }
 
@@ -55,7 +50,8 @@ exports.handler = async function (event) {
   const colors = String(payload.colors || memory.brand || '').trim();
   const font = String(payload.font || '').trim();
   const { topic, slideCount } = payload;
-  const count = parseInt(slideCount || "3", 10);
+  const requestedCount = Number.parseInt(slideCount || "3", 10);
+  const count = Number.isFinite(requestedCount) ? Math.max(2, Math.min(6, requestedCount)) : 3;
 
   if (!activity || !topic) {
     return {
@@ -86,41 +82,32 @@ exports.handler = async function (event) {
 ${contextPrompt(clientContext)}`;
 
   let slidesPlan;
+  let planningProvider = null;
   try {
-    const planResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1200,
-        system: planningSystemPrompt,
-        messages: [{ role: "user", content: `صف كاروسيل عن: ${topic}` }],
-      }),
+    const completion = await requestText({
+      systemPrompt: planningSystemPrompt,
+      userPrompt: `صف كاروسيل عن: ${topic}`,
+      maxTokens: 1200
     });
-
-    if (!planResponse.ok) {
-      const errText = await planResponse.text();
-      return {
-        statusCode: planResponse.status,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: `خطأ من Claude: ${planResponse.status}`, details: errText }),
-      };
-    }
-
-    const planData = await planResponse.json();
-    const rawText = (planData.content || []).map((b) => b.text || "").join("\n").trim();
-    // تنظيف بسيط لو رجع النص محاط بـ ```json
-    const cleaned = rawText.replace(/```json|```/g, "").trim();
+    planningProvider = completion.provider;
+    const cleaned = completion.text.replace(/```json|```/g, "").trim();
     slidesPlan = JSON.parse(cleaned);
+    if (!Array.isArray(slidesPlan) || slidesPlan.length !== count) {
+      throw new Error(`يجب أن تعود خطة الكاروسيل بعدد ${count} شرائح بالضبط.`);
+    }
+    slidesPlan = slidesPlan.map((slide, index) => ({
+      slide: index + 1,
+      visual_description_english: String(slide.visual_description_english || "").trim().slice(0, 1800),
+      overlay_text_arabic: String(slide.overlay_text_arabic || "").trim().slice(0, 180)
+    }));
+    if (slidesPlan.some(slide => !slide.visual_description_english || !slide.overlay_text_arabic)) {
+      throw new Error("إحدى الشرائح تفتقد الوصف البصري أو النص العربي.");
+    }
   } catch (err) {
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: "تعذر تحليل خطة الشرائح من Claude", details: err.message }),
+      body: JSON.stringify({ error: "تعذر إعداد خطة الشرائح. لم يبدأ توليد الصور.", details: err.message }),
     };
   }
 
@@ -170,13 +157,13 @@ ${contextPrompt(clientContext)}`;
   }
 
   if (clientId) {
-    await saveAIHistory({ clientId, mode: 'carousel', topic, input: JSON.stringify({ activity, audience, colors, font, slideCount }), output: JSON.stringify(slidesPlan), metadata: { generatedImages: true, slideCount: results.length, continuedFromMemory: true } });
+    await saveAIHistory({ clientId, mode: 'carousel', topic, input: JSON.stringify({ activity, audience, colors, font, slideCount }), output: JSON.stringify(slidesPlan), metadata: { generatedImages: true, slideCount: results.length, continuedFromMemory: true, planningProvider } });
     await logActivity(clientId, 'ai', 'AI — كاروسيل + صور', { topic: String(topic).slice(0,500), mode:'carousel', generatedImages:true, memoryApplied:!!clientContext });
   }
 
   return {
     statusCode: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
-    body: JSON.stringify({ slides: results, clientId, memoryApplied: !!clientContext }),
+    body: JSON.stringify({ slides: results, clientId, memoryApplied: !!clientContext, planningProvider, requestedSlides: count, generatedSlides: results.filter(x => x.image_base64).length }),
   };
 };
