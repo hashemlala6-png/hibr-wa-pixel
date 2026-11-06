@@ -37,12 +37,18 @@ exports.handler=async e=>{
       const payments=await listByProject('payments','payment-',p.id,x=>({amount:x.amount,method:x.method,createdAt:x.createdAt}));
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
       const invoices=await listByProject('invoices','invoice-',p.id,x=>({number:x.number,total:x.total,dueDate:x.dueDate,status:x.status,createdAt:x.createdAt}));
-      const contracts=await listByProject('contracts','contract-',p.id,x=>({number:x.number,amount:x.amount,status:x.status,startDate:x.startDate,dueDate:x.dueDate}));
-      const deliveries=await listByProject('deliveries','delivery-',p.id,x=>({title:x.title,url:x.url,note:x.note,status:x.status,createdAt:x.createdAt}));
+      const contracts=await listByProject('contracts','contract-',p.id,x=>({id:x.id,number:x.number,amount:x.amount,status:x.status,startDate:x.startDate,dueDate:x.dueDate,signedAt:x.signedAt||null,paymentPolicy:x.paymentPolicy||null}));
+      const deliveries=await listByProject('deliveries','delivery-',p.id,x=>({id:x.id,title:x.title,url:x.url,note:x.note,status:x.status,stage:x.stage||'final',watermarked:x.watermarked===true,lowResolution:x.lowResolution===true,fullQuality:x.fullQuality===true,rightsTransferred:x.rightsTransferred===true,clientApproval:x.clientApproval||null,createdAt:x.createdAt}));
       const rr=await listByProject('resultPlans','result-',p.id,x=>({promise:x.promise||x.plan?.promise||'',deliverables:x.plan?.deliverables||[],handoffMessage:x.plan?.handoff_message||x.plan?.handoffMessage||'',status:x.status}));
       const approvedResults=rr.filter(x=>['approved','delivered'].includes(x.status));
       const paid=payments.reduce((a,x)=>a+Number(x.amount||0),0);
-      projects.push({id:p.id,name:p.name,status:p.status,startDate:p.startDate,dueDate:p.dueDate,amount:p.amount,paid,remaining:Math.max(Number(p.amount||0)-paid,0),payments,tasks,invoices,contracts,deliveries,clientResult:approvedResults[0]||null});
+      const signedContract=contracts.filter(x=>x.status==='signed'&&x.signedAt).sort((a,b)=>new Date(b.signedAt)-new Date(a.signedAt))[0]||null;
+      const amount=Number(signedContract?.amount||p.amount||0);
+      const depositRequired=amount>0?Math.ceil(amount*0.10):0;
+      const remaining=Math.max(amount-paid,0);
+      const latestPreview=deliveries.filter(x=>x.stage==='preview').sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))[0]||null;
+      const contentApproved=latestPreview?.clientApproval?.decision==='approved';
+      projects.push({id:p.id,name:p.name,status:p.status,startDate:p.startDate,dueDate:p.dueDate,amount,paid,remaining,depositRequired,depositMet:Boolean(signedContract&&depositRequired>0&&paid>=depositRequired),contractSigned:Boolean(signedContract),fullyPaid:Boolean(signedContract&&amount>0&&paid>=amount),contentApproved,finalDeliveryEligible:Boolean(signedContract&&amount>0&&paid>=amount&&contentApproved),payments,tasks,invoices,contracts,deliveries,clientResult:approvedResults[0]||null});
     }
     projects.sort((a,b)=>new Date(b.startDate||0)-new Date(a.startDate||0));
     return json(200,{client:{id:account.id,clientId:account.id,name:account.name,email:account.email,whatsapp:account.whatsapp},projects});

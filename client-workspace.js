@@ -63,11 +63,24 @@
     if (!Array.isArray(deliveries) || !deliveries.length) return empty('لا توجد تسليمات مسجلة لهذا المشروع حتى الآن.');
     return '<div class="cw-item-list">' + deliveries.map((delivery) => {
       const url = safeUrl(delivery.url);
-      return '<div class="cw-item"><div class="cw-item-main"><strong>' + esc(delivery.title || 'تسليم مشروع') + '</strong>' +
+      const preview = delivery.stage === 'preview';
+      const approval = delivery.clientApproval || null;
+      const approvalText = approval?.decision === 'approved'
+        ? '<small class="cw-signed-note">تم اعتماد محتوى المعاينة بتاريخ ' + date(approval.at) + '</small>'
+        : approval?.decision === 'needs_changes'
+          ? '<small class="cw-note-muted">طلبت تعديلات: ' + esc(approval.note || 'لا توجد ملاحظة') + '</small>'
+          : '';
+      const actions = preview && !approval
+        ? '<div class="cw-delivery-approval"><small>هذه نسخة مراجعة محمية، وليست الملفات الأصلية.</small><textarea class="cw-delivery-note" data-delivery-note="' + esc(delivery.id) + '" rows="2" maxlength="1000" placeholder="ملاحظة اختيارية أو تفاصيل التعديل"></textarea><div class="cw-delivery-actions"><button type="button" class="cw-primary" data-delivery-decision="approved" data-delivery-id="' + esc(delivery.id) + '">أوافق على المحتوى</button><button type="button" class="cw-secondary" data-delivery-decision="needs_changes" data-delivery-id="' + esc(delivery.id) + '">أطلب تعديلاً</button></div><small class="cw-delivery-message" data-delivery-message="' + esc(delivery.id) + '" role="status" aria-live="polite"></small></div>'
+        : approvalText;
+      const typeLabel = preview
+        ? '<small class="cw-delivery-stage">معاينة محمية · علامة مائية / دقة منخفضة</small>'
+        : '<small class="cw-delivery-stage">ملفات نهائية · كاملة الجودة · الحقوق منقولة</small>';
+      return '<div class="cw-item"><div class="cw-item-main"><strong>' + esc(delivery.title || 'تسليم مشروع') + '</strong>' + typeLabel +
         (delivery.note ? '<small>' + esc(delivery.note) + '</small>' : '') +
         (delivery.createdAt ? '<small>تاريخ الإضافة: ' + date(delivery.createdAt) + '</small>' : '') +
-        (url ? '<a class="cw-delivery-link" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">فتح التسليم <b>↗</b></a>' : '') +
-        '</div>' + tag(delivery.status) + '</div>';
+        (url ? '<a class="cw-delivery-link" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + (preview?'فتح المعاينة المحمية':'فتح الملفات النهائية') + ' <b>↗</b></a>' : '') +
+        actions + '</div>' + tag(delivery.status) + '</div>';
     }).join('') + '</div>';
   }
 
@@ -119,6 +132,7 @@
        '<div class="cw-finance-cell"><small>المدفوع المسجل</small><strong>' + money(paid) + '</strong></div>' +
        '<div class="cw-finance-cell"><small>المتبقي حسب السجل</small><strong>' + (hasAmount ? money(remaining) : 'يُحدد بعد الاتفاق') + '</strong></div>' +
       '</div>' +
+      (hasAmount ? '<div class="cw-payment-policy"><small>العربون المتفق عليه 10%: ' + money(project.depositRequired || Math.ceil(amount*0.10)) + ' · ' + (project.depositMet ? 'تم تسجيل استلامه' : 'لم يكتمل تسجيله بعد') + '</small><small>التسليم النهائي ونقل الحقوق بعد سداد 100% وموافقتك على المعاينة.</small></div>' : '') +
       '<div class="cw-project-content">' +
        '<section class="cw-lane"><div class="cw-lane-heading"><h4>المهام</h4><small>' + (Array.isArray(project.tasks) ? project.tasks.length : 0) + ' TASKS</small></div>' + renderTasks(project.tasks) + '</section>' +
        '<section class="cw-lane"><div class="cw-lane-heading"><h4>التسليمات</h4><small>' + (Array.isArray(project.deliveries) ? project.deliveries.length : 0) + ' FILES</small></div>' + renderDeliveries(project.deliveries) + '</section>' +
@@ -138,6 +152,33 @@
       return;
     }
     root.innerHTML = projects.map((project, index) => renderProject(project, index, serviceDirectory)).join('');
+    root.querySelectorAll('[data-delivery-decision]').forEach((button) => button.addEventListener('click', async () => {
+      const deliveryId = button.dataset.deliveryId;
+      const decision = button.dataset.deliveryDecision;
+      const message = root.querySelector('[data-delivery-message="' + deliveryId + '"]');
+      const note = root.querySelector('[data-delivery-note="' + deliveryId + '"]')?.value?.trim() || '';
+      if (decision === 'needs_changes' && note.length < 5) {
+        if (message) message.textContent = 'اكتبي ملاحظة قصيرة توضّح التعديل المطلوب.';
+        return;
+      }
+      if (decision === 'approved' && !window.confirm('هل تؤكدين موافقتك على محتوى المعاينة؟ تبقى الملفات الأصلية ونقل الحقوق حتى اكتمال الدفعة المتبقية.')) return;
+      button.disabled = true;
+      if (message) message.textContent = 'جارٍ حفظ قرارك…';
+      try {
+        const response = await fetch('/.netlify/functions/client-deliveries', {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ deliveryId, decision, note })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'تعذر حفظ القرار.');
+        if (message) message.textContent = decision === 'approved' ? 'تم اعتماد المعاينة وإشعار فريق الوكالة.' : 'تم إرسال طلب التعديل إلى فريق الوكالة.';
+        window.location.reload();
+      } catch (error) {
+        if (message) message.textContent = error.message || 'تعذر حفظ القرار.';
+        button.disabled = false;
+      }
+    }));
   }
 
   function signable(contract) {

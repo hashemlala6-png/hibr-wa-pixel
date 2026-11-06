@@ -3,6 +3,7 @@ const crypto=require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
+const {getProjectFinancials}=require('./project-financials');
 const projectStore=()=>getStore({name:'hbpx-projects',consistency:'strong'});
 const qualityStore=()=>getStore({name:'hbpx-quality-gates',consistency:'strong'});
 const vqaStore=()=>getStore({name:'hbpx-visual-qa',consistency:'strong'});
@@ -47,13 +48,41 @@ exports.handler=async e=>{
     const next=renewalDate(start,cycle);const id='subscription-'+Date.now()+'-'+crypto.randomBytes(3).toString('hex');const x={id,projectId:clean(b.projectId,120),clientName:clean(b.clientName,160),planName:clean(b.planName,160),amount:amount(b.amount),cycle,startDate:start,nextRenewal:next,status:'active',autoRenew:!!b.autoRenew,note:clean(b.note,1000),createdAt:now,updatedAt:now};await stores.subscriptions().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,'subscription','تم إنشاء اشتراك',{planName:x.planName,amount:x.amount,cycle:x.cycle});return json(201,{item:x});
    }
    if(b.type==='delivery'){
-    if(!clean(b.projectId,120)||!clean(b.title,180)||!clean(b.url,2000))return json(400,{error:'المشروع والعنوان ورابط التسليم مطلوبة.'});
-    const projectId=clean(b.projectId,120);const gate=await approvedGate(projectId);
-    if(!gate)return json(409,{error:'التسليم مقفول حتى تعتمد الفحص النهائي الشامل للمشروع.'});
+    const projectId=clean(b.projectId,120),title=clean(b.title,180),rawUrl=clean(b.url,2000),stage=clean(b.stage,20)||'final';
+    if(!projectId||!title||!rawUrl)return json(400,{error:'المشروع والعنوان ورابط التسليم مطلوبة.'});
+    if(!['preview','final'].includes(stage))return json(400,{error:'مرحلة التسليم يجب أن تكون معاينة أو نهائية.'});
+    let url;try{url=new URL(rawUrl)}catch{return json(400,{error:'رابط التسليم غير صالح.'})}
+    if(url.protocol!=='https:'||!url.hostname||url.username||url.password)return json(400,{error:'رابط التسليم يجب أن يكون HTTPS آمناً.'});
+    const project=await projectStore().get(projectId,{type:'json'}).catch(()=>null);
+    if(!project)return json(404,{error:'المشروع غير موجود.'});
+    const financial=await getProjectFinancials(projectId,project.amount);
+    if(!financial.contractSigned)return json(409,{error:'التسليم مقفول حتى يوقّع العميل العقد.',financial});
+    if(stage==='preview'){
+     if(!financial.depositMet)return json(409,{error:'لا يمكن عرض المعاينة قبل استلام عربون 10% من قيمة العقد.',financial});
+     if(b.watermarkConfirmed!==true||b.lowResolutionConfirmed!==true)return json(400,{error:'أكدي أن نسخة المراجعة تحمل علامة مائية أو دقة منخفضة، وأنها ليست ملفاً أصلياً كاملاً.'});
+     if(b.finalQualityConfirmed===true||b.rightsTransferConfirmed===true)return json(400,{error:'لا يمكن اعتبار المعاينة نسخة نهائية أو نقل الحقوق في هذه المرحلة.'});
+     const id='delivery-'+Date.now()+'-'+crypto.randomBytes(3).toString('hex');
+     const x={id,projectId,title,url:url.toString(),note:clean(b.note,1000),stage:'preview',watermarked:true,lowResolution:true,fullQuality:false,rightsTransferred:false,ownerConfirmedPreviewAt:now,status:'ready',createdAt:now,updatedAt:now};
+     await stores.deliveries().setJSON(id,x);
+     if(project.leadId)await logActivity(project.leadId,'delivery','تم إتاحة معاينة محمية للعميل',{title:x.title,deliveryId:id,stage:'preview'});
+     return json(201,{item:x,financial,message:'حُفظت المعاينة المحمية فقط. النسخة الأصلية والحقوق غير متاحة.'});
+    }
+
+    if(!financial.fullyPaid)return json(409,{error:'التسليم النهائي ونقل الحقوق مقفولان حتى سداد كامل المبلغ (100%).',financial});
+    const deliveries=await all('deliveries','delivery-');
+    const latestPreview=deliveries.filter(x=>x.projectId===projectId&&x.stage==='preview').sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))[0];
+    if(!latestPreview||latestPreview.clientApproval?.decision!=='approved')return json(409,{error:'يلزم اعتماد العميل لآخر معاينة قبل إتاحة الملفات النهائية.',previewId:latestPreview?.id||null});
+    if(b.finalQualityConfirmed!==true||b.rightsTransferConfirmed!==true)return json(400,{error:'أكدي اجتياز النسخة النهائية لفحص الجودة، وأن الملفات أصلية كاملة الجودة ومن دون علامة مائية، قبل نقل الحقوق.'});
+    const gate=await approvedGate(projectId);
+    if(!gate)return json(409,{error:'التسليم النهائي مقفول حتى تعتمد بوابة الجودة النهائية للمشروع.'});
     const latest=await newestVQA(projectId);
-    if(latest && new Date(latest.createdAt)>new Date(gate.approvedAt||gate.updatedAt))return json(409,{error:'تم فحص مخرج بصري بعد اعتماد بوابة الجودة. أعد الفحص النهائي واعتمد النسخة الأحدث قبل التسليم.'});
-    if(gate.result?.passed!==true||Number(gate.result?.criticalCount)>0)return json(409,{error:'التسليم مقفول: بوابة الجودة النهائية غير ناجحة.'});
-    const id='delivery-'+Date.now()+'-'+crypto.randomBytes(3).toString('hex');const x={id,projectId:clean(b.projectId,120),title:clean(b.title,180),url:clean(b.url,2000),note:clean(b.note,1000),qualityGateId:gate.id,status:'ready',createdAt:now,updatedAt:now};await stores.deliveries().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,'delivery','تم تسجيل تسليم',{title:x.title});return json(201,{item:x});
+    if(latest&&new Date(latest.createdAt)>new Date(gate.approvedAt||gate.updatedAt))return json(409,{error:'تم فحص مخرج بصري بعد اعتماد بوابة الجودة. أعيدي الفحص النهائي واعتمدي النسخة الأحدث قبل التسليم.'});
+    if(gate.result?.passed!==true||Number(gate.result?.criticalCount)>0)return json(409,{error:'التسليم النهائي مقفول: بوابة الجودة غير ناجحة أو بها أخطاء حرجة.'});
+    const id='delivery-'+Date.now()+'-'+crypto.randomBytes(3).toString('hex');
+    const x={id,projectId,title,url:url.toString(),note:clean(b.note,1000),stage:'final',watermarked:false,lowResolution:false,fullQuality:true,rightsTransferred:true,rightsTransferredAt:now,finalQualityConfirmedAt:now,clientApprovedPreviewId:latestPreview.id,qualityGateId:gate.id,status:'ready',createdAt:now,updatedAt:now};
+    await stores.deliveries().setJSON(id,x);
+    if(project.leadId)await logActivity(project.leadId,'delivery','تم إتاحة الملفات النهائية ونقل الحقوق بعد اكتمال السداد',{title:x.title,deliveryId:id,stage:'final'});
+    return json(201,{item:x,financial,message:'تم تسجيل التسليم النهائي ونقل الحقوق بعد اكتمال السداد وموافقة العميل والجودة.'});
    }
    return json(400,{error:'نوع العملية غير معروف.'});
   }
@@ -65,7 +94,9 @@ exports.handler=async e=>{
     if(['active','paused','cancelled','expired'].includes(b.status)){x.status=b.status;x.updatedAt=new Date().toISOString();await stores.subscriptions().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,'subscription','تحديث الاشتراك',{status:x.status,action:b.action||null});return json(200,{item:x});}
     return json(400,{error:'حالة الاشتراك غير صحيحة.'});
    } const map={invoice:['issued','paid','cancelled','overdue'],contract:['draft','sent','accepted','rejected','expired'],delivery:['ready','delivered','archived']};
-   if(!map[type]||!map[type].includes(b.status))return json(400,{error:'الحالة غير صحيحة.'});const name=type==='invoice'?'invoices':type==='contract'?'contracts':'deliveries';const x=await stores[name]().get(id,{type:'json'});if(!x)return json(404,{error:'العنصر غير موجود.'});x.status=b.status;x.updatedAt=new Date().toISOString();await stores[name]().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,type,'تحديث '+type,{status:x.status});return json(200,{item:x});
+   if(!map[type]||!map[type].includes(b.status))return json(400,{error:'الحالة غير صحيحة.'});const name=type==='invoice'?'invoices':type==='contract'?'contracts':'deliveries';const x=await stores[name]().get(id,{type:'json'});if(!x)return json(404,{error:'العنصر غير موجود.'});
+   if(type==='delivery'&&b.status==='delivered'&&(x.stage!=='final'||x.fullQuality!==true||x.watermarked!==false||x.rightsTransferred!==true))return json(409,{error:'لا يمكن تسليم نسخة مراجعة كملفات نهائية. التسليم النهائي يتطلب نسخة كاملة الجودة، بلا علامة مائية، وبعد نقل الحقوق.'});
+   x.status=b.status;x.updatedAt=new Date().toISOString();await stores[name]().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,type,'تحديث '+type,{status:x.status});return json(200,{item:x});
   }
   return json(405,{error:'Method not allowed'});
  }catch(err){return json(500,{error:'حدث خطأ في الخادم.',details:env('NODE_ENV')==='development'?err.message:undefined})}
