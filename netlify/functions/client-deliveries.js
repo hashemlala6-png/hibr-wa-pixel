@@ -1,16 +1,17 @@
 'use strict';
 
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { json } = require('./auth-utils');
 const { getClientSession } = require('./client-auth-utils');
 const { ownsProject } = require('./client-ownership');
 const { logActivity } = require('./client-activity');
 
 const stores = {
-  accounts: () => getStore({ name: 'hbpx-client-accounts', consistency: 'strong' }),
-  projects: () => getStore({ name: 'hbpx-projects', consistency: 'strong' }),
-  leads: () => getStore({ name: 'hbpx-leads', consistency: 'strong' }),
-  deliveries: () => getStore({ name: 'hbpx-deliveries', consistency: 'strong' })
+  accounts: () => getStore(blobOptions('hbpx-client-accounts', 'strong')),
+  projects: () => getStore(blobOptions('hbpx-projects', 'strong')),
+  leads: () => getStore(blobOptions('hbpx-leads', 'strong')),
+  deliveries: () => getStore(blobOptions('hbpx-deliveries', 'strong'))
 };
 const clean = (value, max = 1000) => String(value == null ? '' : value).trim().slice(0, max);
 
