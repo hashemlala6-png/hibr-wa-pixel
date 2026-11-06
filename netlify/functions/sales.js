@@ -3,6 +3,7 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
 const { resolveClientIdentity } = require('./client-ownership');
+const { getProjectFinancials } = require('./project-financials');
 const blobOptions = (name) => { const options={name,consistency:'strong'}; const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae'; const token=process.env.NETLIFY_AUTH_TOKEN; if(siteID&&token){options.siteID=siteID;options.token=token;} return options; };
 const stores = {
   quotes: () => getStore(blobOptions('hbpx-quotes')),
@@ -138,7 +139,7 @@ exports.handler=async event=>{
    }
    if(b.type==='project'){
     if(!b.leadId||!clean(b.name,160)||!amount(b.amount))return json(400,{error:'العميل واسم المشروع والقيمة مطلوبة.'});
-    if(!allowed.projects.includes(b.status))b.status='planned';
+    if(!allowed.projects.includes(b.status)||b.status==='active')b.status='planned';
     const identity=await identityForLead(b.leadId);
     if(!identity)return json(404,{error:'العميل المرتبط بالمشروع غير موجود.'});
     const lead=identity.lead;
@@ -166,6 +167,11 @@ exports.handler=async event=>{
    if(!stores[collection]||!allowed[collection]?.includes(status))return json(400,{error:'الحالة غير صحيحة.'});
    const x=await stores[collection]().get(id,{type:'json'});
    if(!x)return json(404,{error:'العنصر غير موجود.'});
+   if(collection==='projects'&&status==='active'){
+    const financial=await getProjectFinancials(x.id,x.amount);
+    if(!financial.contractSigned)return json(409,{error:'لا يمكن بدء التنفيذ قبل توقيع عقد المشروع من العميل.',financial});
+    if(!financial.depositMet)return json(409,{error:'لا يمكن بدء التنفيذ قبل استلام عربون 10% من قيمة العقد. سجّلي الدفعة المستلمة أولاً.',financial});
+   }
    const previousStatus=x.status;x.status=status;x.updatedAt=new Date().toISOString();await stores[collection]().setJSON(id,x);
    const clientId=await clientIdForRecord(x);
    if(clientId)await logActivity(clientId,collection,'تحديث الحالة',{id,from:previousStatus,to:status});

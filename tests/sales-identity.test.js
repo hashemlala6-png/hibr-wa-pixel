@@ -116,9 +116,10 @@ test('sales records use an exact account match or an isolated lead identity, nev
 
   const changed = await service.handler({
     httpMethod:'PATCH',
-    body:JSON.stringify({collection:'projects',id:itemB.id,status:'active'})
+    body:JSON.stringify({collection:'projects',id:itemB.id,status:'paused'})
   });
   assert.equal(changed.statusCode,200);
+  assert.equal(service.data['hbpx-projects'][itemB.id].status,'paused');
   assert.equal(service.activity.at(-1).clientId,expectedB);
 
   const listed = await service.handler({httpMethod:'GET'});

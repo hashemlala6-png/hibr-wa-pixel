@@ -39,8 +39,8 @@ function fixture() {
       'invoice-b': {id:'invoice-b',projectId:'project-b',total:2000}
     },
     'hbpx-contracts': {
-      'contract-a': {id:'contract-a',projectId:'project-a',title:'Contract A',terms:'A'.repeat(40),status:'pending_signature'},
-      'contract-b': {id:'contract-b',projectId:'project-b',title:'Contract B',terms:'B'.repeat(40),status:'pending_signature'}
+      'contract-a': {id:'contract-a',projectId:'project-a',title:'Contract A',terms:'سياسة الدفع: عربون 10% عند التعاقد وسداد 90% قبل التسليم النهائي. '.repeat(2),amount:1000,status:'pending_signature'},
+      'contract-b': {id:'contract-b',projectId:'project-b',title:'Contract B',terms:'سياسة الدفع: عربون 10% عند التعاقد وسداد 90% قبل التسليم النهائي. '.repeat(2),amount:2000,status:'pending_signature'}
     },
     'hbpx-subscriptions': {
       'subscription-a': {id:'subscription-a',projectId:'project-a',name:'Subscription A'},
