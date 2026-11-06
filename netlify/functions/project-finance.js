@@ -1,6 +1,7 @@
 'use strict';
 
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { requireAdmin, json } = require('./auth-utils');
 const { getProjectFinancials } = require('./project-financials');
 
@@ -45,8 +46,8 @@ exports.handler = async event => {
 
   try {
     const [project, deliveries] = await Promise.all([
-      getStore({ name: 'hbpx-projects', consistency: 'strong' }).get(projectId, { type: 'json' }),
-      readAll(getStore({ name: 'hbpx-deliveries', consistency: 'strong' }), 'delivery-')
+      getStore(blobOptions('hbpx-projects', 'strong')).get(projectId, { type: 'json' }),
+      readAll(getStore(blobOptions('hbpx-deliveries', 'strong')), 'delivery-')
     ]);
     if (!project) return json(404, { error: 'المشروع غير موجود.' });
 
