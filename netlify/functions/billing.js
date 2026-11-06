@@ -8,13 +8,37 @@ const {getProjectFinancials}=require('./project-financials');
 const projectStore=()=>getStore(blobOptions('hbpx-projects', 'strong'));
 const qualityStore=()=>getStore(blobOptions('hbpx-quality-gates', 'strong'));
 const vqaStore=()=>getStore(blobOptions('hbpx-visual-qa', 'strong'));
-async function approvedGate(projectId){
- const r=await qualityStore().list({prefix:'gate-'});
- let best=null;
- for(const b of r.blobs||[]){try{const x=await qualityStore().get(b.key,{type:'json'});if(x?.projectId===projectId&&x.status==='approved'&&x.kind==='final'&&(!best||new Date(x.approvedAt||x.updatedAt)>new Date(best.approvedAt||best.updatedAt)))best=x}catch{}}
- return best;
+async function readAll(store,prefix){
+ const rows=[];
+ let cursor;
+ do{
+  const page=await store.list({prefix,limit:100,cursor});
+  for(const blob of page.blobs||[]){
+   const record=await store.get(blob.key,{type:'json'});
+   if(record)rows.push(record);
+  }
+  cursor=page.cursor;
+ }while(cursor);
+ return rows;
 }
-async function newestVQA(projectId){const r=await vqaStore().list({prefix:'vqa-'});let latest=null;for(const b of r.blobs||[]){try{const x=await vqaStore().get(b.key,{type:'json'});if(x?.projectId===projectId&&(!latest||new Date(x.createdAt)>new Date(latest.createdAt)))latest=x}catch{}}return latest;}
+function timestamp(value){
+ const parsed=new Date(value||0).getTime();
+ return Number.isFinite(parsed)?parsed:0;
+}
+async function approvedGate(projectId){
+ const gates=await readAll(qualityStore(),'gate-');
+ const latest=gates
+  .filter(item=>item?.projectId===projectId&&item.kind==='final')
+  .sort((a,b)=>timestamp(b.updatedAt||b.approvedAt||b.createdAt)-timestamp(a.updatedAt||a.approvedAt||a.createdAt))[0]||null;
+ // A previous approval must not override a newer failed, pending, or revoked final gate.
+ if(!latest||latest.status!=='approved'||latest.result?.passed!==true||Number(latest.result?.criticalCount)>0)return null;
+ return latest;
+}
+async function newestVQA(projectId){
+ const records=await readAll(vqaStore(),'vqa-');
+ return records.filter(item=>item?.projectId===projectId)
+  .sort((a,b)=>timestamp(b.createdAt)-timestamp(a.createdAt))[0]||null;
+}
 const stores={
  invoices:()=>getStore(blobOptions('hbpx-invoices', 'strong')),
  contracts:()=>getStore(blobOptions('hbpx-contracts', 'strong')),
@@ -23,7 +47,10 @@ const stores={
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 const amount=require('./money');
-async function all(name,prefix){const st=stores[name](),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));}
+async function all(name,prefix){
+ const records=await readAll(stores[name](),prefix);
+ return records.sort((a,b)=>timestamp(b.createdAt)-timestamp(a.createdAt));
+}
 function renewalDate(start,cycle){const d=new Date(start+'T12:00:00');if(cycle==='yearly')d.setFullYear(d.getFullYear()+1);else if(cycle==='quarterly')d.setMonth(d.getMonth()+3);else d.setMonth(d.getMonth()+1);return d.toISOString().slice(0,10)}
 function num(prefix){return `${prefix}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`}
 exports.handler=async e=>{

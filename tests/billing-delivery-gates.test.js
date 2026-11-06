@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
 
-function loadBilling(data) {
+function loadBilling(data, { pageSize = 1000 } = {}) {
   const financePath = require.resolve('../netlify/functions/project-financials');
   delete require.cache[financePath];
   const resolved = require.resolve('../netlify/functions/billing');
@@ -18,8 +18,11 @@ function loadBilling(data) {
     getStore({ name }) {
       stores[name] ||= {};
       return {
-        async list({ prefix = '' } = {}) {
-          return { blobs: Object.keys(stores[name]).filter(key => key.startsWith(prefix)).map(key => ({ key })) };
+        async list({ prefix = '', cursor } = {}) {
+          const keys=Object.keys(stores[name]).filter(key=>key.startsWith(prefix));
+          const offset=cursor?Number(cursor):0;
+          const blobs=keys.slice(offset,offset+pageSize).map(key=>({key}));
+          return {blobs,cursor:offset+pageSize<keys.length?String(offset+pageSize):undefined};
         },
         async get(key) { return stores[name][key] ?? null; },
         async setJSON(key, value) { stores[name][key] = JSON.parse(JSON.stringify(value)); writes.push({ name, key, value }); },
@@ -170,4 +173,78 @@ test('a protected preview can never be marked delivered as the final handoff', a
   assert.equal(response.statusCode, 409);
   assert.equal(data['hbpx-deliveries']['delivery-preview'].status, 'ready');
   assert.equal(service.writes.length, 0);
+});
+
+
+test('final delivery uses the latest preview even when it is beyond the first Blobs page', async () => {
+  const data=base();
+  data['hbpx-payments']['payment-a'].amount=100000;
+  data['hbpx-deliveries']['delivery-preview-old']={
+    id:'delivery-preview-old',projectId:'project-a',stage:'preview',status:'ready',
+    createdAt:'2026-11-03T10:00:00.000Z',clientApproval:{decision:'approved'}
+  };
+  data['hbpx-deliveries']['delivery-preview-middle']={
+    id:'delivery-preview-middle',projectId:'project-a',stage:'preview',status:'ready',
+    createdAt:'2026-11-04T10:00:00.000Z',clientApproval:{decision:'approved'}
+  };
+  data['hbpx-deliveries']['delivery-preview-latest']={
+    id:'delivery-preview-latest',projectId:'project-a',stage:'preview',status:'ready',
+    createdAt:'2026-11-05T10:00:00.000Z',clientApproval:{decision:'needs_changes'}
+  };
+  data['hbpx-quality-gates']['gate-final']={
+    id:'gate-final',projectId:'project-a',kind:'final',status:'approved',
+    approvedAt:'2026-11-05T12:00:00.000Z',result:{passed:true,criticalCount:0}
+  };
+  const service=loadBilling(data,{pageSize:2});
+  const response=await service.handler(event(deliveryPayload('final',{finalQualityConfirmed:true,rightsTransferConfirmed:true})));
+  assert.equal(response.statusCode,409);
+  assert.match(body(response).error,/اعتماد العميل/);
+  assert.equal(service.writes.length,0);
+});
+
+test('a newer non-approved final quality gate invalidates an older approved gate', async () => {
+  const data=base();
+  data['hbpx-payments']['payment-a'].amount=100000;
+  data['hbpx-deliveries']['delivery-preview']={
+    id:'delivery-preview',projectId:'project-a',stage:'preview',status:'ready',
+    createdAt:'2026-11-04T08:00:00.000Z',clientApproval:{decision:'approved'}
+  };
+  data['hbpx-visual-qa']['vqa-before']={
+    id:'vqa-before',projectId:'project-a',createdAt:'2026-11-04T09:00:00.000Z'
+  };
+  data['hbpx-quality-gates']['gate-approved-old']={
+    id:'gate-approved-old',projectId:'project-a',kind:'final',status:'approved',
+    approvedAt:'2026-11-04T10:00:00.000Z',updatedAt:'2026-11-04T10:00:00.000Z',
+    result:{passed:true,criticalCount:0}
+  };
+  data['hbpx-quality-gates']['gate-failed-new']={
+    id:'gate-failed-new',projectId:'project-a',kind:'final',status:'rejected',
+    updatedAt:'2026-11-05T10:00:00.000Z',result:{passed:false,criticalCount:2}
+  };
+  const service=loadBilling(data,{pageSize:2});
+  const response=await service.handler(event(deliveryPayload('final',{finalQualityConfirmed:true,rightsTransferConfirmed:true})));
+  assert.equal(response.statusCode,409);
+  assert.match(body(response).error,/بوابة الجودة النهائية/);
+  assert.equal(service.writes.length,0);
+});
+
+test('newest visual QA record is checked across every Blobs page before final handoff', async () => {
+  const data=base();
+  data['hbpx-payments']['payment-a'].amount=100000;
+  data['hbpx-deliveries']['delivery-preview']={
+    id:'delivery-preview',projectId:'project-a',stage:'preview',status:'ready',
+    createdAt:'2026-11-03T08:00:00.000Z',clientApproval:{decision:'approved'}
+  };
+  data['hbpx-quality-gates']['gate-final']={
+    id:'gate-final',projectId:'project-a',kind:'final',status:'approved',
+    approvedAt:'2026-11-04T10:00:00.000Z',result:{passed:true,criticalCount:0}
+  };
+  data['hbpx-visual-qa']['vqa-old']={id:'vqa-old',projectId:'project-a',createdAt:'2026-11-03T09:00:00.000Z'};
+  data['hbpx-visual-qa']['vqa-middle']={id:'vqa-middle',projectId:'project-a',createdAt:'2026-11-03T12:00:00.000Z'};
+  data['hbpx-visual-qa']['vqa-latest']={id:'vqa-latest',projectId:'project-a',createdAt:'2026-11-05T10:00:00.000Z'};
+  const service=loadBilling(data,{pageSize:2});
+  const response=await service.handler(event(deliveryPayload('final',{finalQualityConfirmed:true,rightsTransferConfirmed:true})));
+  assert.equal(response.statusCode,409);
+  assert.match(body(response).error,/بعد اعتماد بوابة الجودة/);
+  assert.equal(service.writes.length,0);
 });
