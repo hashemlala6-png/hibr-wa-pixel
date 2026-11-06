@@ -3,17 +3,17 @@ const crypto=require('crypto');
 const {getStore,connectLambda}=require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
+const { blobOptions } = require('./blob-config');
 
-const blobOptions=(name)=>{const options={name,consistency:'eventual'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
 const S={
- leads:()=>getStore(blobOptions('hbpx-leads')),
- projects:()=>getStore(blobOptions('hbpx-projects')),
- quotes:()=>getStore(blobOptions('hbpx-quotes')),
- subs:()=>getStore(blobOptions('hbpx-subscriptions')),
- tasks:()=>getStore(blobOptions('hbpx-tasks')),
- plans:()=>getStore(blobOptions('hbpx-execution-plans')),
- autopilot:()=>getStore(blobOptions('hbpx-autopilot')),
- gates:()=>getStore(blobOptions('hbpx-review-gates'))
+ leads:()=>getStore(blobOptions('hbpx-leads', 'eventual')),
+ projects:()=>getStore(blobOptions('hbpx-projects', 'eventual')),
+ quotes:()=>getStore(blobOptions('hbpx-quotes', 'eventual')),
+ subs:()=>getStore(blobOptions('hbpx-subscriptions', 'eventual')),
+ tasks:()=>getStore(blobOptions('hbpx-tasks', 'eventual')),
+ plans:()=>getStore(blobOptions('hbpx-execution-plans', 'eventual')),
+ autopilot:()=>getStore(blobOptions('hbpx-autopilot', 'eventual')),
+ gates:()=>getStore(blobOptions('hbpx-review-gates', 'eventual'))
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 const num=v=>{const n=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(n)?n:0};
