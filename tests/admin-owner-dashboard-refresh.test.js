@@ -350,3 +350,86 @@ test('customer notification retry does not conflate accepted retry with failed i
   assert.equal(calls.some(item => item.alert), false);
   assert.match(status.textContent, /تم تنفيذ طلب إعادة الإرسال، لكن تعذر تحديث قائمة الطلبات/);
 });
+
+
+test('owner universe polling handles failures without leaking rejected promises or masking stale data', async () => {
+  const status = { textContent: '', style: {} };
+  const calls = [];
+  const previous = { counts: { registered: 4 } };
+  const context = {
+    U: previous,
+    UNIVERSE_ERROR: '',
+    api: async () => { throw new Error('owner universe unavailable'); },
+    $: selector => selector === '#loadStatus' ? status : null,
+    renderOverview: () => calls.push('overview'),
+    renderCustomers: () => calls.push('customers'),
+    renderProjects: () => calls.push('projects'),
+    renderIntelligence: () => calls.push('intelligence')
+  };
+  const loadUniverse = vm.runInNewContext(functionSource('loadUniverse') + '\\nloadUniverse', context);
+
+  await assert.doesNotReject(() => loadUniverse());
+  assert.equal(context.U, previous, 'the last successful snapshot remains available');
+  assert.equal(context.UNIVERSE_ERROR, 'owner universe unavailable');
+  assert.match(status.textContent, /آخر نسخة ناجحة/);
+  assert.equal(status.style.color, '#a94b4b');
+  assert.deepEqual(calls, []);
+});
+
+test('strict owner universe refresh propagates errors to the all-sections refresh report', async () => {
+  const status = { textContent: '', style: {} };
+  const context = {
+    U: { previous: true },
+    UNIVERSE_ERROR: '',
+    api: async () => { throw new Error('owner API down'); },
+    $: selector => selector === '#loadStatus' ? status : null
+  };
+  const loadUniverse = vm.runInNewContext(functionSource('loadUniverse') + '\\nloadUniverse', context);
+  await assert.rejects(() => loadUniverse({ propagate: true }), /owner API down/);
+  assert.match(status.textContent, /آخر نسخة ناجحة/);
+  assert.match(functionSource('loadAll'), /\\(\\)=>loadUniverse\\(\\{propagate:true\\}\\)/);
+  assert.match(functionSource('loadAll'), /بيانات الرؤية تعرض آخر نسخة ناجحة/);
+});
+
+test('pricing save adopts the exact values confirmed by the server and prevents duplicate submission', async () => {
+  const calls = [];
+  const button = { disabled: false };
+  const status = { textContent: '' };
+  const fields = {
+    '#p-single': { value: '19,000 IQD' },
+    '#p-basic': { value: '142,000' },
+    '#p-comprehensive': { value: '252,000' },
+    '#p-extended': { value: '372,000' }
+  };
+  const context = {
+    $: selector => selector === '#savePricing' ? button : selector === '#settingsMsg' ? status : fields[selector],
+    api: async (url, options) => {
+      calls.push({ url, body: JSON.parse(options.body), disabledDuringRequest: button.disabled });
+      return { pricing: { single: '19000', basic: '142,000', comprehensive: '252,000', extended: '372,000' } };
+    }
+  };
+  const savePricing = vm.runInNewContext(functionSource('savePricing') + '\\nsavePricing', context);
+  const result = await savePricing();
+  assert.deepEqual(calls[0].body, { single: '19,000 IQD', basic: '142,000', comprehensive: '252,000', extended: '372,000' });
+  assert.equal(calls[0].disabledDuringRequest, true);
+  assert.equal(fields['#p-single'].value, '19000');
+  assert.equal(status.textContent, 'تم حفظ الأسعار وتأكيد القيم من الخادم.');
+  assert.equal(button.disabled, false);
+  assert.equal(result.single, '19000');
+});
+
+test('pricing save keeps entered values and clearly reports an unconfirmed save on API failure', async () => {
+  const button = { disabled: false };
+  const status = { textContent: '' };
+  const fields = Object.fromEntries(['single','basic','comprehensive','extended'].map(key => ['#p-'+key,{value:'100'}]));
+  const context = {
+    $: selector => selector === '#savePricing' ? button : selector === '#settingsMsg' ? status : fields[selector],
+    api: async () => { throw new Error('storage unavailable'); }
+  };
+  const savePricing = vm.runInNewContext(functionSource('savePricing') + '\\nsavePricing', context);
+  const result = await savePricing();
+  assert.equal(result, null);
+  assert.equal(fields['#p-single'].value, '100');
+  assert.match(status.textContent, /لم يتم تأكيد حفظ الأسعار: storage unavailable/);
+  assert.equal(button.disabled, false);
+});

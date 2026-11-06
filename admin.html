@@ -68,10 +68,10 @@
 <div class="actions" style="margin-bottom:12px"><button id="refreshSystemHealth" class="ghost" type="button">تحديث حالة الخدمات</button><button id="testTextAI" class="primary" type="button">اختبار الذكاء الاصطناعي النصي</button><span id="systemHealthChecked" class="meta">لم يُجرَ الفحص بعد.</span></div>
 <div id="systemHealthServices" class="grid three"><div class="kv">جارٍ فحص حالة الخدمات…</div></div>
 <div id="systemHealthTest" class="meta" role="status" aria-live="polite" style="margin-top:10px"></div>
-</div><div class="panel"><h3>أسعار الخدمات</h3><div class="detail"><label class="kv"><small>منشور منفرد</small><input id="p-single" class="search"></label><label class="kv"><small>الباقة الأساسية</small><input id="p-basic" class="search"></label><label class="kv"><small>الباقة الشاملة</small><input id="p-comprehensive" class="search"></label><label class="kv"><small>الباقة الموسعة</small><input id="p-extended" class="search"></label></div><button id="savePricing" class="primary">حفظ الأسعار</button><span id="settingsMsg" class="meta"></span></div><div class="panel"><h3>حدود النظام</h3><p class="note">الإعدادات الحساسة، الجلسات، الحسابات، الـFunctions والتكاملات تبقى محمية من الخادم. هذه الصفحة لا تعرض أسرار API.</p></div></section>
+</div><div class="panel"><h3>أسعار الخدمات</h3><div class="detail"><label class="kv"><small>منشور منفرد</small><input id="p-single" class="search"></label><label class="kv"><small>الباقة الأساسية</small><input id="p-basic" class="search"></label><label class="kv"><small>الباقة الشاملة</small><input id="p-comprehensive" class="search"></label><label class="kv"><small>الباقة الموسعة</small><input id="p-extended" class="search"></label></div><button id="savePricing" class="primary">حفظ الأسعار</button><span id="settingsMsg" class="meta" role="status" aria-live="polite"></span></div><div class="panel"><h3>حدود النظام</h3><p class="note">الإعدادات الحساسة، الجلسات، الحسابات، الـFunctions والتكاملات تبقى محمية من الخادم. هذه الصفحة لا تعرض أسرار API.</p></div></section>
 </main></div></div>
 <script>
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];let U=null,CLIENTS=[],ORDERS=[],LEADS=[],SALES=null,GROWTH=null,NOTIFS=[],NOTIFS_ERROR='',OPS_ERROR='',GROWTH_ERROR='',CLIENTS_ERROR='',ORDERS_ERROR='',SALES_ERROR='';let AI_CAROUSEL_SLIDES=[],AI_CAROUSEL_UPLOADS={},AI_CAROUSEL_DRAFT_REQUEST_ID=null,AI_CAROUSEL_REQUESTED_COUNT=3;const fmt=n=>Number(n||0).toLocaleString('ar-IQ');const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));const jsArg=v=>esc(JSON.stringify(String(v??'')));const dt=v=>v?new Intl.DateTimeFormat('ar-IQ',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'—';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];let U=null,UNIVERSE_ERROR='',CLIENTS=[],ORDERS=[],LEADS=[],SALES=null,GROWTH=null,NOTIFS=[],NOTIFS_ERROR='',OPS_ERROR='',GROWTH_ERROR='',CLIENTS_ERROR='',ORDERS_ERROR='',SALES_ERROR='';let AI_CAROUSEL_SLIDES=[],AI_CAROUSEL_UPLOADS={},AI_CAROUSEL_DRAFT_REQUEST_ID=null,AI_CAROUSEL_REQUESTED_COUNT=3;const fmt=n=>Number(n||0).toLocaleString('ar-IQ');const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));const jsArg=v=>esc(JSON.stringify(String(v??'')));const dt=v=>v?new Intl.DateTimeFormat('ar-IQ',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'—';
 async function api(url,opt={}){const r=await fetch(url,{cache:'no-store',credentials:'same-origin',...opt});let d={};try{d=await r.json()}catch{}if(r.status===401){try{const s=await fetch('/.netlify/functions/auth?action=me',{cache:'no-store',credentials:'same-origin'});const m=await s.json().catch(()=>({}));if(!m.authenticated){location.reload();throw Error('انتهت الجلسة')} }catch(e){if(e?.message==='انتهت الجلسة')throw e;throw Error('تعذر التحقق من جلسة المالك')}throw Error(d.error||'غير مصرح لهذا الإجراء');}if(!r.ok)throw Error(d.error||'تعذر تنفيذ العملية');return d}
 function fillAIClients(){const s=$('#aiClient');if(!s)return;const current=s.value;const list=(CLIENTS||[]).slice().sort((a,b)=>String(a.name||a.email||'').localeCompare(String(b.name||b.email||'')));s.innerHTML='<option value="">اختاري العميل...</option>'+list.map(x=>{const id=x.clientId||x.id;return '<option value="'+esc(id)+'">'+esc(x.name||x.email||id)+' — '+esc(x.email||'')+'</option>'}).join('');if(current&&list.some(x=>(x.clientId||x.id)===current))s.value=current;}
 function selectedAIClient(){const id=$('#aiClient')?.value||'';if(!id){throw Error('اختاري العميل أولاً.')}return id;}
@@ -146,10 +146,23 @@ async function login(e){e.preventDefault();$('#loginError').textContent='';try{c
 $('#loginForm').addEventListener('submit',login);async function show(){ $('#lock').classList.add('hidden');$('#app').classList.remove('hidden');await loadAll();heartbeat();setInterval(heartbeat,60000);setInterval(loadPresence,30000);setInterval(loadUniverse,30000);setInterval(()=>$('#clock').textContent=dt(new Date()),1000)}
 async function check(){try{const d=await api('/.netlify/functions/auth?action=me');if(d.authenticated)show()}catch{}}async function heartbeat(){try{await api('/.netlify/functions/presence?action=heartbeat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'owner',page:location.pathname})})}catch{}}
 $('#logout').onclick=async()=>{await fetch('/.netlify/functions/auth?action=logout',{method:'POST'});location.reload()};$('#refresh').onclick=loadAll;$('#refreshLeads')?.addEventListener('click',loadIncomingLeads);
-async function loadUniverse(){U=await api('/.netlify/functions/owner-universe');renderOverview();renderCustomers();renderProjects();renderIntelligence()}
+async function loadUniverse({propagate=false}={}){
+ try{
+  U=await api('/.netlify/functions/owner-universe');
+  UNIVERSE_ERROR='';
+  renderOverview();renderCustomers();renderProjects();renderIntelligence();
+  const status=$('#loadStatus');
+  if(status&&status.textContent.startsWith('تعذر تحديث بيانات الرؤية')){status.textContent='تم استعادة تحديث بيانات الإدارة.';status.style.color='#866517';}
+ }catch(e){
+  UNIVERSE_ERROR=e.message||'تعذر تحديث بيانات الرؤية العامة';
+  const status=$('#loadStatus');
+  if(status){status.textContent='تعذر تحديث بيانات الرؤية العامة: '+UNIVERSE_ERROR+'. المعروض، إن وُجد، هو آخر نسخة ناجحة.';status.style.color='#a94b4b';}
+  if(propagate)throw e;
+ }
+}
 async function loadAll(){
  const jobs=[
-  ['بيانات الإدارة',loadUniverse],
+  ['بيانات الإدارة',()=>loadUniverse({propagate:true})],
   ['ملفات العملاء',()=>loadClients({propagate:true})],
   ['طلبات العملاء',()=>loadIncomingLeads({propagate:true})],
   ['الطلبات',()=>loadOrders({propagate:true})],
@@ -170,10 +183,11 @@ async function loadAll(){
   try{fn()}catch(e){console.error('Hibr & Pixel admin render failed:',fn.name,e)}
  });
  if(status){
-  status.textContent=failed.length
+  const staleNote=UNIVERSE_ERROR?' بيانات الرؤية تعرض آخر نسخة ناجحة وقد لا تكون محدثة: '+UNIVERSE_ERROR+'.':'';
+  status.textContent=(failed.length
    ?'اكتمل التحديث جزئياً. الأقسام التي تعذر تحديثها: '+failed.join('، ')+'.'
-   :'اكتمل تحديث جميع أقسام الإدارة وطلبات العملاء.';
-  status.style.color=failed.length?'#a94b4b':'#866517';
+   :'اكتمل تحديث جميع أقسام الإدارة وطلبات العملاء.')+staleNote;
+  status.style.color=failed.length||UNIVERSE_ERROR?'#a94b4b':'#866517';
  }
  results.forEach((r,i)=>{if(r.status==='rejected')console.error('Hibr & Pixel admin load failed:',jobs[i][0],r.reason)});
 }
@@ -384,6 +398,22 @@ $('#testTextAI')?.addEventListener('click',async()=>{
  }catch(e){status.textContent='فشل اختبار النص: '+e.message;await loadSystemHealth()}
  finally{button.disabled=false}
 });
-$('#savePricing').onclick=async()=>{try{await api('/.netlify/functions/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({single:$('#p-single').value,basic:$('#p-basic').value,comprehensive:$('#p-comprehensive').value,extended:$('#p-extended').value})});$('#settingsMsg').textContent='تم الحفظ';setTimeout(()=>$('#settingsMsg').textContent='',1800)}catch(e){$('#settingsMsg').textContent=e.message}};
+async function savePricing(){
+ const button=$('#savePricing'),status=$('#settingsMsg');
+ if(!button||!status||button.disabled)return;
+ const pricing={single:$('#p-single').value,basic:$('#p-basic').value,comprehensive:$('#p-comprehensive').value,extended:$('#p-extended').value};
+ button.disabled=true;status.textContent='جارٍ حفظ الأسعار والتحقق من القيم المعتمدة…';
+ try{
+  const d=await api('/.netlify/functions/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(pricing)});
+  const confirmed=d.pricing||{};
+  for(const key of Object.keys(pricing))if(confirmed[key]!==undefined)$('#p-'+key).value=confirmed[key];
+  status.textContent='تم حفظ الأسعار وتأكيد القيم من الخادم.';
+  return confirmed;
+ }catch(e){
+  status.textContent='لم يتم تأكيد حفظ الأسعار: '+(e.message||'خطأ غير معروف');
+  return null;
+ }finally{button.disabled=false;}
+}
+$('#savePricing').onclick=savePricing;
 check();
 </script></body></html>
