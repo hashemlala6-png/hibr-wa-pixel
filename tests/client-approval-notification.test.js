@@ -368,7 +368,9 @@ test('invalid owner WhatsApp recipient is recorded without calling the Cloud API
 
 test('approval still completes and notifies when secondary activity logging is unavailable', async () => {
   await withEnv({}, async () => {
-    const service = loadLeads(baseData('07712345678'), { activityError: 'activity store unavailable' });
+    const initial = baseData('07712345678');
+    initial['hbpx-leads']['lead-test'].email = 'customer@example.com';
+    const service = loadLeads(initial, { activityError: 'activity store unavailable' });
     const { response, body } = await approve(service.handler);
 
     assert.equal(response.statusCode, 200);
