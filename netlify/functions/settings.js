@@ -1,6 +1,7 @@
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { requireAdmin, json } = require('./auth-utils');
-const store = () => getStore({ name: 'hbpx-settings', consistency: 'strong' });
+const store = () => getStore(blobOptions('hbpx-settings', 'strong'));
 const DEFAULTS = {
   single: '19,000', basic: '142,000', comprehensive: '252,000', extended: '372,000'
 };
