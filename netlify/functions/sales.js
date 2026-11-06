@@ -1,10 +1,10 @@
 const { env } = require('./env');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { requireAdmin, json } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
 const { resolveClientIdentity } = require('./client-ownership');
 const { getProjectFinancials } = require('./project-financials');
-const blobOptions = (name) => { const options={name,consistency:'strong'}; const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae'; const token=process.env.NETLIFY_AUTH_TOKEN; if(siteID&&token){options.siteID=siteID;options.token=token;} return options; };
 const stores = {
   quotes: () => getStore(blobOptions('hbpx-quotes')),
   projects: () => getStore(blobOptions('hbpx-projects')),
