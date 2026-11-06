@@ -545,7 +545,7 @@ body.xp-home{background:var(--xp-paper)!important;color:var(--xp-ink)!important;
 .hp-home-art{min-height:410px}
 .hp-home-kicker{margin-top:22px}
 .hp-home-proof{margin-top:34px}
-.hp-home-formula{position:relative;overflow:hidden;padding:58px 0 54px;background:#e8e2d5;border-top:1px solid #d9d2c5;border-bottom:1px solid #d9d2c5}
+.hp-home-formula{position:relative;overflow:hidden;padding:58px 0 54px;background:#dfe9e1;border-top:1px solid #cbd8ce;border-bottom:1px solid #cbd8ce}
 .hp-home-formula:before{content:"×";position:absolute;left:-.04em;top:-.42em;color:#294b3c08;font:900 22rem/1 Arial,sans-serif;pointer-events:none}
 .hp-home-formula-inner{position:relative;z-index:1}
 .hp-home-formula-intro{display:grid;grid-template-columns:1fr .8fr;column-gap:8%;align-items:end}
@@ -554,12 +554,12 @@ body.xp-home{background:var(--xp-paper)!important;color:var(--xp-ink)!important;
 .hp-home-formula-intro h2 em{color:#c65d3f;font-style:normal}
 .hp-home-formula-intro>p{max-width:480px;margin:0 0 5px;color:#68756b;font-size:.87rem;line-height:2.1}
 .hp-home-formula-equation{display:flex;align-items:center;gap:clamp(7px,1.5vw,18px);flex-wrap:wrap;margin-top:27px;color:#6e796d;font-size:.78rem;font-weight:800}
-.hp-home-formula-equation span{padding:9px 13px;border:1px solid #c9c1b1;background:#f5f1e8;color:#294b3c}
+.hp-home-formula-equation span{padding:9px 13px;border:1px solid #bdcdbf;background:#f3f7f2;color:#294b3c}
 .hp-home-formula-equation b,.hp-home-formula-equation i{color:#bd684b;font:700 1rem Arial,sans-serif}
 .hp-home-formula-equation strong{padding:9px 14px;background:#294b3c;color:#fff;font-size:.78rem}
 .hp-home-formula-equation i{font-style:normal}
-.hp-home-formula-steps{display:grid;grid-template-columns:repeat(3,1fr);margin-top:40px;border-top:1px solid #c9c1b1;border-bottom:1px solid #c9c1b1}
-.hp-home-formula-steps article{position:relative;min-height:180px;padding:18px 22px 21px;border-inline-start:1px solid #c9c1b1}
+.hp-home-formula-steps{display:grid;grid-template-columns:repeat(3,1fr);margin-top:40px;border-top:1px solid #bdcdbf;border-bottom:1px solid #bdcdbf}
+.hp-home-formula-steps article{position:relative;min-height:180px;padding:18px 22px 21px;border-inline-start:1px solid #bdcdbf}
 .hp-home-formula-steps article:first-child{border-inline-start:0}
 .hp-home-formula-steps article>small{font:800 .53rem Arial,sans-serif;letter-spacing:.12em;color:#b45a40}
 .hp-home-formula-steps article>b{display:block;margin:18px 0 8px;color:#bdb5a6;font:900 2rem Arial,sans-serif}
@@ -591,7 +591,7 @@ body.xp-home{background:var(--xp-paper)!important;color:var(--xp-ink)!important;
  .hp-home-formula-equation span{padding:8px 9px}
  .hp-home-formula-equation strong{padding:8px 10px}
  .hp-home-formula-steps{grid-template-columns:1fr;margin-top:25px}
- .hp-home-formula-steps article{min-height:0;padding:16px 7px 19px;border-inline-start:0;border-bottom:1px solid #c9c1b1}
+ .hp-home-formula-steps article{min-height:0;padding:16px 7px 19px;border-inline-start:0;border-bottom:1px solid #bdcdbf}
  .hp-home-formula-steps article:last-child{border-bottom:0}
  .hp-home-formula-steps article>b{margin:12px 0 7px}
  .hp-home-formula-note{align-items:flex-start;gap:8px;flex-wrap:wrap}
