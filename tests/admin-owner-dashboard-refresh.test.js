@@ -136,3 +136,59 @@ test('dashboard loaders expose swallowed failures when strict refresh mode is re
   assert.match(functionSource('loadSystemHealth'), /\{propagate=false\}=\{\}/);
   assert.match(functionSource('loadSystemHealth'), /if\(propagate\)throw e;/);
 });
+
+
+test('lead status save is not reported as failed when the follow-up list refresh fails', async () => {
+  const calls = [];
+  const status = { textContent: '', style: {} };
+  const context = {
+    api: async (url, options) => {
+      calls.push({ url, method: options.method, body: JSON.parse(options.body) });
+      return { saved: true };
+    },
+    loadIncomingLeads: async options => {
+      calls.push({ refresh: options.propagate });
+      throw new Error('list unavailable');
+    },
+    $: selector => selector === '#leadsStatus' ? status : null,
+    alert: message => calls.push({ alert: message })
+  };
+  const leadStatus = vm.runInNewContext(functionSource('leadStatus') + '\nleadStatus', context);
+  await leadStatus('lead-1', 'contacted');
+
+  assert.equal(calls[0].method, 'PATCH');
+  assert.deepEqual(calls[0].body, { id: 'lead-1', status: 'contacted' });
+  assert.deepEqual(calls[1], { refresh: true });
+  assert.equal(calls.some(item => item.alert), false);
+  assert.match(status.textContent, /تم حفظ حالة الطلب، لكن تعذر تحديث قائمة الطلبات/);
+  assert.equal(status.style.color, '#a94b4b');
+});
+
+test('task status save is not retried as a failed mutation when task refresh fails', async () => {
+  const calls = [];
+  const status = { textContent: '', style: {} };
+  const context = {
+    api: async (url, options) => {
+      calls.push({ url, method: options.method, body: JSON.parse(options.body) });
+      return { saved: true };
+    },
+    loadOps: async options => {
+      calls.push({ refresh: options.propagate });
+      throw new Error('task list unavailable');
+    },
+    renderProjects: () => calls.push('renderProjects'),
+    $: selector => selector === '#loadStatus' ? status : null,
+    OPS_ERROR: '',
+    alert: message => calls.push({ alert: message })
+  };
+  const taskStatus = vm.runInNewContext(functionSource('taskStatus') + '\ntaskStatus', context);
+  await taskStatus('task-1', 'review');
+
+  assert.equal(calls[0].method, 'PATCH');
+  assert.deepEqual(calls[0].body, { type: 'task', id: 'task-1', status: 'review' });
+  assert.deepEqual(calls[1], { refresh: true });
+  assert.equal(calls.includes('renderProjects'), true);
+  assert.equal(calls.some(item => item.alert), false);
+  assert.match(status.textContent, /تم حفظ حالة المهمة، لكن تعذر تحديث عرض المهام/);
+  assert.equal(status.style.color, '#a94b4b');
+});
