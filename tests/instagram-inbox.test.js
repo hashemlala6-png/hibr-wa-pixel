@@ -81,12 +81,16 @@ test('owner can save an internal reply draft without sending a message', async (
 
 test('owner inbox refuses draft replies for another Instagram account and unauthenticated requests', async () => {
   const event = { id: 'event-message', accountId: 'other-ig', eventType: 'message', senderId: 'customer-1', text: 'السعر؟' };
-  const service = loadInbox({
-    connection: { token: { iv: 'iv', data: 'cipher', tag: 'tag' }, profile: { userId: 'ig-123', username: 'hibr_pixels' } },
+  const connection = { token: { iv: 'iv', data: 'cipher', tag: 'tag' }, profile: { userId: 'ig-123', username: 'hibr_pixels' } };
+  const deniedService = loadInbox({
+    denied: true,
+    connection,
     events: { [event.id]: event }
   });
-  const denied = await service.handler({ httpMethod: 'GET', headers: {}, denied: true });
+  const denied = await deniedService.handler({ httpMethod: 'GET', headers: {} });
   assert.equal(denied.statusCode, 401);
+
+  const service = loadInbox({ connection, events: { [event.id]: event } });
   const wrongAccount = await service.handler({
     httpMethod: 'POST', headers: {},
     body: JSON.stringify({ action: 'save_reply_draft', id: event.id, reply: 'رد مقترح' })
