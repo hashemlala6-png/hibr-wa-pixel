@@ -45,7 +45,7 @@ exports.handler = async (event) => {
   if (action === 'logout') {
     const header = event.headers?.cookie || event.headers?.Cookie || '';
     const match = header.split(';').map(x => x.trim()).find(x => x.startsWith('hbpx_admin='));
-    if (match) { try { await presenceStore().delete(`owner-${hashToken(decodeURIComponent(match.slice(11))) }`); } catch {} }
+    if (match) { try { await presenceStore().delete(`owner-${hashToken(decodeURIComponent(match.slice(11)))}`); } catch {} }
     return json(200, { authenticated: false }, { 'Set-Cookie': clearCookie() });
   }
   if (action !== 'login') return json(400, { error: 'طلب تسجيل دخول غير صالح.' });
