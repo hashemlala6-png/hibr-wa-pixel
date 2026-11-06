@@ -224,3 +224,26 @@
 }
 
 .cw-project-service{margin-top:3px;color:var(--cw-orange);font-size:.7rem;font-weight:800}
+
+
+/* CLIENT WORKSPACE — matching H&P white and sky-blue system */
+:root{--cw-paper:#f5faff;--cw-paper-2:#fff;--cw-ink:#20394d;--cw-green:#168fbe;--cw-green-dark:#176c91;--cw-orange:#19a9dc;--cw-gold:#f2c84b;--cw-muted:#647b8c;--cw-line:#dce9f1;--cw-white:#fff}
+.cw-body{background:linear-gradient(145deg,#f7fbff,#eef7fc)!important;color:var(--cw-ink)!important;font-family:'IBM Plex Sans Arabic',Arial,sans-serif!important}
+.cw-nav{background:rgba(255,255,255,.96)!important;border-color:var(--cw-line)!important}
+.cw-nav .logo{font-size:1.12rem!important;color:var(--cw-ink)!important}
+.cw-nav .solid-btn,.cw-primary{background:linear-gradient(110deg,#159fd1,#32b9e5)!important;border:0!important;border-radius:9px!important;color:#fff!important}
+.cw-welcome{background:linear-gradient(120deg,#176c91,#168fbe 65%,#39b5df)!important;border-radius:18px!important;box-shadow:0 14px 30px rgba(25,169,220,.14)!important;padding:34px 38px!important}
+.cw-welcome h1{font-size:clamp(2rem,4vw,3.1rem)!important;line-height:1.25!important;letter-spacing:-.035em!important}
+.cw-overline,.cw-section-heading>div>small,.cw-lane-heading small{color:#ffe17a!important}
+.cw-signal-row,.cw-project-card,.cw-card,.cw-profile-block,.cw-no-project{background:#fff!important;border:1px solid var(--cw-line)!important;border-radius:13px!important;box-shadow:0 7px 22px rgba(35,103,139,.045)!important}
+.cw-signal-row{border-inline-start:4px solid var(--cw-sky,#19a9dc)!important}
+.cw-signal-copy h2,.cw-project-title-line h3,.cw-section-heading h2,.cw-card h3{color:var(--cw-ink)!important}
+.cw-stat-strip,.cw-project-finance{background:#eaf5fb!important;border-color:var(--cw-line)!important;border-radius:10px!important}
+.cw-stat strong,.cw-finance-cell strong,.cw-order-count strong{color:#168fbe!important}
+.cw-project-head,.cw-project-finance,.cw-lane,.cw-stat{border-color:var(--cw-line)!important}
+.cw-stage,.cw-tag,.cw-payments-note,.cw-contract-terms{background:#eaf5fb!important;color:#28698e!important;border-radius:7px!important}
+.cw-result-note,.cw-invoice,.cw-signed-note{background:#fff8df!important;border-color:#f0dfa0!important;border-radius:9px!important}
+.cw-result-note strong,.cw-payments-note b,.cw-invoice-meta>b{color:#99721a!important}
+.cw-footer{border-color:var(--cw-line)!important}
+@media(max-width:700px){.cw-welcome{padding:25px 20px!important}.cw-welcome h1{font-size:2.15rem!important}.cw-section-heading h2{font-size:1.45rem!important}}
+
