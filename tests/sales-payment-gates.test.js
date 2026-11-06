@@ -5,6 +5,8 @@ const assert = require('node:assert/strict');
 const Module = require('node:module');
 
 function loadSales(data) {
+  const financialsResolved = require.resolve('../netlify/functions/project-financials');
+  delete require.cache[financialsResolved];
   const resolved = require.resolve('../netlify/functions/sales');
   delete require.cache[resolved];
   const originalLoad = Module._load;
