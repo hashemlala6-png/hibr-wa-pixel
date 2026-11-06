@@ -172,9 +172,9 @@ async function postInstagram(path, token, payload, contentType) {
 async function sendReplyToInstagram(item, linked, token) {
   const text = clean(item.replyDraft?.text, 2000);
   if (!text) throw new Error('مسودة الرد فارغة.');
-  if (text.length > 1000) throw new Error('حد الرد للإرسال 1000 حرف. اختصري النص قبل الإرسال.');
 
   if (item.eventType === 'message') {
+    if (Buffer.byteLength(text, 'utf8') > 1000) throw new Error('حد الرسالة الخاصة 1000 بايت UTF-8.');
     return postInstagram(linked.profile.userId + '/messages', token, JSON.stringify({
       recipient: { id: item.senderId },
       message: { text }
@@ -219,7 +219,12 @@ async function sendOwnerApprovedReply(body) {
     const token = decryptToken(linked.token);
     const replyText = clean(item.replyDraft.text, 2000);
     if (!replyText) return json(400, { error: 'مسودة الرد فارغة.' });
-    if (replyText.length > 1000) return json(400, { error: 'حد الرد للإرسال 1000 حرف. اختصري النص قبل الإرسال.' });
+    if (item.eventType === 'message' && Buffer.byteLength(replyText, 'utf8') > 1000) {
+      return json(400, { error: 'حد الرسالة الخاصة 1000 بايت UTF-8. اختصري النص، خصوصاً النص العربي، قبل الإرسال.' });
+    }
+    if (item.eventType === 'comment' && replyText.length > 1000) {
+      return json(400, { error: 'حد الرد على التعليق 1000 حرف في هذه النسخة. اختصري النص قبل الإرسال.' });
+    }
     if (item.eventType === 'message') {
       if (!validInstagramId(item.senderId) || !validInstagramId(linked.profile.userId)) {
         return json(409, { error: 'معرّف الحساب أو المرسل غير صالح؛ لم نرسل الرسالة.' });

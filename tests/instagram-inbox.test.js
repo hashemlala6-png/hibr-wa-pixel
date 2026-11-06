@@ -468,3 +468,30 @@ test('an already-sent reply cannot be overwritten by saving a new draft', async 
   assert.equal(response.statusCode, 409);
   assert.equal(service.writes.length, 0);
 });
+
+
+test('Arabic direct-message replies are checked by UTF-8 byte length before the external request', async () => {
+  const event = {
+    id: 'event-arabic-byte-limit', accountId: '123456', eventType: 'message',
+    senderId: '987654', timestamp: Date.now() - 1000,
+    replyDraft: { text: 'ا'.repeat(501), savedAt: new Date().toISOString(), sendStatus: 'draft', sentAt: null }
+  };
+  const service = loadInbox({
+    connection: { token: encryptedToken('long-lived-instagram-token'), profile: { userId: '123456', username: 'hibr_pixels' } },
+    events: { [event.id]: event }
+  });
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async () => { calls++; throw new Error('Meta must not be called'); };
+  try {
+    const response = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'send_reply', id: event.id, confirmed: true })
+    });
+    assert.equal(response.statusCode, 400);
+    assert.match(body(response).error, /1000 بايت UTF-8/);
+    assert.equal(Buffer.byteLength(event.replyDraft.text, 'utf8'), 1002);
+    assert.equal(calls, 0);
+    assert.equal(service.stores['hbpx-instagram-events'][event.id].replyDraft.sendStatus, 'draft');
+  } finally { global.fetch = originalFetch; }
+});
