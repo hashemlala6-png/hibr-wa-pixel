@@ -38,7 +38,7 @@ exports.handler=async e=>{
       const tasks=await listByProject('tasks','task-',p.id,x=>({title:x.title,status:x.status,dueDate:x.dueDate}));
       const invoices=await listByProject('invoices','invoice-',p.id,x=>({number:x.number,total:x.total,dueDate:x.dueDate,status:x.status,createdAt:x.createdAt}));
       const contracts=await listByProject('contracts','contract-',p.id,x=>({id:x.id,number:x.number,amount:x.amount,status:x.status,startDate:x.startDate,dueDate:x.dueDate,signedAt:x.signedAt||null,paymentPolicy:x.paymentPolicy||null}));
-      const deliveries=await listByProject('deliveries','delivery-',p.id,x=>({id:x.id,title:x.title,url:x.url,note:x.note,status:x.status,stage:x.stage||'final',watermarked:x.watermarked===true,lowResolution:x.lowResolution===true,fullQuality:x.fullQuality===true,rightsTransferred:x.rightsTransferred===true,clientApproval:x.clientApproval||null,createdAt:x.createdAt}));
+      const deliveries=await listByProject('deliveries','delivery-',p.id,x=>({id:x.id,title:x.title,url:x.url,note:x.note,status:x.status,stage:x.stage||'legacy',watermarked:x.watermarked===true,lowResolution:x.lowResolution===true,fullQuality:x.fullQuality===true,rightsTransferred:x.rightsTransferred===true,clientApproval:x.clientApproval||null,createdAt:x.createdAt}));
       const rr=await listByProject('resultPlans','result-',p.id,x=>({promise:x.promise||x.plan?.promise||'',deliverables:x.plan?.deliverables||[],handoffMessage:x.plan?.handoff_message||x.plan?.handoffMessage||'',status:x.status}));
       const approvedResults=rr.filter(x=>['approved','delivered'].includes(x.status));
       const paid=payments.reduce((a,x)=>a+Number(x.amount||0),0);

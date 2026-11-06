@@ -64,6 +64,8 @@
     return '<div class="cw-item-list">' + deliveries.map((delivery) => {
       const url = safeUrl(delivery.url);
       const preview = delivery.stage === 'preview';
+      const finalVerified = delivery.stage === 'final' && delivery.fullQuality === true && delivery.watermarked === false && delivery.rightsTransferred === true;
+      const legacyUnverified = !preview && !finalVerified;
       const approval = delivery.clientApproval || null;
       const approvalText = approval?.decision === 'approved'
         ? '<small class="cw-signed-note">تم اعتماد محتوى المعاينة بتاريخ ' + date(approval.at) + '</small>'
@@ -75,11 +77,13 @@
         : approvalText;
       const typeLabel = preview
         ? '<small class="cw-delivery-stage">معاينة محمية · علامة مائية / دقة منخفضة</small>'
-        : '<small class="cw-delivery-stage">ملفات نهائية · كاملة الجودة · الحقوق منقولة</small>';
+        : finalVerified
+          ? '<small class="cw-delivery-stage">ملفات نهائية · كاملة الجودة · الحقوق منقولة</small>'
+          : '<small class="cw-delivery-stage">تسليم سابق · حالة الجودة والحقوق غير موثّقة في النظام الجديد</small>';
       return '<div class="cw-item"><div class="cw-item-main"><strong>' + esc(delivery.title || 'تسليم مشروع') + '</strong>' + typeLabel +
         (delivery.note ? '<small>' + esc(delivery.note) + '</small>' : '') +
         (delivery.createdAt ? '<small>تاريخ الإضافة: ' + date(delivery.createdAt) + '</small>' : '') +
-        (url ? '<a class="cw-delivery-link" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + (preview?'فتح المعاينة المحمية':'فتح الملفات النهائية') + ' <b>↗</b></a>' : '') +
+        (url ? '<a class="cw-delivery-link" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + (preview?'فتح المعاينة المحمية':finalVerified?'فتح الملفات النهائية':'فتح ملف التسليم السابق') + ' <b>↗</b></a>' : '') +
         actions + '</div>' + tag(delivery.status) + '</div>';
     }).join('') + '</div>';
   }

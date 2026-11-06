@@ -26,6 +26,10 @@ jobs:
         run: |
           find netlify/functions tests -type f -name '*.js' -print0 | xargs -0 -n1 node --check
 
+      - name: Check root JavaScript files
+        run: |
+          find . -maxdepth 1 -type f -name '*.js' -print0 | xargs -0 -r -n1 node --check
+
       - name: Check inline JavaScript in HTML pages
         run: |
           node <<'NODE'

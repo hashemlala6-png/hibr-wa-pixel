@@ -149,7 +149,7 @@ exports.handler=async event=>{
    }
    if(b.type==='project'){
     if(!b.leadId||!clean(b.name,160)||!amount(b.amount))return json(400,{error:'العميل واسم المشروع والقيمة مطلوبة.'});
-    if(!allowed.projects.includes(b.status)||b.status==='active')b.status='planned';
+    if(b.status!=='planned')b.status='planned';
     const identity=await identityForLead(b.leadId);
     if(!identity)return json(404,{error:'العميل المرتبط بالمشروع غير موجود.'});
     const lead=identity.lead;
