@@ -158,12 +158,15 @@ exports.handler=async event=>{
    }
    if(b.type==='payment'){
     if(!b.projectId||!amount(b.amount))return json(400,{error:'المشروع والمبلغ مطلوبان.'});
+    if(b.receivedConfirmed!==true)return json(400,{error:'يجب تأكيد استلام المبلغ فعلياً قبل تسجيل الدفعة.'});
+    const method=clean(b.method,60);
+    if(!['cash','bank_transfer','zain_cash','other'].includes(method))return json(400,{error:'طريقة الاستلام غير صحيحة.'});
     const project=await stores.projects().get(clean(b.projectId,120),{type:'json'}).catch(()=>null);
     if(!project)return json(404,{error:'المشروع غير موجود.'});
     const clientId=await clientIdForProject(project);
     const financial=await getProjectFinancials(project.id,project.amount);
     const id=`payment-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-    const x={id,projectId:clean(b.projectId,120),contractId:financial.contractId||null,clientId:clientId||null,amount:amount(b.amount),method:clean(b.method,60),note:clean(b.note,500),createdAt:now};
+    const x={id,projectId:clean(b.projectId,120),contractId:financial.contractId||null,clientId:clientId||null,amount:amount(b.amount),method, note:clean(b.note,500),receivedConfirmed:true,receivedConfirmedAt:now,createdAt:now};
     await stores.payments().setJSON(id,x);
     if(clientId)await logActivity(clientId,'payment','تم تسجيل دفعة',{projectId:x.projectId,amount:x.amount,method:x.method});
     return json(201,{item:x});

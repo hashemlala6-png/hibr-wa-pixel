@@ -113,7 +113,7 @@ test('payment amounts reject negative values instead of turning them positive', 
   const service = loadSales(fixture({ contract: {} }));
   const response = await service.handler({
     httpMethod: 'POST',
-    body: JSON.stringify({ type: 'payment', projectId: 'project-a', amount: '-10000', method: 'transfer' })
+    body: JSON.stringify({ type: 'payment', projectId: 'project-a', amount: '-10000', method: 'bank_transfer', receivedConfirmed: true })
   });
   assert.equal(response.statusCode, 400);
   assert.equal(Object.keys(service.stores['hbpx-payments']).length, 0);
@@ -123,7 +123,7 @@ test('payment amount keeps decimal precision and binds the payment to the active
   const service = loadSales(fixture({ contract: {} }));
   const response = await service.handler({
     httpMethod: 'POST',
-    body: JSON.stringify({ type: 'payment', projectId: 'project-a', amount: '1,000.50', method: 'transfer' })
+    body: JSON.stringify({ type: 'payment', projectId: 'project-a', amount: '1,000.50', method: 'bank_transfer', receivedConfirmed: true })
   });
   assert.equal(response.statusCode, 201);
   assert.equal(body(response).item.amount, 1000.5);
@@ -154,4 +154,39 @@ test('owner sales summary separates payments belonging to an older signed contra
   assert.deepEqual(result.financialSummary.unallocatedProjects.map(x => x.projectId), ['project-a']);
   assert.equal(result.financialSummary.unallocatedProjects[0].paid, 5000);
   assert.equal(result.financialSummary.unallocatedProjects[0].fullyPaid, false);
+});
+
+
+test('server refuses to register a payment without explicit actual-receipt confirmation', async () => {
+  const service = loadSales(fixture({ contract: {} }));
+  const response = await service.handler({
+    httpMethod: 'POST',
+    body: JSON.stringify({ type: 'payment', projectId: 'project-a', amount: 10000, method: 'cash' })
+  });
+  assert.equal(response.statusCode, 400);
+  assert.match(body(response).error, /تأكيد استلام المبلغ فعلياً/);
+  assert.equal(Object.keys(service.stores['hbpx-payments']).length, 0);
+});
+
+test('server rejects payment methods not offered by the owner form', async () => {
+  const service = loadSales(fixture({ contract: {} }));
+  const response = await service.handler({
+    httpMethod: 'POST',
+    body: JSON.stringify({ type: 'payment', projectId: 'project-a', amount: 10000, method: 'paypal', receivedConfirmed: true })
+  });
+  assert.equal(response.statusCode, 400);
+  assert.match(body(response).error, /طريقة الاستلام غير صحيحة/);
+  assert.equal(Object.keys(service.stores['hbpx-payments']).length, 0);
+});
+
+test('confirmed payment records include a server timestamp for manual receipt audit', async () => {
+  const service = loadSales(fixture({ contract: {} }));
+  const response = await service.handler({
+    httpMethod: 'POST',
+    body: JSON.stringify({ type: 'payment', projectId: 'project-a', amount: 10000, method: 'cash', receivedConfirmed: true })
+  });
+  assert.equal(response.statusCode, 201);
+  assert.equal(body(response).item.receivedConfirmed, true);
+  assert.ok(Number.isFinite(Date.parse(body(response).item.receivedConfirmedAt)));
+  assert.equal(body(response).item.contractId, 'contract-a');
 });

@@ -108,7 +108,7 @@ test('sales records use an exact account match or an isolated lead identity, nev
 
   const payment = await service.handler({
     httpMethod:'POST',
-    body:JSON.stringify({type:'payment',projectId:itemB.id,amount:500,method:'transfer'})
+    body:JSON.stringify({type:'payment',projectId:itemB.id,amount:500,method:'bank_transfer',receivedConfirmed:true})
   });
   assert.equal(payment.statusCode,201);
   assert.equal(responseBody(payment).item.clientId,expectedB);
