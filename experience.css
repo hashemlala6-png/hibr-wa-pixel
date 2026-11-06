@@ -598,3 +598,40 @@ body.xp-home{background:var(--xp-paper)!important;color:var(--xp-ink)!important;
  .hp-home-formula-note p{flex:1 1 100%}
  .hp-home-pages{padding:34px 0 55px}
 }
+
+
+/* MICROSOFT-INSPIRED FRESH SPECTRUM — airy blue, mint and lemon light */
+:root{
+ --xp-paper:#f7fbff;--xp-paper2:#ffffff;--xp-ink:#183b56;--xp-green:#238caa;
+ --xp-orange:#55bfa7;--xp-gold:#f5e78c;--xp-muted:#607b8b;--xp-line:#dcebf1;
+}
+body{background:linear-gradient(145deg,#f8fcff 0%,#f2fbf8 48%,#fbfdf2 100%)!important;color:var(--xp-ink)!important}
+.nav,.hp-nav{background:rgba(250,253,255,.92)!important}
+.nav .logo i,.hp-nav .logo i{background:linear-gradient(135deg,#48b8d8,#70d2a4)!important}
+.nav .solid-btn,.hp-nav .solid-btn,.solid-btn,
+.xp-button{background:linear-gradient(110deg,#279bd0 0%,#38b6bd 48%,#65c99c 100%)!important;border:0!important;color:#fff!important}
+.nav .solid-btn:hover,.hp-nav .solid-btn:hover,.solid-btn:hover,.xp-button:hover{background:linear-gradient(110deg,#1885bd,#279f9f 55%,#4caf82)!important}
+.brand-eyebrow,.brand-kicker,.kicker,.brand-step>b,.brand-pillar .pillar-mark,
+.xp-overline i,.xp-section-index,.xp-label{color:#319fbd!important}
+.brand-intro em,.brand-section-head h2 em,.brand-manifesto .big-line span,
+.intake-title em,.xp-hero h1 span{color:#45b9a1!important}
+.brand-final,.brand-bundle{background:linear-gradient(115deg,#278fbe 0%,#39b7b3 52%,#75c995 100%)!important}
+.brand-final .solid-btn,.brand-bundle .solid-btn{background:linear-gradient(110deg,#f6e78f,#f8efb8)!important;color:#24485a!important;border:0!important}
+.brand-offer-design,.brand-access-note{background:linear-gradient(135deg,#e5f5ff 0%,#e7f8ef 100%)!important}
+.brand-access-note{border-inline-start-color:#54bca4!important}
+.brand-pillars,.brand-steps,.brand-offers,.brand-cases{border-color:#bcdce5!important}
+.brand-pillar:hover{background:linear-gradient(135deg,#f0f9ff,#f0fbf5)!important}
+.intake-control,.intake-control:focus{background:#ffffff!important;border-bottom-color:#b8dce4!important}
+.intake-control:focus{border-color:#42b6c0!important;outline:2px solid #42b6c022!important}
+.xp-hero{background:radial-gradient(circle at 82% 12%,#d8f5e6 0%,transparent 31%),radial-gradient(circle at 16% 85%,#d9f0ff 0%,transparent 34%),linear-gradient(115deg,#f9fcff 0%,#eef9ff 48%,#f3fbf3 100%)!important}
+.xp-hero:before{background-image:linear-gradient(#3b8ea20b 1px,transparent 1px),linear-gradient(90deg,#3b8ea20b 1px,transparent 1px)!important}
+.xp-poster{background:linear-gradient(145deg,#168fc5 0%,#35b7bd 48%,#72cb98 100%)!important}
+.xp-poster-slice span{background:linear-gradient(110deg,#fff0a6,#fff7ce)!important;color:#24485a!important}
+.xp-poster-slice b{background:linear-gradient(110deg,#8cdeb5,#b9efd0)!important;color:#184b58!important}
+.xp-statement{background:linear-gradient(120deg,#fff 0%,#f2fbff 55%,#f3fcf5 100%)!important}
+.hp-home-formula{background:linear-gradient(120deg,#f7fcff 0%,#effaf5 100%)!important}
+.hp-home-formula-intro h2 em,.hp-home-formula-intro>small,.hp-home-formula-steps article>small{color:#299fba!important}
+.hp-home-formula-equation span{border-color:#cce8e5!important;background:linear-gradient(120deg,#f2fbff,#effaf4)!important;color:#247e9a!important}
+.hp-home-formula-equation strong{background:linear-gradient(110deg,#259bc2,#4ebd9f)!important}
+.hp-contact-footer,.brand-footer{background:linear-gradient(110deg,#174d70,#247f91 55%,#318c78)!important}
+.hp-contact-footer a{color:#fff0a6!important}
