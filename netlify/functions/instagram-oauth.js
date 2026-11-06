@@ -93,8 +93,9 @@ async function writeConnection(value) { await store().setJSON(CONNECTION_KEY, va
 async function profileFor(token) {
   const url = new URL('https://graph.instagram.com/' + API_VERSION + '/me');
   url.searchParams.set('fields', 'user_id,username,account_type');
-  url.searchParams.set('access_token', token);
-  const data = await responseJson(await fetch(url));
+  const data = await responseJson(await fetch(url, {
+    headers: { Authorization: 'Bearer ' + token }
+  }));
   return { userId: String(data.user_id || data.id || ''), username: clean(data.username, 100), accountType: clean(data.account_type, 50) };
 }
 async function exchangeCode(code, redirectUri) {

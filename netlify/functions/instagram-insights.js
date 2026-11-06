@@ -37,8 +37,9 @@ async function graph(path, token, params = {}) {
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
   }
-  url.searchParams.set('access_token', token);
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: { Authorization: 'Bearer ' + token }
+  });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.error) throw new Error(clean(data.error?.message || 'Instagram API HTTP ' + response.status, 400));
   return data;
