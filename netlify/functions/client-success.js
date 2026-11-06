@@ -1,13 +1,14 @@
 const { env } = require('./env');
 const crypto=require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {requireAdmin,json}=require('./auth-utils');
 const {getAIContext,contextPrompt,saveAIHistory}=require('./ai-context');
 const {logActivity}=require('./client-activity');
 
-const projects=()=>getStore({name:'hbpx-projects',consistency:'strong'});
-const gates=()=>getStore({name:'hbpx-quality-gates',consistency:'strong'});
-const vqa=()=>getStore({name:'hbpx-visual-qa',consistency:'strong'});
+const projects=()=>getStore(blobOptions('hbpx-projects', 'strong'));
+const gates=()=>getStore(blobOptions('hbpx-quality-gates', 'strong'));
+const vqa=()=>getStore(blobOptions('hbpx-visual-qa', 'strong'));
 const clean=(v,n=4000)=>String(v??'').trim().slice(0,n);
 const list=async(st,prefix)=>{const r=await st().list({prefix}),o=[];for(const b of r.blobs||[]){try{const x=await st().get(b.key,{type:'json'});if(x)o.push(x)}catch{}}return o};
 const extractJSON=t=>{const s=String(t||'').replace(/```json|```/g,'').trim();try{return JSON.parse(s)}catch{}const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)return JSON.parse(s.slice(a,b+1));throw Error('تعذر قراءة فحص الجودة.')};
