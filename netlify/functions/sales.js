@@ -20,22 +20,33 @@ const allowed = {
 const clean=(v,n=500)=>String(v??'').trim().slice(0,n);
 const amount=require('./money');
 
-async function all(name){
-  const st=stores[name]();
-  const prefix=name==='quotes'?'quote-':name==='projects'?'project-':'payment-';
-  const result=await st.list({prefix});
+async function readStoreRecords(store,prefix){
   const out=[];
-  for(const item of result.blobs||[]){try{const x=await st.get(item.key,{type:'json'});if(x)out.push(x)}catch{}}
-  out.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const seen=new Set();
+  let cursor;
+  do{
+    const page=await store.list({prefix,limit:100,...(cursor?{cursor}:{})});
+    for(const item of page.blobs||[]){
+      const record=await store.get(item.key,{type:'json'});
+      if(record)out.push(record);
+    }
+    const next=page.cursor||null;
+    if(!next||next===cursor||seen.has(next))break;
+    seen.add(next);
+    cursor=next;
+  }while(cursor);
+  return out;
+}
+
+async function all(name){
+  const prefix=name==='quotes'?'quote-':name==='projects'?'project-':'payment-';
+  const out=await readStoreRecords(stores[name](),prefix);
+  out.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
   return out;
 }
 
 async function allAccounts(){
-  const st=stores.accounts();
-  const result=await st.list({prefix:'email-',limit:1000});
-  const out=[];
-  for(const item of result.blobs||[]){try{const x=await st.get(item.key,{type:'json'});if(x)out.push(x)}catch{}}
-  return out;
+  return readStoreRecords(stores.accounts(),'email-');
 }
 
 async function identityForLead(leadId){
@@ -86,11 +97,15 @@ async function clientIdForRecord(record){
 
 async function ownershipReview(projects){
   const leads=stores.leads();
-  const listed=await leads.list({prefix:'lead-',limit:1000}).catch(()=>null);
-  if(!listed)return [{id:'ownership-review-unavailable',name:'تعذر فحص ربط العملاء',clientEmail:'',reason:'تعذر قراءة طلبات العملاء الآن. لم يتغير أي ربط؛ أعيدي الفحص لاحقاً.'}];
-  const leadMap=new Map();
-  for(const item of listed.blobs||[]){const lead=await leads.get(item.key,{type:'json'}).catch(()=>null);if(lead?.id)leadMap.set(lead.id,lead);}
-  const accounts=await allAccounts().catch(()=>[]);
+  let leadMap,accounts;
+  try{
+    const leadRows=await readStoreRecords(leads,'lead-');
+    leadMap=new Map(leadRows.filter(lead=>lead?.id).map(lead=>[lead.id,lead]));
+    accounts=await allAccounts();
+  }catch(error){
+    console.warn('ownership review read failed',error?.message||error);
+    return [{id:'ownership-review-unavailable',name:'تعذر فحص ربط العملاء',clientEmail:'',reason:'تعذر قراءة جميع صفحات طلبات العملاء أو الحسابات. لم يتغير أي ربط؛ أعيدي الفحص لاحقاً.'}];
+  }
   const issues=[];
   for(const project of projects){
     if(!project.leadId){

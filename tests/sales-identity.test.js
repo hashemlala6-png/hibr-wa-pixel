@@ -144,3 +144,48 @@ test('sales refuses project and quote creation when the referenced lead does not
   assert.equal(quote.statusCode,404);
   assert.equal(service.data['hbpx-projects']['project-missing'],undefined);
 });
+
+
+test('sales resolves client identity when the matching account is beyond the first Blobs page', async () => {
+  const accounts={};
+  for(let index=0;index<6;index+=1){
+    accounts['email-'+index]={id:'account-'+index,email:'other'+index+'@example.com',whatsapp:'964770000000'+index};
+  }
+  accounts['email-target']={id:'account-target',email:'target@example.com',whatsapp:'9647712345678'};
+  const data={
+    'hbpx-client-accounts':accounts,
+    'hbpx-leads':{'lead-target':{id:'lead-target',email:'target@example.com',whatsapp:'07712345678'}},
+    'hbpx-projects':{},
+    'hbpx-quotes':{},
+    'hbpx-payments':{}
+  };
+  const service=loadSales(data,{pageSize:2});
+  const response=await service.handler({
+    httpMethod:'POST',
+    body:JSON.stringify({type:'project',leadId:'lead-target',name:'Target customer project',amount:10000})
+  });
+  assert.equal(response.statusCode,201);
+  assert.equal(responseBody(response).item.accountId,'account-target');
+  assert.equal(responseBody(response).item.clientId,'account-target');
+});
+
+test('owner sales response includes projects beyond the first page and checks their ownership links', async () => {
+  const data=baseData();
+  for(let index=0;index<5;index+=1){
+    const leadId='lead-extra-'+index;
+    const lead={id:leadId,email:'extra'+index+'@example.com',whatsapp:'964771111000'+index};
+    data['hbpx-leads'][leadId]=lead;
+    const identity=clientIdentityKey(lead);
+    const projectId=index===4?'project-orphan-late':'project-extra-'+index;
+    data['hbpx-projects'][projectId]=index===4
+      ? {id:projectId,name:'Unlinked late project',amount:5000}
+      : {id:projectId,leadId,clientId:identity,accountId:null,name:'Extra project '+index,amount:5000};
+  }
+  const service=loadSales(data,{pageSize:2});
+  const response=await service.handler({httpMethod:'GET',headers:{}});
+  const result=responseBody(response);
+  assert.equal(response.statusCode,200);
+  assert.equal(result.projects.length,7);
+  assert.ok(result.projects.some(project=>project.id==='project-orphan-late'));
+  assert.ok(result.ownershipReview.some(issue=>issue.id==='project-orphan-late'));
+});
