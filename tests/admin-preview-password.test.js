@@ -2,7 +2,12 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { adminPassword, createSession, verifySession } = require('../netlify/functions/session-core');
+const {
+  adminPassword,
+  isDeployPreview,
+  createSession,
+  verifySession
+} = require('../netlify/functions/session-core');
 
 const keys = ['ADMIN_PASSWORD', 'ADMIN_PREVIEW_PASSWORD', 'ADMIN_SESSION_SECRET'];
 const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
@@ -14,25 +19,41 @@ test.after(() => {
   }
 });
 
-test('Deploy Preview password takes priority without replacing the Production password', () => {
-  process.env.ADMIN_PASSWORD = 'production-test-only';
-  process.env.ADMIN_PREVIEW_PASSWORD = 'preview-test-only';
-  assert.equal(adminPassword(), 'preview-test-only');
-  assert.equal(process.env.ADMIN_PASSWORD, 'production-test-only');
+const previewEvent = {
+  headers: { host: 'deploy-preview-4--fabulous-bublanina-8d5626.netlify.app' }
+};
+const productionEvent = {
+  headers: { host: 'fabulous-bublanina-8d5626.netlify.app' }
+};
+
+test('recognizes the exact Netlify Deploy Preview host', () => {
+  assert.equal(isDeployPreview(previewEvent), true);
+  assert.equal(isDeployPreview(productionEvent), false);
+  assert.equal(isDeployPreview({ rawUrl: 'https://deploy-preview-4--fabulous-bublanina-8d5626.netlify.app/admin.html' }), true);
 });
 
-test('admin session signs and verifies with the preview password fallback', () => {
+test('Deploy Preview never falls back to the Production password', () => {
+  process.env.ADMIN_PASSWORD = 'production-test-only';
+  delete process.env.ADMIN_PREVIEW_PASSWORD;
+  assert.equal(adminPassword(previewEvent), '');
+  assert.equal(adminPassword(productionEvent), 'production-test-only');
+});
+
+test('Deploy Preview accepts its own password and Production keeps its own password', () => {
   delete process.env.ADMIN_SESSION_SECRET;
   process.env.ADMIN_PASSWORD = 'production-test-only';
   process.env.ADMIN_PREVIEW_PASSWORD = 'preview-test-only';
 
-  const token = createSession('admin', 'admin', 60);
-  const event = { headers: { cookie: `hbpx_admin=${encodeURIComponent(token)}` } };
-  assert.equal(verifySession(event, 'admin', 'hbpx_admin').role, 'admin');
-});
+  assert.equal(adminPassword(previewEvent), 'preview-test-only');
+  assert.equal(adminPassword(productionEvent), 'production-test-only');
 
-test('Production keeps using ADMIN_PASSWORD when no preview password is present', () => {
-  delete process.env.ADMIN_PREVIEW_PASSWORD;
-  process.env.ADMIN_PASSWORD = 'production-test-only';
-  assert.equal(adminPassword(), 'production-test-only');
+  const previewToken = createSession('admin', 'admin', 60, previewEvent);
+  const productionToken = createSession('admin', 'admin', 60, productionEvent);
+
+  const previewWithCookie = { ...previewEvent, headers: { ...previewEvent.headers, cookie: 'hbpx_admin=' + encodeURIComponent(previewToken) } };
+  const productionWithCookie = { ...productionEvent, headers: { ...productionEvent.headers, cookie: 'hbpx_admin=' + encodeURIComponent(productionToken) } };
+  assert.equal(verifySession(previewWithCookie, 'admin', 'hbpx_admin').role, 'admin');
+  assert.equal(verifySession(productionWithCookie, 'admin', 'hbpx_admin').role, 'admin');
+  const previewCookieOnProduction = { ...productionEvent, headers: { ...productionEvent.headers, cookie: 'hbpx_admin=' + encodeURIComponent(previewToken) } };
+  assert.equal(verifySession(previewCookieOnProduction, 'admin', 'hbpx_admin'), null);
 });
