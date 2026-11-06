@@ -1,18 +1,19 @@
 const { getStore } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { sameClientContact } = require('./client-ownership');
 
 const stores = {
-  clients: () => getStore({ name: 'hbpx-clients', consistency: 'strong' }),
-  leads: () => getStore({ name: 'hbpx-leads', consistency: 'strong' }),
-  activity: () => getStore({ name: 'hbpx-client-activity', consistency: 'strong' }),
-  results: () => getStore({ name: 'hbpx-result-plans', consistency: 'strong' }),
-  aiHistory: () => getStore({ name: 'hbpx-ai-history', consistency: 'strong' }),
-  dna: () => getStore({ name: 'hbpx-creative-dna', consistency: 'strong' }),
-  activityIndex: () => getStore({ name: 'hbpx-client-activity-index', consistency: 'strong' }),
-  leadIndex: () => getStore({ name: 'hbpx-lead-index', consistency: 'strong' }),
-  resultIndex: () => getStore({ name: 'hbpx-result-client-index', consistency: 'strong' }),
-  accounts: () => getStore({ name: 'hbpx-client-accounts', consistency: 'strong' }),
-  projects: () => getStore({ name: 'hbpx-projects', consistency: 'strong' }),
+  clients: () => getStore(blobOptions('hbpx-clients', 'strong')),
+  leads: () => getStore(blobOptions('hbpx-leads', 'strong')),
+  activity: () => getStore(blobOptions('hbpx-client-activity', 'strong')),
+  results: () => getStore(blobOptions('hbpx-result-plans', 'strong')),
+  aiHistory: () => getStore(blobOptions('hbpx-ai-history', 'strong')),
+  dna: () => getStore(blobOptions('hbpx-creative-dna', 'strong')),
+  activityIndex: () => getStore(blobOptions('hbpx-client-activity-index', 'strong')),
+  leadIndex: () => getStore(blobOptions('hbpx-lead-index', 'strong')),
+  resultIndex: () => getStore(blobOptions('hbpx-result-client-index', 'strong')),
+  accounts: () => getStore(blobOptions('hbpx-client-accounts', 'strong')),
+  projects: () => getStore(blobOptions('hbpx-projects', 'strong')),
 };
 
 const clean = (v, n = 5000) => String(v ?? '').trim().slice(0, n);
