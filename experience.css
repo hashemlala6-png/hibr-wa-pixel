@@ -537,3 +537,64 @@ body.xp-home{background:var(--xp-paper)!important;color:var(--xp-ink)!important;
  .hp-process-note p{margin:9px 0}
 }
 @media(prefers-reduced-motion:reduce){.hp-page-tabs a,.hp-home-page-grid>a{transition:none!important}}
+
+
+/* Homepage rhythm + brand formula inserted before page selection. */
+.hp-home-main{min-height:0}
+.hp-home-hero{padding:clamp(28px,4.2vw,58px) 0 clamp(30px,4vw,48px)}
+.hp-home-art{min-height:410px}
+.hp-home-kicker{margin-top:22px}
+.hp-home-proof{margin-top:34px}
+.hp-home-formula{position:relative;overflow:hidden;padding:58px 0 54px;background:#e8e2d5;border-top:1px solid #d9d2c5;border-bottom:1px solid #d9d2c5}
+.hp-home-formula:before{content:"×";position:absolute;left:-.04em;top:-.42em;color:#294b3c08;font:900 22rem/1 Arial,sans-serif;pointer-events:none}
+.hp-home-formula-inner{position:relative;z-index:1}
+.hp-home-formula-intro{display:grid;grid-template-columns:1fr .8fr;column-gap:8%;align-items:end}
+.hp-home-formula-intro>small{grid-column:1/-1;font:800 .58rem Arial,sans-serif;letter-spacing:.16em;color:#b45a40}
+.hp-home-formula-intro h2{margin:13px 0 0;color:#263e34;font:900 clamp(2.5rem,5vw,4.8rem)/1.12 var(--xp-display);letter-spacing:-.08em}
+.hp-home-formula-intro h2 em{color:#c65d3f;font-style:normal}
+.hp-home-formula-intro>p{max-width:480px;margin:0 0 5px;color:#68756b;font-size:.87rem;line-height:2.1}
+.hp-home-formula-equation{display:flex;align-items:center;gap:clamp(7px,1.5vw,18px);flex-wrap:wrap;margin-top:27px;color:#6e796d;font-size:.78rem;font-weight:800}
+.hp-home-formula-equation span{padding:9px 13px;border:1px solid #c9c1b1;background:#f5f1e8;color:#294b3c}
+.hp-home-formula-equation b,.hp-home-formula-equation i{color:#bd684b;font:700 1rem Arial,sans-serif}
+.hp-home-formula-equation strong{padding:9px 14px;background:#294b3c;color:#fff;font-size:.78rem}
+.hp-home-formula-equation i{font-style:normal}
+.hp-home-formula-steps{display:grid;grid-template-columns:repeat(3,1fr);margin-top:40px;border-top:1px solid #c9c1b1;border-bottom:1px solid #c9c1b1}
+.hp-home-formula-steps article{position:relative;min-height:180px;padding:18px 22px 21px;border-inline-start:1px solid #c9c1b1}
+.hp-home-formula-steps article:first-child{border-inline-start:0}
+.hp-home-formula-steps article>small{font:800 .53rem Arial,sans-serif;letter-spacing:.12em;color:#b45a40}
+.hp-home-formula-steps article>b{display:block;margin:18px 0 8px;color:#bdb5a6;font:900 2rem Arial,sans-serif}
+.hp-home-formula-steps article h3{margin:0 0 8px;color:#294b3c;font:900 1.14rem var(--xp-display)}
+.hp-home-formula-steps article p{max-width:300px;margin:0;color:#70796e;font-size:.76rem;line-height:1.9}
+.hp-home-formula-note{display:flex;align-items:center;gap:18px;margin-top:19px;color:#748074;font-size:.72rem}
+.hp-home-formula-note>span{color:#b45a40;font-weight:900}
+.hp-home-formula-note p{margin:0}
+.hp-home-formula-note i{margin-inline-start:auto;color:#c65d3f;font-size:1.6rem;font-style:normal}
+.hp-home-pages{padding:48px 0 78px}
+@media(max-width:900px){
+ .hp-home-hero{padding:35px 0 32px}
+ .hp-home-art{min-height:360px}
+ .hp-home-formula-intro{grid-template-columns:1fr;gap:16px}
+ .hp-home-formula-intro>small{grid-column:auto}
+ .hp-home-formula-intro>p{max-width:650px}
+}
+@media(max-width:700px){
+ .hp-home-hero{padding:25px 0 24px}
+ .hp-home-grid{gap:23px}
+ .hp-home-kicker{margin-top:17px}
+ .hp-home-proof{margin-top:23px}
+ .hp-home-art{min-height:290px}
+ .hp-home-art-core{padding:26px 8px}
+ .hp-home-formula{padding:38px 0 34px}
+ .hp-home-formula-intro h2{font-size:clamp(2.2rem,10vw,3.2rem)}
+ .hp-home-formula-intro>p{font-size:.8rem;line-height:1.95}
+ .hp-home-formula-equation{gap:6px;margin-top:19px;font-size:.7rem}
+ .hp-home-formula-equation span{padding:8px 9px}
+ .hp-home-formula-equation strong{padding:8px 10px}
+ .hp-home-formula-steps{grid-template-columns:1fr;margin-top:25px}
+ .hp-home-formula-steps article{min-height:0;padding:16px 7px 19px;border-inline-start:0;border-bottom:1px solid #c9c1b1}
+ .hp-home-formula-steps article:last-child{border-bottom:0}
+ .hp-home-formula-steps article>b{margin:12px 0 7px}
+ .hp-home-formula-note{align-items:flex-start;gap:8px;flex-wrap:wrap}
+ .hp-home-formula-note p{flex:1 1 100%}
+ .hp-home-pages{padding:34px 0 55px}
+}
