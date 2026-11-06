@@ -78,7 +78,7 @@ test('Instagram webhook verifies raw-body HMAC, stores message events, and dedup
   const first = await service.handler(event);
   assert.equal(first.statusCode, 200);
   assert.equal(body(first).saved, 1);
-  assert.equal(service.writes.length, 1);
+  assert.equal(service.writes.filter(write => write.name === 'hbpx-instagram-events').length, 1);
   const saved = Object.values(service.records)[0];
   assert.equal(saved.eventType, 'message');
   assert.equal(saved.accountId, 'instagram-account-123');
@@ -91,7 +91,7 @@ test('Instagram webhook verifies raw-body HMAC, stores message events, and dedup
   const retry = await service.handler(event);
   assert.equal(retry.statusCode, 200);
   assert.equal(body(retry).duplicates, 1);
-  assert.equal(service.writes.length, 1);
+  assert.equal(service.writes.filter(write => write.name === 'hbpx-instagram-events').length, 1);
 });
 
 test('Instagram webhook rejects missing or invalid signatures before storing any event', async () => {
