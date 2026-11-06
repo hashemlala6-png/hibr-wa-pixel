@@ -111,7 +111,7 @@ async function notifyClientApproval(lead, channels = ['email', 'whatsapp']) {
     if (process.env.RESEND_API_KEY && (process.env.CLIENT_APPROVAL_FROM_EMAIL || process.env.LEADS_FROM_EMAIL) && lead.email) {
       try {
         const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.CLIENT_APPROVAL_FROM_EMAIL || process.env.LEADS_FROM_EMAIL, to: [lead.email], subject: 'تمت الموافقة على طلبك — حبر وبكسل', text: msg }) });
-        result.email = r.ok ? 'sent' : 'failed'; if (!r.ok) console.error('client approval email failed', r.status, (await r.text()).slice(0,300));
+        result.email = r.ok ? 'accepted' : 'failed'; if (!r.ok) console.error('client approval email failed', r.status, (await r.text()).slice(0,300));
       } catch (e) { result.email = 'failed'; console.error('client approval email failed', e.message || e); }
     } else if (!lead.email) result.email = 'no_customer_email';
   }
@@ -124,7 +124,7 @@ async function notifyClientApproval(lead, channels = ['email', 'whatsapp']) {
     if (token && phoneId && template && validRecipient) {
       try {
         const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone, type: 'template', template: { name: template, language: { code: process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_LANGUAGE || 'ar' }, components: [{ type: 'body', parameters: [{ type: 'text', text: String(lead.name || 'عميل').slice(0,200) }, { type: 'text', text: String(lead.service || 'الخدمة المطلوبة').slice(0,200) }] }] } }) });
-        result.whatsapp = r.ok ? 'sent' : 'failed'; if (!r.ok) console.error('client approval WhatsApp failed', r.status, (await r.text()).slice(0,300));
+        result.whatsapp = r.ok ? 'accepted' : 'failed'; if (!r.ok) console.error('client approval WhatsApp failed', r.status, (await r.text()).slice(0,300));
       } catch (e) { result.whatsapp = 'failed'; console.error('client approval WhatsApp failed', e.message || e); }
     } else if (token && phoneId && template && phone && !validRecipient) {
       result.whatsapp = 'invalid_recipient';
@@ -241,7 +241,7 @@ exports.handler = async (event) => {
     if (current.status === 'approved' && (previousStatus !== 'approved' || retryCustomerNotifications)) {
       const previousNotifications = current.customerNotifications || {};
       const channels = retryCustomerNotifications
-        ? ['email', 'whatsapp'].filter(channel => previousNotifications[channel] !== 'sent')
+        ? ['email', 'whatsapp'].filter(channel => !['sent', 'accepted'].includes(previousNotifications[channel]))
         : ['email', 'whatsapp'];
       const attemptedNotifications = await notifyClientApproval(current, channels);
       customerNotifications = { ...previousNotifications, ...attemptedNotifications };

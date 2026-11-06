@@ -144,7 +144,7 @@ test('approval WhatsApp template uses the complete Iraqi international recipient
 
     const { response, body } = await approve(service.handler);
     assert.equal(response.statusCode, 200);
-    assert.equal(body.customerNotifications.whatsapp, 'sent');
+    assert.equal(body.customerNotifications.whatsapp, 'accepted');
     assert.equal(calls.length, 1);
     assert.equal(calls[0].payload.to, '9647712345678');
     assert.equal(calls[0].payload.template.name, 'client_approved');
@@ -239,8 +239,8 @@ test('approval notification statuses are stored on the lead and survive a fresh 
     global.fetch = async () => ({ ok: true, status: 200, async text() { return ''; } });
     const { response, body } = await approve(service.handler);
     assert.equal(response.statusCode, 200);
-    assert.equal(body.customerNotifications.whatsapp, 'sent');
-    assert.equal(service.stores['hbpx-leads']['lead-test'].customerNotifications.whatsapp, 'sent');
+    assert.equal(body.customerNotifications.whatsapp, 'accepted');
+    assert.equal(service.stores['hbpx-leads']['lead-test'].customerNotifications.whatsapp, 'accepted');
     assert.ok(service.stores['hbpx-leads']['lead-test'].customerNotificationAt);
   });
 });
@@ -271,7 +271,7 @@ test('retry only sends notification channels that have not already succeeded', a
     const body = JSON.parse(response.body || '{}');
     assert.equal(response.statusCode, 200);
     assert.equal(body.customerNotifications.email, 'sent');
-    assert.equal(body.customerNotifications.whatsapp, 'sent');
+    assert.equal(body.customerNotifications.whatsapp, 'accepted');
     assert.equal(calls.length, 1);
     assert.match(calls[0], /graph\.facebook\.com/);
   });
