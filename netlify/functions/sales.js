@@ -151,11 +151,12 @@ exports.handler=async event=>{
    }
    if(b.type==='payment'){
     if(!b.projectId||!amount(b.amount))return json(400,{error:'المشروع والمبلغ مطلوبان.'});
+    if(b.receivedConfirmed!==true)return json(400,{error:'لا يمكن تسجيل مبلغ ما لم تؤكدي أنه استُلم فعلاً.'});
     const project=await stores.projects().get(clean(b.projectId,120),{type:'json'}).catch(()=>null);
     if(!project)return json(404,{error:'المشروع غير موجود.'});
     const clientId=await clientIdForProject(project);
     const id=`payment-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-    const x={id,projectId:clean(b.projectId,120),clientId:clientId||null,amount:amount(b.amount),method:clean(b.method,60),note:clean(b.note,500),createdAt:now};
+    const x={id,projectId:clean(b.projectId,120),clientId:clientId||null,amount:amount(b.amount),method:clean(b.method,60),note:clean(b.note,500),ownerConfirmedReceived:true,recordedBy:'owner',receivedConfirmedAt:now,createdAt:now};
     await stores.payments().setJSON(id,x);
     if(clientId)await logActivity(clientId,'payment','تم تسجيل دفعة',{projectId:x.projectId,amount:x.amount,method:x.method});
     return json(201,{item:x});
