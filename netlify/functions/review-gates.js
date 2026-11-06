@@ -1,7 +1,8 @@
 const crypto=require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {requireAdmin,json}=require('./auth-utils');
-const store=()=>getStore({name:'hbpx-review-gates',consistency:'strong'});
+const store=()=>getStore(blobOptions('hbpx-review-gates', 'strong'));
 const clean=(v,n=3000)=>String(v??'').trim().slice(0,n);
 async function all(){const s=store(),out=[];let cursor;do{const r=await s.list({prefix:'gate-',limit:100,cursor});for(const b of r.blobs||[]){try{const x=await s.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}cursor=r.cursor}while(cursor);return out.sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt))}
 exports.handler=async e=>{
