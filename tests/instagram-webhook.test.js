@@ -106,3 +106,57 @@ test('Instagram webhook rejects invalid JSON and oversized bodies after signatur
   const oversized = await service.handler({ httpMethod: 'POST', headers: { 'x-hub-signature-256': signature(huge) }, body: huge });
   assert.equal(oversized.statusCode, 413);
 });
+
+test('Instagram comments webhook stores comment identity, author, media, and text for owner review', async () => {
+  const service = loadWebhook();
+  const payload = JSON.stringify({
+    object: 'instagram',
+    entry: [{
+      id: 'instagram-account-123',
+      time: 1793971200,
+      changes: [{
+        field: 'comments',
+        value: {
+          id: 'comment-987',
+          text: 'التصميم جميل، شلون نطلب؟',
+          from: { id: 'customer-commenter-77', username: 'customer_handle' },
+          media: { id: 'media-456' }
+        }
+      }]
+    }]
+  });
+  const result = await service.handler({
+    httpMethod: 'POST',
+    headers: { 'x-hub-signature-256': signature(payload) },
+    body: payload
+  });
+  assert.equal(result.statusCode, 200);
+  assert.equal(body(result).saved, 1);
+  const saved = Object.values(service.records)[0];
+  assert.equal(saved.eventType, 'comment');
+  assert.equal(saved.commentId, 'comment-987');
+  assert.equal(saved.senderId, 'customer-commenter-77');
+  assert.equal(saved.senderUsername, 'customer_handle');
+  assert.equal(saved.mediaId, 'media-456');
+  assert.equal(saved.text, 'التصميم جميل، شلون نطلب؟');
+  assert.equal(saved.externalAction, false);
+});
+
+test('Instagram webhook verifies the signature over decoded base64 request bytes', async () => {
+  const service = loadWebhook();
+  const payload = JSON.stringify({
+    object: 'instagram',
+    entry: [{ id: 'instagram-account-123', messaging: [{ sender: { id: 'customer-1' }, message: { mid: 'base64-msg', text: 'اختبار' } }] }]
+  });
+  const raw = Buffer.from(payload, 'utf8');
+  const signatureValue = 'sha256=' + crypto.createHmac('sha256', APP_SECRET).update(raw).digest('hex');
+  const result = await service.handler({
+    httpMethod: 'POST',
+    isBase64Encoded: true,
+    headers: { 'x-hub-signature-256': signatureValue },
+    body: raw.toString('base64')
+  });
+  assert.equal(result.statusCode, 200);
+  assert.equal(body(result).saved, 1);
+  assert.equal(Object.values(service.records)[0].text, 'اختبار');
+});

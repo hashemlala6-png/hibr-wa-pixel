@@ -23,7 +23,7 @@ textarea{width:100%;min-height:90px;border:1px solid #cfe1ec;border-radius:10px;
 <body>
 <main class="wrap">
 <header class="top"><div><div class="eyebrow">HIBR & PIXEL · OWNER INBOX</div><h1>صندوق Instagram</h1><div class="muted">رسائل وتعليقات واردة إلى مساحة خاصة بالمالكة</div></div><div class="links"><a class="link secondary" href="/instagram.html">ربط الحساب</a><a class="link secondary" href="/admin.html">لوحة الإدارة</a></div></header>
-<section class="panel"><h2>حالة استقبال الإشعارات</h2><div id="status" class="status">جارٍ التحقق…</div><p class="muted">يُستقبل الإشعار بعد إعداد Callback URL وVerify Token في لوحة Meta. هذه الصفحة تحفظ مسودات الردود فقط؛ لا ترسل رسائل أو تعليقات تلقائياً.</p><div class="actions"><button id="refresh">تحديث الوارد</button></div></section>
+<section class="panel"><h2>حالة استقبال الإشعارات</h2><div id="status" class="status">جارٍ التحقق…</div><div id="callbackSetup" class="status warn hidden" style="margin-top:10px"><b>عنوان Callback URL في Meta</b><div class="meta">انسخي هذا العنوان إلى إعدادات Webhooks في تطبيق Meta، ثم ضعي Verify Token نفسه الموجود في متغيرات Netlify.</div><code id="callbackUrl" style="display:block;direction:ltr;text-align:left;overflow-wrap:anywhere;margin:9px 0"></code><button type="button" class="secondary" id="copyCallback">نسخ عنوان Callback</button><span id="callbackCopyStatus" class="meta" role="status" aria-live="polite"></span></div><p class="muted">يُستقبل الإشعار بعد إعداد Callback URL وVerify Token في لوحة Meta. هذه الصفحة تحفظ مسودات الردود فقط؛ لا ترسل رسائل أو تعليقات تلقائياً.</p><div class="actions"><button id="refresh">تحديث الوارد</button></div></section>
 <section id="events"><div class="panel muted">جارٍ تحميل الإشعارات…</div></section>
 </main>
 <script>
@@ -60,11 +60,15 @@ textarea{width:100%;min-height:90px;border:1px solid #cfe1ec;border-radius:10px;
    const data=await api();ITEMS=data.items||[];
    $('status').className='status'+(data.webhookConfigured&&data.connected?'':' warn');
    $('status').textContent=(data.account?'الحساب المرتبط: @'+data.account.username+' · ':'')+(data.webhookConfigured?'متغيرات Webhook موجودة.':'أضيفي INSTAGRAM_WEBHOOK_VERIFY_TOKEN وINSTAGRAM_APP_SECRET في Netlify.')+(data.connected?' · إشعارات هذا الحساب فقط.':' · اربطي حساب Instagram أولاً.')+' استقبال الإشعار لا يعني تشغيل رد تلقائي.';
+   const setup=$('callbackSetup');
+   if(data.callbackUrl){setup.classList.remove('hidden');$('callbackUrl').textContent=data.callbackUrl;}
+   else{setup.classList.add('hidden');$('callbackUrl').textContent='';}
    render();
   }catch(error){$('status').className='status warn';$('status').textContent=error.message;$('events').innerHTML='';}
   finally{$('refresh').disabled=false}
  }
  $('refresh').addEventListener('click',load);
+ $('copyCallback').addEventListener('click',async()=>{const value=$('callbackUrl').textContent.trim();if(!value)return;try{await navigator.clipboard.writeText(value);$('callbackCopyStatus').textContent='تم نسخ العنوان.';}catch{$('callbackCopyStatus').textContent='تعذر النسخ التلقائي؛ حددي العنوان وانسخيه.';}});
  fetch('/.netlify/functions/auth?action=me',{credentials:'same-origin',cache:'no-store'})
   .then(async response=>{const data=await response.json();if(!response.ok||!data.authenticated)throw new Error('سجّلي الدخول إلى لوحة المالك أولاً.');await load();})
   .catch(error=>{$('status').className='status warn';$('status').textContent=error.message;$('events').innerHTML='';});

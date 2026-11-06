@@ -32,7 +32,7 @@ function loadInbox({ events = {}, connection = null, denied = false } = {}) {
       json(statusCode, body) { return { statusCode, body: JSON.stringify(body) }; }
     };
     if (request === './env' && parent && parent.filename === resolved) return {
-      env(name) { return name === 'INSTAGRAM_WEBHOOK_VERIFY_TOKEN' ? 'private-verify-token' : name === 'INSTAGRAM_APP_SECRET' ? 'private-app-secret' : ''; }
+      env(name) { return name === 'INSTAGRAM_WEBHOOK_VERIFY_TOKEN' ? 'private-verify-token' : name === 'INSTAGRAM_APP_SECRET' ? 'private-app-secret' : name === 'URL' ? 'https://fabulous-bublanina-8d5626.netlify.app' : ''; }
     };
     return originalLoad.call(this, request, parent, isMain);
   };
@@ -57,6 +57,7 @@ test('owner inbox filters webhook events to the currently connected Instagram ac
   assert.equal(data.items[0].text, 'مرحبا');
   assert.equal(data.policy.automaticRepliesEnabled, false);
   assert.equal(data.webhookConfigured, true);
+  assert.equal(data.callbackUrl, 'https://fabulous-bublanina-8d5626.netlify.app/.netlify/functions/instagram-webhook');
 });
 
 test('owner can save an internal reply draft without sending a message', async () => {
