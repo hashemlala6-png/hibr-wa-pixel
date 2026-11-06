@@ -1,10 +1,11 @@
 const { env } = require('./env');
 const crypto=require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {requireAdmin,json}=require('./auth-utils');
 const {getAIContext,contextPrompt,saveAIHistory}=require('./ai-context');
 const {logActivity}=require('./client-activity');
-const store=()=>getStore({name:'hbpx-visual-qa',consistency:'strong'});
+const store=()=>getStore(blobOptions('hbpx-visual-qa', 'strong'));
 const clean=(v,n=5000)=>String(v??'').trim().slice(0,n);
 const extract=t=>{const s=String(t||'').replace(/```json|```/g,'').trim();try{return JSON.parse(s)}catch{}const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)return JSON.parse(s.slice(a,b+1));throw Error('تعذر قراءة نتيجة الفحص البصري.');};
 const dataUrlOk=x=>/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(String(x||''));
