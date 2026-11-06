@@ -283,20 +283,26 @@ test('retry only sends notification channels that have not already succeeded', a
 });
 
 
-test('public lead intake stores owner notification status with the lead record', async () => {
+test('public lead intake stores owner notification status with the lead record and sends readable email lines', async () => {
   await withEnv({
     RESEND_API_KEY: 'test-resend',
     LEADS_NOTIFY_EMAIL: 'owner@example.com',
     LEADS_FROM_EMAIL: 'studio@example.com'
   }, async () => {
     const service = loadLeads(baseData('07712345678'));
-    global.fetch = async url => {
+    let emailPayload = null;
+    global.fetch = async (url, init) => {
       assert.ok(String(url).includes('https://api.resend.com/emails'));
+      emailPayload = JSON.parse(init.body);
       return { ok: true, status: 200, async text() { return ''; } };
     };
     const { response, body } = await submitLead(service.handler, validLeadPayload(), '192.0.2.14');
     assert.equal(response.statusCode, 201);
     assert.equal(body.notifications.email, 'accepted');
+    assert.ok(emailPayload);
+    assert.match(emailPayload.text, /طلب جديد/);
+    assert.match(emailPayload.text, /\nالاسم:/);
+    assert.equal(emailPayload.text.includes('\\n'), false);
     const saved = service.stores['hbpx-leads'][body.leadId];
     assert.equal(saved.ownerNotifications.email, 'accepted');
     assert.equal(saved.ownerNotifications.whatsapp, 'not_configured');
