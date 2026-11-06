@@ -8,7 +8,7 @@ function clone(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
 
-function loadLeads(initial) {
+function loadLeads(initial, { activityError = null } = {}) {
   const resolved = require.resolve('../netlify/functions/leads');
   delete require.cache[resolved];
   const originalLoad = Module._load;
@@ -48,7 +48,7 @@ function loadLeads(initial) {
       };
     }
     if (request === './client-activity' && parent && parent.filename === resolved) {
-      return { async logActivity() {} };
+      return { async logActivity() { if (activityError) throw new Error(activityError); } };
     }
     return originalLoad.call(this, request, parent, isMain);
   };
@@ -362,5 +362,20 @@ test('invalid owner WhatsApp recipient is recorded without calling the Cloud API
     assert.equal(response.statusCode, 201);
     assert.equal(body.notifications.whatsapp, 'invalid_recipient');
     assert.equal(calls, 0);
+  });
+});
+
+
+test('approval still completes and notifies when secondary activity logging is unavailable', async () => {
+  await withEnv({}, async () => {
+    const service = loadLeads(baseData('07712345678'), { activityError: 'activity store unavailable' });
+    const { response, body } = await approve(service.handler);
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.lead.status, 'approved');
+    assert.equal(service.stores['hbpx-leads']['lead-test'].status, 'approved');
+    assert.equal(body.customerNotifications.email, 'not_configured');
+    assert.equal(body.customerNotifications.whatsapp, 'not_configured');
+    assert.ok(service.stores['hbpx-leads']['lead-test'].customerNotificationAt);
   });
 });
