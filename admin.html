@@ -267,7 +267,23 @@ function renderSales(){
   ?'<p class="note danger-txt">بيانات التحصيل والمشاريع غير متاحة حالياً.</p>'
   :`<div class="row"><span>إجمالي المشاريع المحجوزة</span><b>${fmt(c.booked)} د.ع</b></div><div class="row"><span>المبالغ المتبقية</span><b>${fmt(c.receivable)} د.ع</b></div>`;
 }
-async function orderStatus(id,status){try{await api('/.netlify/functions/orders',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});await loadAll()}catch(e){alert(e.message)}}
+async function orderStatus(id,status){
+ try{
+  await api('/.netlify/functions/orders',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});
+ }catch(e){alert('تعذر حفظ حالة الطلب التجاري: '+e.message);return;}
+ const box=$('#loadStatus');
+ try{
+  await loadAll();
+  if(box&&!box.textContent.includes('اكتمل التحديث جزئياً')){
+   box.textContent='تم حفظ حالة الطلب التجاري وتحديث لوحة الإدارة.';
+   box.style.color='#866517';
+  }else if(box){
+   box.textContent='تم حفظ حالة الطلب التجاري. '+box.textContent;
+  }
+ }catch(e){
+  if(box){box.textContent='تم حفظ حالة الطلب التجاري، لكن تعذر تحديث لوحة الإدارة: '+(e.message||'خطأ غير معروف');box.style.color='#a94b4b';}
+ }
+}
 function renderProjects(){
  const reviewBox=$('#ownershipReview');
  if(SALES_ERROR){
@@ -285,7 +301,23 @@ function renderProjects(){
 }
 let OPS=null;function awaitData(k){return OPS?.[k]||[]}
 async function loadOps({propagate=false}={}){try{OPS=await api('/.netlify/functions/operations');OPS_ERROR='';}catch(e){OPS_ERROR=e.message||'تعذر تحميل مهام التشغيل';if(propagate)throw e;}}
-async function projectStatus(id,status){try{await api('/.netlify/functions/sales',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({collection:'projects',id,status})});await loadAll()}catch(e){alert(e.message)}}async function taskStatus(id,status){
+async function projectStatus(id,status){
+ try{
+  await api('/.netlify/functions/sales',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({collection:'projects',id,status})});
+ }catch(e){alert('تعذر حفظ حالة المشروع: '+e.message);return;}
+ const box=$('#loadStatus');
+ try{
+  await loadAll();
+  if(box&&!box.textContent.includes('اكتمل التحديث جزئياً')){
+   box.textContent='تم حفظ حالة المشروع وتحديث لوحة الإدارة.';
+   box.style.color='#866517';
+  }else if(box){
+   box.textContent='تم حفظ حالة المشروع. '+box.textContent;
+  }
+ }catch(e){
+  if(box){box.textContent='تم حفظ حالة المشروع، لكن تعذر تحديث لوحة الإدارة: '+(e.message||'خطأ غير معروف');box.style.color='#a94b4b';}
+ }
+}async function taskStatus(id,status){
  try{
   await api('/.netlify/functions/operations',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'task',id,status})});
  }catch(e){alert('تعذر حفظ حالة المهمة: '+e.message);return;}

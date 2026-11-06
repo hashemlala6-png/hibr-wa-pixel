@@ -253,3 +253,48 @@ test('sales and project views distinguish failed data requests from empty datase
   assert.match(projects, /OPS_ERROR/);
   assert.match(functionSource('openClient'), /تعذر تحميل ملفات العملاء/);
 });
+
+
+test('commercial order status save is kept distinct from dashboard refresh failure', async () => {
+  const calls = [];
+  const status = { textContent: '', style: {} };
+  const context = {
+    api: async (url, options) => {
+      calls.push({ url, method: options.method, body: JSON.parse(options.body) });
+      return { saved: true };
+    },
+    loadAll: async () => { calls.push('refresh'); throw new Error('dashboard refresh failed'); },
+    $: selector => selector === '#loadStatus' ? status : null,
+    alert: message => calls.push({ alert: message })
+  };
+  const orderStatus = vm.runInNewContext(functionSource('orderStatus') + '\norderStatus', context);
+  await orderStatus('order-1', 'approved');
+
+  assert.equal(calls[0].method, 'PATCH');
+  assert.deepEqual(calls[0].body, { id: 'order-1', status: 'approved' });
+  assert.equal(calls[1], 'refresh');
+  assert.equal(calls.some(item => item.alert), false);
+  assert.match(status.textContent, /تم حفظ حالة الطلب التجاري، لكن تعذر تحديث لوحة الإدارة/);
+});
+
+test('project status save is kept distinct from dashboard refresh failure', async () => {
+  const calls = [];
+  const status = { textContent: '', style: {} };
+  const context = {
+    api: async (url, options) => {
+      calls.push({ url, method: options.method, body: JSON.parse(options.body) });
+      return { saved: true };
+    },
+    loadAll: async () => { calls.push('refresh'); throw new Error('dashboard refresh failed'); },
+    $: selector => selector === '#loadStatus' ? status : null,
+    alert: message => calls.push({ alert: message })
+  };
+  const projectStatus = vm.runInNewContext(functionSource('projectStatus') + '\nprojectStatus', context);
+  await projectStatus('project-1', 'active');
+
+  assert.equal(calls[0].method, 'PATCH');
+  assert.deepEqual(calls[0].body, { collection: 'projects', id: 'project-1', status: 'active' });
+  assert.equal(calls[1], 'refresh');
+  assert.equal(calls.some(item => item.alert), false);
+  assert.match(status.textContent, /تم حفظ حالة المشروع، لكن تعذر تحديث لوحة الإدارة/);
+});
