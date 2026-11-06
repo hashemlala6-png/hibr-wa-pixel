@@ -9,6 +9,7 @@ const stores = {
   quotes: () => getStore(blobOptions('hbpx-quotes')),
   projects: () => getStore(blobOptions('hbpx-projects')),
   payments: () => getStore(blobOptions('hbpx-payments')),
+  contracts: () => getStore(blobOptions('hbpx-contracts')),
   leads: () => getStore(blobOptions('hbpx-leads')),
   accounts: () => getStore(blobOptions('hbpx-client-accounts'))
 };
@@ -174,6 +175,27 @@ exports.handler=async event=>{
    return json(400,{error:'نوع العملية غير معروف.'});
   }
   if(event.httpMethod==='PATCH'){
+   if(b.type==='payment'&&b.action==='allocate'){
+    const paymentId=clean(b.paymentId,160),contractId=clean(b.contractId,160),note=clean(b.note,1000);
+    if(!paymentId.startsWith('payment-')||!contractId.startsWith('contract-'))return json(400,{error:'معرّف الدفعة أو العقد غير صالح.'});
+    if(b.allocationConfirmed!==true||note.length<5)return json(400,{error:'يجب تأكيد التخصيص وكتابة سبب واضح لا يقل عن 5 أحرف.'});
+    const payment=await stores.payments().get(paymentId,{type:'json'});
+    if(!payment)return json(404,{error:'الدفعة غير موجودة.'});
+    if(payment.contractId)return json(409,{error:'هذه الدفعة مرتبطة بعقد سابق أو حالي. لا يمكن تغيير ربطها بهذا الإجراء.'});
+    const contract=await stores.contracts().get(contractId,{type:'json'});
+    if(!contract)return json(404,{error:'العقد المحدد غير موجود.'});
+    if(contract.projectId!==payment.projectId)return json(409,{error:'لا يمكن تخصيص دفعة إلى عقد تابع لمشروع آخر.'});
+    if(contract.status!=='signed'||!contract.signedAt)return json(409,{error:'التخصيص متاح للعقود الموقّعة فقط.'});
+    const now=new Date().toISOString();
+    payment.contractId=contract.id;
+    payment.allocatedAt=now;
+    payment.allocationNote=note;
+    payment.allocationSource='owner-manual';
+    await stores.payments().setJSON(paymentId,payment);
+    const clientId=await clientIdForRecord(payment);
+    if(clientId)await logActivity(clientId,'payment-allocation','تم تخصيص دفعة يدوياً لعقد موقّع',{paymentId,contractId,projectId:payment.projectId,note});
+    return json(200,{item:payment,message:'تم تخصيص الدفعة للعقد الموقّع مع حفظ سبب التخصيص.'});
+   }
    const collection=clean(b.collection,20),id=clean(b.id,120),status=clean(b.status,30);
    if(!stores[collection]||!allowed[collection]?.includes(status))return json(400,{error:'الحالة غير صحيحة.'});
    const x=await stores[collection]().get(id,{type:'json'});

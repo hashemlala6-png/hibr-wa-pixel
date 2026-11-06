@@ -114,3 +114,17 @@ test('payments received before any signed contract remain visible but never coun
   assert.equal(result.unallocatedPaid, 10000);
   assert.equal(result.unallocatedPaymentCount, 1);
 });
+
+
+test('unallocated payment details expose only the fields needed for owner reconciliation', async () => {
+  const getProjectFinancials = loadFinancials({
+    'hbpx-payments': {
+      'payment-orphan': { id:'payment-orphan',projectId:'project-a',amount:10000,method:'cash',note:'إيصال 123',createdAt:'2026-11-06T10:00:00.000Z' }
+    },
+    'hbpx-contracts': {}
+  });
+  const result=await getProjectFinancials('project-a',100000);
+  assert.deepEqual(result.unallocatedPayments,[{
+    id:'payment-orphan',amount:10000,method:'cash',note:'إيصال 123',contractId:null,createdAt:'2026-11-06T10:00:00.000Z',receivedConfirmedAt:null
+  }]);
+});

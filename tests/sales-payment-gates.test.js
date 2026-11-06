@@ -190,3 +190,35 @@ test('confirmed payment records include a server timestamp for manual receipt au
   assert.ok(Number.isFinite(Date.parse(body(response).item.receivedConfirmedAt)));
   assert.equal(body(response).item.contractId, 'contract-a');
 });
+
+
+test('manual allocation requires confirmation, an audit note, and a signed contract for the same project', async () => {
+  const data = fixture({ contract: {} });
+  data['hbpx-contracts']['contract-other-project'] = {
+    id:'contract-other-project',projectId:'project-b',amount:50000,status:'signed',signedAt:'2026-11-06T10:00:00.000Z'
+  };
+  data['hbpx-payments']['payment-legacy'] = {
+    id:'payment-legacy',projectId:'project-a',amount:4000,method:'cash',createdAt:'2026-11-06T11:00:00.000Z'
+  };
+  const service=loadSales(data);
+  const missingConfirmation=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-legacy',contractId:'contract-a',note:'مطابقة إيصال البنك'} ,'PATCH'));
+  assert.equal(missingConfirmation.statusCode,400);
+  const wrongProject=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-legacy',contractId:'contract-other-project',note:'مطابقة إيصال البنك',allocationConfirmed:true},'PATCH'));
+  assert.equal(wrongProject.statusCode,409);
+  assert.equal(data['hbpx-payments']['payment-legacy'].contractId,undefined);
+  const success=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-legacy',contractId:'contract-a',note:'مطابقة إيصال البنك',allocationConfirmed:true},'PATCH'));
+  assert.equal(success.statusCode,200);
+  assert.equal(data['hbpx-payments']['payment-legacy'].contractId,'contract-a');
+  assert.equal(data['hbpx-payments']['payment-legacy'].allocationSource,'owner-manual');
+  assert.equal(data['hbpx-payments']['payment-legacy'].allocationNote,'مطابقة إيصال البنك');
+});
+
+test('manual allocation cannot overwrite a payment already bound to another signed contract', async () => {
+  const data=fixture({contract:{}});
+  data['hbpx-contracts']['contract-old']={id:'contract-old',projectId:'project-a',amount:50000,status:'signed',signedAt:'2026-10-01T10:00:00.000Z'};
+  data['hbpx-payments']['payment-old']={id:'payment-old',projectId:'project-a',contractId:'contract-old',amount:3000};
+  const service=loadSales(data);
+  const response=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-old',contractId:'contract-a',note:'إعادة ربط الإيصال',allocationConfirmed:true},'PATCH'));
+  assert.equal(response.statusCode,409);
+  assert.equal(data['hbpx-payments']['payment-old'].contractId,'contract-old');
+});

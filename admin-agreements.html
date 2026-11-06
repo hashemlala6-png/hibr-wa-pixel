@@ -50,13 +50,36 @@ async function loadProjectFinance(){
   const unallocatedNotice=unallocatedPaid>0
    ?'<div role="alert" style="margin-top:12px;padding:12px;border:1px solid #e8b8a8;background:#fff5f1;border-radius:10px;color:#8d3d30"><b>'+(x.contractSigned?'تحتاج مراجعة تخصيص يدوية':'دفعات بانتظار توقيع العقد')+'</b><p class="note">'+(x.contractSigned?'توجد '+unallocatedCount+' دفعة محفوظة بقيمة '+moneyIQD(unallocatedPaid)+' غير مرتبطة بالعقد الموقّع الحالي. ':'لا يوجد عقد موقّع حتى الآن؛ توجد '+unallocatedCount+' دفعة محفوظة بقيمة '+moneyIQD(unallocatedPaid)+' وتبقى خارج حساب العربون والسداد حتى توقيع الاتفاق. ')+'لم تدخل في حساب العربون أو المتبقي، ولم يتم نقلها تلقائياً. راجعي الإيصالات والعقود قبل أي تصحيح.</p></div>'
    :'<p class="note">لا توجد دفعات بانتظار التخصيص ضمن السجلات المقروءة.</p>';
-  root.innerHTML='<div class="grid">'+facts.map(([label,value])=>'<div style="background:#f1f9fd;border:1px solid #dcecf5;border-radius:10px;padding:12px"><small>'+label+'</small><b style="display:block;color:#176c91;margin-top:5px">'+value+'</b></div>').join('')+'</div>'+unallocatedNotice+
+  const unallocatedPayments=Array.isArray(x.unallocatedPayments)?x.unallocatedPayments:[];
+  const escapeText=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  const paymentMethods={cash:'نقداً',bank_transfer:'تحويل مصرفي',zain_cash:'زين كاش',other:'أخرى'};
+  const paymentRows=unallocatedPayments.length
+   ?'<div style="margin-top:12px"><b>تفاصيل الدفعات غير المخصصة</b>'+unallocatedPayments.map(payment=>{
+     const paymentId=String(payment.id||'').replace(/[^A-Za-z0-9_-]/g,'');
+     const canAllocate=Boolean(x.contractSigned&&x.contractId&&!payment.contractId&&paymentId);
+     const allocationState=payment.contractId?'مرتبطة بعقد آخر: '+escapeText(payment.contractId):canAllocate?'غير مرتبطة — يمكن تخصيصها يدوياً':'بانتظار توقيع عقد';
+     return '<div class="row" style="align-items:center;gap:12px"><div style="min-width:0;flex:1"><b>'+moneyIQD(payment.amount)+'</b><div class="note">'+escapeText(paymentMethods[payment.method]||payment.method||'طريقة غير محددة')+' · '+(payment.createdAt?new Date(payment.createdAt).toLocaleString('ar-IQ'):'تاريخ غير مسجل')+'</div><div class="note">'+allocationState+'</div>'+(payment.note?'<div class="note">'+escapeText(payment.note)+'</div>':'')+'</div>'+(canAllocate?'<button type="button" data-allocate-payment="'+paymentId+'" data-contract-id="'+String(x.contractId).replace(/[^A-Za-z0-9_-]/g,'')+'">تخصيص للعقد الحالي</button>':'')+'</div>';
+    }).join('')+'</div>'
+   :'';
+  root.innerHTML='<div class="grid">'+facts.map(([label,value])=>'<div style="background:#f1f9fd;border:1px solid #dcecf5;border-radius:10px;padding:12px"><small>'+label+'</small><b style="display:block;color:#176c91;margin-top:5px">'+value+'</b></div>').join('')+'</div>'+unallocatedNotice+paymentRows+
    '<p class="note">مرجع العقد الموقّع الحالي: '+String(x.contractId||'لا يوجد عقد موقّع').replace(/[&<>"']/g,'')+'</p>'+
    '<p class="note" style="margin-top:10px">العقد: '+(x.contractSigned?'موقّع من العميل':'بانتظار توقيع العميل')+' · العربون: '+(x.depositMet?'مكتمل':'غير مكتمل')+' · موافقة المحتوى: '+(data.latestPreviewApproval==='approved'?'معتمد':data.latestPreviewApproval==='needs_changes'?'يحتاج تعديلاً':'بانتظار العميل')+' · السداد: '+(x.fullyPaid?'مكتمل 100%':'غير مكتمل')+'</p>'+
    '<p class="note">آخر معاينة: '+(preview?String(preview.title||preview.id).replace(/[&<>]/g,'')+' · '+new Date(preview.createdAt).toLocaleString('ar-IQ'):'لا توجد معاينة مسجلة')+'</p>'+
    '<p class="note">الملفات النهائية: '+(data.latestFinal?(data.latestFinal.status==='delivered'?'تم تأكيد التسليم فعلاً':'جاهزة وتنتظر تأكيد التسليم'):'لم تُسجل بعد')+'</p>'+
    '<p style="padding:10px 12px;background:#fff8df;border:1px solid #f0dfa0;border-radius:9px;color:#735c23;font-weight:700">الخطوة التالية حسب السجلات: '+(nextStepLabels[data.nextStep]||'مراجعة الحالة')+'</p>'+
    '<small class="note">مصدر المبالغ: العقد الموقّع وسجلات الدفعات المستلمة فقط. هذا الملخص لا يمثل كشفاً مصرفياً أو بوابة دفع.</small>';
+  root.querySelectorAll('[data-allocate-payment]').forEach(button=>button.addEventListener('click',async()=>{
+   const reason=window.prompt('اكتبي سبب تخصيص هذه الدفعة إلى العقد الحالي (مثلاً: الإيصال يطابق عربون العقد):');
+   if(!reason||reason.trim().length<5)return;
+   const amountLabel=button.closest('.row')?.querySelector('b')?.textContent||'الدفعة';
+   if(!window.confirm('تأكيد تخصيص '+amountLabel+' إلى العقد الموقّع الحالي؟ سيتم حفظ السبب ولا يمكن تغيير ربط الدفعة بهذا الإجراء.'))return;
+   button.disabled=true;
+   try{
+    const response=await fetch('/.netlify/functions/sales',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'payment',action:'allocate',paymentId:button.dataset.allocatePayment,contractId:button.dataset.contractId,note:reason.trim(),allocationConfirmed:true})});
+    const result=await response.json();if(!response.ok)throw Error(result.error||'تعذر تخصيص الدفعة');
+    await loadProjectFinance();
+   }catch(error){button.disabled=false;window.alert(error.message)}
+  }));
  }catch(error){root.textContent=error.message}
 }
 async function loadDeliveryRecords(){

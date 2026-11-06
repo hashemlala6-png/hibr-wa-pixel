@@ -69,6 +69,15 @@ async function getProjectFinancials(projectId, fallbackAmount = 0, financialData
     paymentCount: matchingPayments.length,
     unallocatedPaid,
     unallocatedPaymentCount: unallocatedPayments.length,
+    unallocatedPayments: unallocatedPayments.map(payment => ({
+      id: String(payment.id || ''),
+      amount: amount(payment.amount),
+      method: String(payment.method || ''),
+      note: String(payment.note || ''),
+      contractId: payment.contractId ? String(payment.contractId) : null,
+      createdAt: payment.createdAt || null,
+      receivedConfirmedAt: payment.receivedConfirmedAt || null
+    })),
     policySource: signedContract?.paymentPolicy ? 'signed-contract' : 'default-10-90'
   };
 }
