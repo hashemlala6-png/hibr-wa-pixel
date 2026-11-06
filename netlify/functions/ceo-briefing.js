@@ -1,4 +1,5 @@
 const {getStore,connectLambda}=require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {env}=require('./env');
 const {requestText,hasTextProvider}=require('./ai-provider');
 const {requireAdmin,json}=require('./auth-utils');
@@ -12,7 +13,7 @@ const defs={
 const clean=(v,n=4000)=>String(v??'').trim().slice(0,n);
 const num=v=>{const x=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(x)?x:0};
 async function readAll(name,prefix){
- const s=getStore({name,consistency:'eventual'}),out=[];let cursor;
+ const s=getStore(blobOptions(name, 'eventual')),out=[];let cursor;
  do{const r=await s.list({prefix,limit:100,cursor});for(const b of r.blobs||[]){try{const x=await s.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}cursor=r.cursor}while(cursor);
  return out;
 }
@@ -46,7 +47,7 @@ exports.handler=async event=>{
  if(event.httpMethod==='OPTIONS')return json(204,{});
  const denied=requireAdmin(event);if(denied)return denied;
  if(event.httpMethod==='GET'){
-  try{const s=getStore({name:'hbpx-ceo-briefings',consistency:'eventual'});const r=await s.list({prefix:'briefing-',limit:1});const b=(r.blobs||[])[0];const latest=b?await s.get(b.key,{type:'json'}):null;return json(200,{latest:latest||null,available:hasTextProvider()})}catch{return json(200,{latest:null,available:hasTextProvider()})}
+  try{const s=getStore(blobOptions('hbpx-ceo-briefings', 'eventual'));const r=await s.list({prefix:'briefing-',limit:1});const b=(r.blobs||[])[0];const latest=b?await s.get(b.key,{type:'json'}):null;return json(200,{latest:latest||null,available:hasTextProvider()})}catch{return json(200,{latest:null,available:hasTextProvider()})}
  }
  if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
  
@@ -62,7 +63,7 @@ exports.handler=async event=>{
   let report;try{const match=raw.match(/\{[\s\S]*\}/);report=JSON.parse(match?match[0]:raw)}catch{return json(502,{error:'وصل رد غير قابل للقراءة من الذكاء الاصطناعي. لم يُحفظ التقرير.'})}
   const now=new Date().toISOString(),id='briefing-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex');
   const record={id,createdAt:now,model:completion.model,provider:completion.provider,source,report,policy:{externalActionsExecuted:false,ownerApprovalRequired:true}};
-  await getStore({name:'hbpx-ceo-briefings',consistency:'eventual'}).setJSON(id,record);
+  await getStore(blobOptions('hbpx-ceo-briefings', 'eventual')).setJSON(id,record);
   return json(200,{briefing:record,provider:completion.provider,model:completion.model,fallbackUsed:completion.fallbackUsed});
  }catch(err){console.error('ceo-briefing',err);return json(502,{error:'تعذر إعداد التقرير التنفيذي. '+clean(err.message,360)})}
 };
