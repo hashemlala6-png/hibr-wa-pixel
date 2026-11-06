@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
+const { blobOptions } = require('./blob-config');
 
 const STORE = 'hbpx-instagram-content';
 const PREFIX = 'post-';
@@ -8,7 +9,7 @@ const FORMATS = ['IMAGE', 'CAROUSEL', 'REEL', 'STORY'];
 const STATUSES = ['draft', 'needs_changes', 'pending_approval', 'approved', 'rejected'];
 
 function store() {
-  return getStore({ name: STORE, consistency: 'eventual' });
+  return getStore(blobOptions(STORE, 'eventual'));
 }
 function clean(value, max = 2000) {
   return String(value == null ? '' : value).trim().slice(0, max);
