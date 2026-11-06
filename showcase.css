@@ -85,3 +85,24 @@
  .concept-lab-heading h2{font-size:3.2rem}
 }
 @media(prefers-reduced-motion:reduce){.concept-tab,.concept-stage,.concept-artwork,.brand-service-section .brand-offer:before{transition:none!important}}
+
+
+/* SHOWCASE TYPOGRAPHY + PALETTE FINISH */
+.concept-lab-heading h2{font-size:clamp(1.9rem,3.7vw,3.2rem)!important;line-height:1.3!important;letter-spacing:-.035em!important;color:#20394d!important}
+.concept-context-copy h3{font-size:1.15rem!important;line-height:1.55!important;color:#20394d!important}
+.concept-stage{background:linear-gradient(145deg,#f1f8fd,#fffdf4)!important;border-color:#dce9f1!important;border-radius:16px!important}
+.concept-selector,.concept-context{background:#fff!important;border-color:#dce9f1!important;border-radius:13px!important}
+.concept-tab.active{background:#e3f3fb!important;color:#168fbe!important;border-color:#b9dceb!important}
+.concept-artwork{background:linear-gradient(145deg,#176c91,#159fd1)!important;border-radius:13px!important;box-shadow:14px 16px 0 rgba(35,103,139,.08)!important}
+.concept-art-sticker{background:#f2c84b!important;color:#20394d!important}
+.concept-art-title{font-size:clamp(2.4rem,4.4vw,4rem)!important;line-height:1.15!important;letter-spacing:-.04em!important}
+.concept-disclosure{color:#647b8c!important}
+.brand-service-section .brand-offer h2{font-size:1.45rem!important;line-height:1.45!important;letter-spacing:-.02em!important}
+.brand-service-section .brand-bundle{background:linear-gradient(120deg,#176c91,#168fbe)!important;border-radius:14px!important}
+.brand-service-section .brand-bundle h2{font-size:clamp(1.6rem,3vw,2.6rem)!important;line-height:1.35!important}
+.brand-service-section .brand-bundle .solid-btn{background:#f2c84b!important;border-color:#f2c84b!important;color:#20394d!important}
+.brand-service-section .brand-quality-grid{border-color:#dce9f1!important}
+.brand-service-section .brand-quality-grid article{border-color:#dce9f1!important}
+.brand-service-section .brand-quality-grid h3{font-size:1rem!important}
+@media(max-width:800px){.concept-lab-heading h2{font-size:2rem!important}.concept-art-title{font-size:2.7rem!important}}
+
