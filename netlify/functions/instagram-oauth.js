@@ -91,6 +91,15 @@ async function responseJson(response) {
 }
 async function readConnection() { return await store().get(CONNECTION_KEY, { type: 'json' }); }
 async function writeConnection(value) { await store().setJSON(CONNECTION_KEY, value); }
+async function recordIntegrationActivity(message, details) {
+  try {
+    await logActivity(AGENCY_ACTIVITY_ID, 'integration', message, details);
+  } catch {
+    // Connection state is authoritative. A secondary activity-feed failure
+    // must never turn a completed OAuth connect/disconnect into a false error.
+    console.error('Instagram integration state was saved, but activity logging failed.');
+  }
+}
 async function profileFor(token) {
   const url = new URL('https://graph.instagram.com/' + API_VERSION + '/me');
   url.searchParams.set('fields', 'user_id,username,account_type');
@@ -176,7 +185,7 @@ async function callback(event) {
     if (!redirectUri) throw new Error('لم يتم ضبط عنوان العودة HTTPS الثابت INSTAGRAM_REDIRECT_URI.');
     const connection = await exchangeCode(code, redirectUri);
     await writeConnection(connection);
-    await logActivity(AGENCY_ACTIVITY_ID, 'integration', 'تم ربط حساب Instagram الرسمي عبر Instagram Login', {
+    await recordIntegrationActivity('تم ربط حساب Instagram الرسمي عبر Instagram Login', {
       provider: 'instagram-login', username: connection.profile.username, accountType: connection.profile.accountType
     });
     return pageRedirect('connected=1');
@@ -260,7 +269,7 @@ exports.handler = async event => {
       if (body.action === 'refresh') return await refreshToken();
       if (body.action === 'disconnect') {
         await store().delete(CONNECTION_KEY);
-        await logActivity(AGENCY_ACTIVITY_ID, 'integration', 'تم فصل حساب Instagram من نظام حبر وبكسل', { provider: 'instagram-login' });
+        await recordIntegrationActivity('تم فصل حساب Instagram من نظام حبر وبكسل', { provider: 'instagram-login' });
         return json(200, { ok: true });
       }
       return json(400, { error: 'الإجراء غير معروف.' });
