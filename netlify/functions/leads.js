@@ -1,18 +1,10 @@
 const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const crypto = require('crypto');
+const { blobOptions } = require('./blob-config');
 const { logActivity } = require('./client-activity');
 const { resolveClientIdentity, normalizePhoneForMatch } = require('./client-ownership');
 
-// Explicit credentials are supported for deployments where Netlify does not inject Blobs context.
-// Prefer the platform-injected context; fall back to server-side environment variables only.
-const blobOptions = (name) => {
-  const options = { name, consistency: 'strong' };
-  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-  const token = process.env.NETLIFY_AUTH_TOKEN;
-  if (siteID && token) { options.siteID = siteID; options.token = token; }
-  return options;
-};
 const store = () => getStore(blobOptions('hbpx-leads'));
 const rateStore = () => getStore(blobOptions('hbpx-lead-rate'));
 const clientIndex = () => getStore(blobOptions('hbpx-lead-index'));
