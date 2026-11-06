@@ -103,26 +103,32 @@ async function notifyOwner(lead) {
   return results;
 }
 
-async function notifyClientApproval(lead) {
-  const result = { email: 'not_configured', whatsapp: 'not_configured' };
+async function notifyClientApproval(lead, channels = ['email', 'whatsapp']) {
+  const result = {};
   const msg = 'مرحباً ' + (lead.name || 'بك') + '، تمت الموافقة على طلبك لدى حبر وبكسل. الخدمة: ' + (lead.service || 'الخدمة المطلوبة') + '. سنتواصل معك لتأكيد الخطوات التالية.';
-  if (process.env.RESEND_API_KEY && (process.env.CLIENT_APPROVAL_FROM_EMAIL || process.env.LEADS_FROM_EMAIL) && lead.email) {
-    try {
-      const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.CLIENT_APPROVAL_FROM_EMAIL || process.env.LEADS_FROM_EMAIL, to: [lead.email], subject: 'تمت الموافقة على طلبك — حبر وبكسل', text: msg }) });
-      result.email = r.ok ? 'sent' : 'failed'; if (!r.ok) console.error('client approval email failed', r.status, (await r.text()).slice(0,300));
-    } catch (e) { result.email = 'failed'; console.error('client approval email failed', e.message || e); }
-  } else if (!lead.email) result.email = 'no_customer_email';
-  const token = process.env.WHATSAPP_ACCESS_TOKEN, phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID, template = process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_NAME;
-  // WhatsApp Cloud API expects the full international recipient ID (digits only, country code included).
-  const phone = normalizePhoneForMatch(lead.whatsapp);
-  const validRecipient = /^[1-9]\d{7,14}$/.test(phone);
-  if (token && phoneId && template && validRecipient) {
-    try {
-      const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone, type: 'template', template: { name: template, language: { code: process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_LANGUAGE || 'ar' }, components: [{ type: 'body', parameters: [{ type: 'text', text: String(lead.name || 'عميل').slice(0,200) }, { type: 'text', text: String(lead.service || 'الخدمة المطلوبة').slice(0,200) }] }] } }) });
-      result.whatsapp = r.ok ? 'sent' : 'failed'; if (!r.ok) console.error('client approval WhatsApp failed', r.status, (await r.text()).slice(0,300));
-    } catch (e) { result.whatsapp = 'failed'; console.error('client approval WhatsApp failed', e.message || e); }
-  } else if (token && phoneId && template && phone && !validRecipient) {
-    result.whatsapp = 'invalid_recipient';
+  if (channels.includes('email')) {
+    result.email = 'not_configured';
+    if (process.env.RESEND_API_KEY && (process.env.CLIENT_APPROVAL_FROM_EMAIL || process.env.LEADS_FROM_EMAIL) && lead.email) {
+      try {
+        const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.CLIENT_APPROVAL_FROM_EMAIL || process.env.LEADS_FROM_EMAIL, to: [lead.email], subject: 'تمت الموافقة على طلبك — حبر وبكسل', text: msg }) });
+        result.email = r.ok ? 'sent' : 'failed'; if (!r.ok) console.error('client approval email failed', r.status, (await r.text()).slice(0,300));
+      } catch (e) { result.email = 'failed'; console.error('client approval email failed', e.message || e); }
+    } else if (!lead.email) result.email = 'no_customer_email';
+  }
+  if (channels.includes('whatsapp')) {
+    result.whatsapp = 'not_configured';
+    const token = process.env.WHATSAPP_ACCESS_TOKEN, phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID, template = process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_NAME;
+    // WhatsApp Cloud API expects the full international recipient ID (digits only, country code included).
+    const phone = normalizePhoneForMatch(lead.whatsapp);
+    const validRecipient = /^[1-9]\d{7,14}$/.test(phone);
+    if (token && phoneId && template && validRecipient) {
+      try {
+        const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone, type: 'template', template: { name: template, language: { code: process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_LANGUAGE || 'ar' }, components: [{ type: 'body', parameters: [{ type: 'text', text: String(lead.name || 'عميل').slice(0,200) }, { type: 'text', text: String(lead.service || 'الخدمة المطلوبة').slice(0,200) }] }] } }) });
+        result.whatsapp = r.ok ? 'sent' : 'failed'; if (!r.ok) console.error('client approval WhatsApp failed', r.status, (await r.text()).slice(0,300));
+      } catch (e) { result.whatsapp = 'failed'; console.error('client approval WhatsApp failed', e.message || e); }
+    } else if (token && phoneId && template && phone && !validRecipient) {
+      result.whatsapp = 'invalid_recipient';
+    }
   }
   return result;
 }
@@ -222,15 +228,32 @@ exports.handler = async (event) => {
     const current = await store().get(b.id, { type: 'json' });
     if (!current) return json(404, { error: 'العميل غير موجود.' });
     const previousStatus = current.status;
+    const retryCustomerNotifications = b.retryCustomerNotifications === true;
+    if (retryCustomerNotifications && b.status !== 'approved') return json(400, { error: 'إعادة الإشعار متاحة للطلبات المعتمدة فقط.' });
     current.status = b.status;
     if (b.status === 'lost') current.lossReason = clean(b.lossReason, 160);
     else if (b.lossReason !== undefined) current.lossReason = clean(b.lossReason, 160);
     current.updatedAt = new Date().toISOString();
     await store().setJSON(b.id, current);
     const identity = await resolveLeadIdentity(current);
-    await logActivity(identity.clientId,'status','تغيير حالة العميل',{from:previousStatus,to:current.status});
+    await logActivity(identity.clientId,'status','تغيير حالة العميل',{from:previousStatus,to:current.status,retryCustomerNotifications});
     let customerNotifications = null;
-    if (current.status === 'approved' && previousStatus !== 'approved') customerNotifications = await notifyClientApproval(current);
+    if (current.status === 'approved' && (previousStatus !== 'approved' || retryCustomerNotifications)) {
+      const previousNotifications = current.customerNotifications || {};
+      const channels = retryCustomerNotifications
+        ? ['email', 'whatsapp'].filter(channel => previousNotifications[channel] !== 'sent')
+        : ['email', 'whatsapp'];
+      const attemptedNotifications = await notifyClientApproval(current, channels);
+      customerNotifications = { ...previousNotifications, ...attemptedNotifications };
+      current.customerNotifications = customerNotifications;
+      current.customerNotificationAt = new Date().toISOString();
+      current.updatedAt = current.customerNotificationAt;
+      // Notification state is durable so the owner can see it after refresh.
+      try { await store().setJSON(b.id, current); }
+      catch (err) { console.error('client notification status persistence failed', err?.message || err); }
+    } else if (current.status === 'approved') {
+      customerNotifications = current.customerNotifications || null;
+    }
     return json(200, { lead: current, customerNotifications });
   }
 

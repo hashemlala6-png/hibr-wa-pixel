@@ -227,3 +227,52 @@ test('valid public lead intake stores a normalized Iraqi WhatsApp number and req
     assert.equal(body.notifications.whatsapp, 'not_configured');
   });
 });
+
+
+test('approval notification statuses are stored on the lead and survive a fresh read', async () => {
+  await withEnv({
+    WHATSAPP_ACCESS_TOKEN: 'test-token',
+    WHATSAPP_PHONE_NUMBER_ID: 'test-phone-id',
+    WHATSAPP_CLIENT_APPROVAL_TEMPLATE_NAME: 'client_approved'
+  }, async () => {
+    const service = loadLeads(baseData('07712345678'));
+    global.fetch = async () => ({ ok: true, status: 200, async text() { return ''; } });
+    const { response, body } = await approve(service.handler);
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.customerNotifications.whatsapp, 'sent');
+    assert.equal(service.stores['hbpx-leads']['lead-test'].customerNotifications.whatsapp, 'sent');
+    assert.ok(service.stores['hbpx-leads']['lead-test'].customerNotificationAt);
+  });
+});
+
+test('retry only sends notification channels that have not already succeeded', async () => {
+  await withEnv({
+    RESEND_API_KEY: 'test-resend',
+    CLIENT_APPROVAL_FROM_EMAIL: 'studio@example.com',
+    WHATSAPP_ACCESS_TOKEN: 'test-token',
+    WHATSAPP_PHONE_NUMBER_ID: 'test-phone-id',
+    WHATSAPP_CLIENT_APPROVAL_TEMPLATE_NAME: 'client_approved'
+  }, async () => {
+    const initial = baseData('07712345678');
+    initial['hbpx-leads']['lead-test'].email = 'customer@example.com';
+    initial['hbpx-leads']['lead-test'].status = 'approved';
+    initial['hbpx-leads']['lead-test'].customerNotifications = { email: 'sent', whatsapp: 'failed' };
+    const service = loadLeads(initial);
+    const calls = [];
+    global.fetch = async (url, init) => {
+      calls.push(String(url));
+      return { ok: true, status: 200, async text() { return ''; } };
+    };
+    const response = await service.handler({
+      httpMethod: 'PATCH',
+      headers: { host: 'fabulous-bublanina-8d5626.netlify.app' },
+      body: JSON.stringify({ id: 'lead-test', status: 'approved', retryCustomerNotifications: true })
+    });
+    const body = JSON.parse(response.body || '{}');
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.customerNotifications.email, 'sent');
+    assert.equal(body.customerNotifications.whatsapp, 'sent');
+    assert.equal(calls.length, 1);
+    assert.match(calls[0], /graph\.facebook\.com/);
+  });
+});
