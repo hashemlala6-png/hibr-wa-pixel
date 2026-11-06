@@ -159,3 +159,34 @@ html,body{background:var(--cd-paper)!important;color:var(--cd-ink)!important;fon
  #app #tabs{padding-inline:13px!important}
  #app #tabs button{min-height:40px!important}
 }
+
+
+/* MICROSOFT-INSPIRED FRESH SPECTRUM — airy blue, mint and lemon light */
+:root{
+ --cd-paper:#f4faff;--cd-paper2:#ffffff;--cd-ink:#183b56;--cd-green:#238caa;
+ --cd-orange:#55bfa7;--cd-gold:#f5e78c;--cd-muted:#607b8b;--cd-line:#dcebf1;
+ --cd-white:#ffffff;--cd-shadow:0 18px 48px rgba(35,103,133,.08)
+}
+html,body{background:linear-gradient(145deg,#f7fbff 0%,#eff9f7 54%,#fbfdf3 100%)!important;color:var(--cd-ink)!important}
+#app .brand small,#app #tabs:before,#app .desk-brief small,#lock .lockbox .eyebrow{color:#299fba!important}
+#app .today.command-banner{background:radial-gradient(circle at 90% 8%,#8de0c1 0%,transparent 34%),linear-gradient(110deg,#168fc5 0%,#32aebd 50%,#64c78f 100%)!important;color:#fff!important}
+#app .command-banner .eyebrow,#app .command-banner .live b{color:#fff0a6!important}
+#app .command-banner .command-policy{border-inline-start-color:#fff0a6!important}
+#app #tabs button.active{background:linear-gradient(110deg,#e3f3ff,#e4f8ed)!important;color:#187da0!important}
+#app #tabs button.active:before,#app #tabs button.active:after{color:#249fba!important;background:#55bfa7!important}
+#app .desk-brief{background:linear-gradient(115deg,#fff 0%,#f0f9ff 55%,#f0fbf5 100%)!important;border-inline-start-color:#55bfa7!important}
+#app .desk-stamp{color:#238caa!important}
+#app .stat{background:linear-gradient(145deg,#fff 0%,#f5fbff 70%,#f4fcf6 100%)!important;border-color:#dcebf1!important}
+#app .stat strong{color:#238caa!important}
+#app .stat:hover{border-color:#9dd9d1!important}
+#app .panel{background:linear-gradient(145deg,#fff 0%,#fbfdff 100%)!important;border-color:#dcebf1!important}
+#app #overview .columns>.panel:first-child{background:linear-gradient(125deg,#168fc5 0%,#32aebd 54%,#62c68e 100%)!important;border:0!important}
+#app #overview .columns>.panel:first-child h3{color:#fff0a6!important}
+#app #overview .columns>.panel:first-child .badge{background:#ffffff2a!important;color:#fff0a6!important}
+#app .badge{background:linear-gradient(110deg,#e5f4ff,#e6f8ec)!important;color:#217f9d!important}
+#app .table th{background:#edf7fc!important;color:#52768a!important}
+#app .primary{background:linear-gradient(110deg,#269bc5 0%,#36b4b3 55%,#62c58f 100%)!important;border:0!important;color:#fff!important}
+#app .kv,#app #aiOutput{background:linear-gradient(120deg,#eff8ff,#effaf4)!important;border-color:#dcebf1!important}
+#app .search,#app .select,#app input,#app textarea,#app select{border-color:#dcebf1!important}
+#lock .lockbox:before{background:linear-gradient(90deg,#279bd0,#55bfa7,#f5e78c)!important}
+@media(max-width:1100px){#app #tabs{background:linear-gradient(110deg,#fff,#f2faff)!important}}
