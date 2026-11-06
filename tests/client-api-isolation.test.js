@@ -56,7 +56,10 @@ function fixture() {
 
 function loadHandler(relativePath, data, sessionSub) {
   const resolved = require.resolve(relativePath);
+  const financialsResolved = require.resolve('../netlify/functions/project-financials');
   delete require.cache[resolved];
+  // This dependency captures the Blobs adapter at load time; reload it with each test fixture.
+  delete require.cache[financialsResolved];
   const originalLoad = Module._load;
   const writes = [];
   const stores = data;
@@ -98,6 +101,7 @@ function loadHandler(relativePath, data, sessionSub) {
   } finally {
     Module._load = originalLoad;
     delete require.cache[resolved];
+    delete require.cache[financialsResolved];
   }
 }
 
