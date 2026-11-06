@@ -21,19 +21,21 @@ function isDeployPreview(event) {
   if (!host && rawUrl) {
     try { host = new URL(rawUrl).hostname.toLowerCase(); } catch {}
   }
-  host = host.replace(/:\d+$/, '');
-  return /^deploy-preview-\d+--[a-z0-9-]+\.netlify\.app$/.test(host);
+  host = host.replace(/:\\d+$/, '');
+  return /^deploy-preview-\\d+--[a-z0-9-]+\\.netlify\\.app$/.test(host);
 }
 
-function adminPassword(event) {
-  // Never fall back to the Production password on a public Deploy Preview.
-  return isDeployPreview(event) ? env('ADMIN_PREVIEW_PASSWORD') : env('ADMIN_PASSWORD');
+function adminPassword(_event) {
+  // Production and Deploy Previews use the existing owner password.
+  // No separate ADMIN_PREVIEW_PASSWORD variable is required.
+  return env('ADMIN_PASSWORD');
 }
 
 function secretFor(role, event) {
-  return role === 'admin'
-    ? (env('ADMIN_SESSION_SECRET') || adminPassword(event))
-    : env('CLIENT_SESSION_SECRET');
+  if (role !== 'admin') return env('CLIENT_SESSION_SECRET');
+  const baseSecret = env('ADMIN_SESSION_SECRET') || adminPassword(event);
+  // Keep preview sessions isolated without changing existing Production signatures.
+  return isDeployPreview(event) ? `${baseSecret}:deploy-preview` : baseSecret;
 }
 
 function b64(value) { return Buffer.from(value).toString('base64url'); }
