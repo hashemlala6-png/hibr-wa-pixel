@@ -10,17 +10,68 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'admin.html'), 'utf8');
 const script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
   .map(match => match[1]).join('\n');
 
-function functionLine(name) {
-  const line = script.split('\n').find(value =>
-    value.startsWith('async function ' + name + '(') ||
-    value.startsWith('function ' + name + '(')
-  );
-  assert.ok(line, 'Missing function: ' + name);
-  return line;
+function functionSource(name) {
+  const matcher = new RegExp('(?:async\\\\s+)?function\\\\s+' + name + '\\\\s*\\\\([^)]*\\\\)\\\\s*\\\\{');
+  const match = matcher.exec(script);
+  assert.ok(match, 'Missing function: ' + name);
+
+  const open = script.indexOf('{', match.index);
+  let depth = 0;
+  let quote = '';
+  let escaped = false;
+  let lineComment = false;
+  let blockComment = false;
+
+  for (let i = open; i < script.length; i += 1) {
+    const char = script[i];
+    const next = script[i + 1];
+
+    if (lineComment) {
+      if (char === '\n') lineComment = false;
+      continue;
+    }
+    if (blockComment) {
+      if (char === '*' && next === '/') {
+        blockComment = false;
+        i += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\\\') {
+        escaped = true;
+      } else if (char === quote) {
+        quote = '';
+      }
+      continue;
+    }
+    if (char === '/' && next === '/') {
+      lineComment = true;
+      i += 1;
+      continue;
+    }
+    if (char === '/' && next === '*') {
+      blockComment = true;
+      i += 1;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '\`') {
+      quote = char;
+      continue;
+    }
+    if (char === '{') depth += 1;
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return script.slice(match.index, i + 1);
+    }
+  }
+  throw new Error('Unclosed function: ' + name);
 }
 
 test('owner refresh includes the lead inbox and asks optional loaders to propagate failures', () => {
-  const source = functionLine('loadAll');
+  const source = functionSource('loadAll');
   assert.match(source, /\['طلبات العملاء',\(\)=>loadIncomingLeads\(\{propagate:true\}\)\]/);
   for (const name of ['loadGrowth', 'loadPresence', 'loadNotifications', 'loadPricing', 'loadOps', 'loadSystemHealth']) {
     assert.match(source, new RegExp('\\(\\)=>' + name + '\\(\\{propagate:true\\}\\)'));
@@ -30,7 +81,7 @@ test('owner refresh includes the lead inbox and asks optional loaders to propaga
 });
 
 test('owner refresh renders cross-dependent views after every section settles', async () => {
-  const source = functionLine('loadAll');
+  const source = functionSource('loadAll');
   const calls = [];
   const status = { textContent: '', style: {} };
   const context = {
@@ -74,11 +125,13 @@ test('owner refresh renders cross-dependent views after every section settles', 
 
 test('dashboard loaders expose swallowed failures when strict refresh mode is requested', () => {
   for (const name of ['loadGrowth', 'loadPresence', 'loadNotifications', 'loadPricing', 'loadOps']) {
-    const line = functionLine(name);
-    assert.match(line, /\{propagate=false\}=\{\}/, name + ' should support strict refresh mode');
-    assert.match(line, /if\(propagate\)throw e;/, name + ' should rethrow in strict mode');
+    const source = functionSource(name);
+    assert.match(source, /\{propagate=false\}=\{\}/, name + ' should support strict refresh mode');
+    assert.match(source, /if\(propagate\)throw e;/, name + ' should rethrow in strict mode');
   }
 
-  assert.match(script, /async function loadIncomingLeads\(\{propagate=false\}=\{\}\)/);
-  assert.match(script, /async function loadSystemHealth\(\{propagate=false\}=\{\}\)/);
+  assert.match(functionSource('loadIncomingLeads'), /\{propagate=false\}=\{\}/);
+  assert.match(functionSource('loadIncomingLeads'), /if\(propagate\)throw e;/);
+  assert.match(functionSource('loadSystemHealth'), /\{propagate=false\}=\{\}/);
+  assert.match(functionSource('loadSystemHealth'), /if\(propagate\)throw e;/);
 });
