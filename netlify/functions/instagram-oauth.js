@@ -3,6 +3,7 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 const { env } = require('./env');
 const { requireAdmin, json, COOKIE_NAME } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
+const { blobOptions } = require('./blob-config');
 
 const STORE_NAME = 'hbpx-instagram-login';
 const CONNECTION_KEY = 'agency-instagram';
@@ -17,11 +18,7 @@ const SCOPES = [
 ];
 
 function store() {
-  const options = { name: STORE_NAME, consistency: 'eventual' };
-  const siteID = env('NETLIFY_SITE_ID') || env('SITE_ID');
-  const token = env('NETLIFY_AUTH_TOKEN');
-  if (siteID && token) { options.siteID = siteID; options.token = token; }
-  return getStore(options);
+  return getStore(blobOptions(STORE_NAME, 'eventual'));
 }
 function secretKey() {
   const secret = env('ADMIN_SESSION_SECRET');
