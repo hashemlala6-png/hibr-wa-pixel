@@ -20,7 +20,7 @@ async function readAll(store, prefix) {
   return rows;
 }
 
-function chooseNextStep(financial, latestPreview, finalDelivered) {
+function chooseNextStep(financial, latestPreview, latestFinalReady, latestFinalDelivered) {
   if (!financial.contractSigned) return 'contract';
   if (!financial.depositMet) return 'deposit';
   if (!latestPreview) return 'preview';
@@ -28,8 +28,8 @@ function chooseNextStep(financial, latestPreview, finalDelivered) {
   if (decision === 'needs_changes') return 'revision';
   if (decision !== 'approved') return 'client_approval';
   if (!financial.fullyPaid) return 'balance';
-  if (!finalDelivered) return 'final';
-  if (!finalDelivered.confirmedHandoff) return 'handoff';
+  if (!latestFinalReady) return 'final';
+  if (!latestFinalDelivered) return 'handoff';
   return 'completed';
 }
 
@@ -56,14 +56,18 @@ exports.handler = async event => {
       .filter(item => item.stage === 'preview')
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
     const latestPreview = previews[0] || null;
-    const latestFinal = projectDeliveries
-      .filter(item => item.stage === 'final' && item.status === 'delivered'
-        && item.fullQuality === true && item.watermarked === false && item.rightsTransferred === true)
-      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))[0] || null;
-    const confirmedHandoff = latestFinal ? {
-      id: latestFinal.id,
-      title: latestFinal.title || '',
-      deliveredAt: latestFinal.updatedAt || latestFinal.createdAt
+    const finalRecords = projectDeliveries
+      .filter(item => item.stage === 'final' && item.fullQuality === true
+        && item.watermarked === false && item.rightsTransferred === true)
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0));
+    const latestFinalReady = finalRecords.find(item => ['ready','delivered'].includes(item.status)) || null;
+    const latestFinalDelivered = latestFinalReady?.status === 'delivered' ? latestFinalReady : null;
+    const latestFinal = latestFinalReady ? {
+      id: latestFinalReady.id,
+      title: latestFinalReady.title || '',
+      status: latestFinalReady.status,
+      createdAt: latestFinalReady.createdAt || null,
+      deliveredAt: latestFinalDelivered?.updatedAt || latestFinalDelivered?.createdAt || null
     } : null;
     return json(200, {
       project: {
@@ -79,8 +83,8 @@ exports.handler = async event => {
         clientApproval: latestPreview.clientApproval || null
       } : null,
       latestPreviewApproval: latestPreview?.clientApproval?.decision || 'pending',
-      latestFinal: confirmedHandoff,
-      nextStep: chooseNextStep(financial, latestPreview, confirmedHandoff ? { ...confirmedHandoff, confirmedHandoff: true } : null),
+      latestFinal,
+      nextStep: chooseNextStep(financial, latestPreview, latestFinalReady, latestFinalDelivered),
       counts: {
         previews: previews.length,
         finalDeliveries: projectDeliveries.filter(item => item.stage === 'final').length,

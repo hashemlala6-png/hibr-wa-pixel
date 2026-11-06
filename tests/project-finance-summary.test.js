@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
 
-function loadEndpoint({ project, deliveries = [], authDenied = false }) {
+function loadEndpoint({ project, deliveries = [], authDenied = false, financialOverride = null }) {
   const resolved = require.resolve('../netlify/functions/project-finance');
   delete require.cache[resolved];
   const originalLoad = Module._load;
@@ -34,7 +34,7 @@ function loadEndpoint({ project, deliveries = [], authDenied = false }) {
     };
     if (request === './project-financials' && parent && parent.filename === resolved) return {
       async getProjectFinancials() {
-        return {
+        return financialOverride || {
           contractSigned: true, total: 100000, paid: 10000, remaining: 90000,
           depositRequired: 10000, depositMet: true, fullyPaid: false, paymentCount: 1
         };
@@ -72,4 +72,30 @@ test('project financial summary rejects unauthenticated owners and unknown proje
   const missing = loadEndpoint({ project: { id: 'project-a' } });
   const notFound = await missing({ httpMethod: 'GET', headers: {}, queryStringParameters: { projectId: 'absent' } });
   assert.equal(notFound.statusCode, 404);
+});
+
+test('project financial summary distinguishes final files ready from actual handoff', async () => {
+  const financial = { contractSigned: true, total: 100000, paid: 100000, remaining: 0, depositRequired: 10000, depositMet: true, fullyPaid: true, paymentCount: 2 };
+  const readyHandler = loadEndpoint({
+    project: { id: 'project-a' },
+    financialOverride: financial,
+    deliveries: [
+      { id: 'preview', projectId: 'project-a', stage: 'preview', createdAt: '2026-11-03T10:00:00.000Z', clientApproval: { decision: 'approved' } },
+      { id: 'final-ready', projectId: 'project-a', stage: 'final', status: 'ready', fullQuality: true, watermarked: false, rightsTransferred: true, createdAt: '2026-11-04T10:00:00.000Z' }
+    ]
+  });
+  const ready = body(await readyHandler({ httpMethod: 'GET', headers: {}, queryStringParameters: { projectId: 'project-a' } }));
+  assert.equal(ready.nextStep, 'handoff');
+  assert.equal(ready.latestFinal.status, 'ready');
+
+  const deliveredHandler = loadEndpoint({
+    project: { id: 'project-a' },
+    financialOverride: financial,
+    deliveries: [
+      { id: 'preview', projectId: 'project-a', stage: 'preview', createdAt: '2026-11-03T10:00:00.000Z', clientApproval: { decision: 'approved' } },
+      { id: 'final-delivered', projectId: 'project-a', stage: 'final', status: 'delivered', fullQuality: true, watermarked: false, rightsTransferred: true, createdAt: '2026-11-04T10:00:00.000Z' }
+    ]
+  });
+  const delivered = body(await deliveredHandler({ httpMethod: 'GET', headers: {}, queryStringParameters: { projectId: 'project-a' } }));
+  assert.equal(delivered.nextStep, 'completed');
 });
