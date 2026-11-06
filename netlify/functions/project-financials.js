@@ -16,14 +16,21 @@ async function readAll(name, prefix) {
   return rows;
 }
 
-async function getProjectFinancials(projectId, fallbackAmount = 0) {
-  const id = String(projectId || '').trim();
-  if (!id) throw new Error('Project ID is required for financial checks.');
-
+async function readProjectFinancialData() {
   const [payments, contracts] = await Promise.all([
     readAll('hbpx-payments', 'payment-'),
     readAll('hbpx-contracts', 'contract-')
   ]);
+  return { payments, contracts };
+}
+
+async function getProjectFinancials(projectId, fallbackAmount = 0, financialData = null) {
+  const id = String(projectId || '').trim();
+  if (!id) throw new Error('Project ID is required for financial checks.');
+
+  const data = financialData || await readProjectFinancialData();
+  const payments = Array.isArray(data.payments) ? data.payments : [];
+  const contracts = Array.isArray(data.contracts) ? data.contracts : [];
   const projectPayments = payments.filter(payment => payment.projectId === id);
   const signedContracts = contracts
     .filter(contract => contract.projectId === id && contract.status === 'signed' && contract.signedAt)
@@ -67,4 +74,4 @@ async function getProjectFinancials(projectId, fallbackAmount = 0) {
   };
 }
 
-module.exports = { getProjectFinancials };
+module.exports = { getProjectFinancials, readProjectFinancialData };

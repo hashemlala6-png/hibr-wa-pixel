@@ -160,3 +160,38 @@ test('customer APIs isolate same-phone accounts with a legacy shared clientId', 
   assert.equal(allowed.statusCode,200);
   assert.equal(data['hbpx-contracts']['contract-a'].status,'signed');
 });
+
+
+test('client financial summary uses the latest signed contract and separates older contract payments', async () => {
+  const data = fixture();
+  data['hbpx-projects']['project-a'].amount = 10000;
+  data['hbpx-contracts']['contract-old'] = {
+    id:'contract-old',projectId:'project-a',amount:10000,status:'signed',signedAt:'2026-10-01T10:00:00.000Z'
+  };
+  data['hbpx-contracts']['contract-current'] = {
+    id:'contract-current',projectId:'project-a',amount:10000,status:'signed',signedAt:'2026-11-06T10:00:00.000Z'
+  };
+  data['hbpx-payments']['payment-a'].contractId = 'contract-old';
+  data['hbpx-payments']['payment-current'] = {
+    id:'payment-current',projectId:'project-a',contractId:'contract-current',amount:1000
+  };
+
+  const client = loadHandler('../netlify/functions/client.js', data);
+  const response = await client.handler({httpMethod:'GET',session:{sub:'acct-a'},headers:{}});
+  const project = responseBody(response).projects[0];
+  assert.equal(response.statusCode,200);
+  assert.equal(project.amount,10000);
+  assert.equal(project.paid,1000);
+  assert.equal(project.remaining,9000);
+  assert.equal(project.depositMet,true);
+  assert.equal(project.fullyPaid,false);
+  assert.equal(project.unallocatedPaid,1000);
+  assert.equal(project.unallocatedPaymentCount,1);
+});
+
+test('client workspace explains when recorded payments are not allocated to the current contract', () => {
+  const fs = require('node:fs');
+  const source = fs.readFileSync(require.resolve('../client-workspace.js'),'utf8');
+  assert.match(source,/unallocatedPaid/);
+  assert.match(source,/دفعات سابقة مسجلة خارج العقد الحالي/);
+});

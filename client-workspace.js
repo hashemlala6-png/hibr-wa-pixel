@@ -114,6 +114,7 @@
     const amount = Number(project.amount || 0);
     const paid = Number(project.paid || 0);
     const remaining = Number(project.remaining ?? Math.max(amount - paid, 0));
+    const unallocatedPaid = Number(project.unallocatedPaid || 0);
     const hasAmount = amount > 0;
     const stage = label(project.status);
     const contractInfo = (serviceDirectory || []).find((item) => item.projectId === project.id) || {};
@@ -132,7 +133,7 @@
        '<div class="cw-finance-cell"><small>المدفوع المسجل</small><strong>' + money(paid) + '</strong></div>' +
        '<div class="cw-finance-cell"><small>المتبقي حسب السجل</small><strong>' + (hasAmount ? money(remaining) : 'يُحدد بعد الاتفاق') + '</strong></div>' +
       '</div>' +
-      (hasAmount ? '<div class="cw-payment-policy"><small>العربون المتفق عليه 10%: ' + money(project.depositRequired || Math.ceil(amount*0.10)) + ' · ' + (project.depositMet ? 'تم تسجيل استلامه' : 'لم يكتمل تسجيله بعد') + '</small><small>التسليم النهائي ونقل الحقوق بعد سداد 100% وموافقتك على المعاينة.</small></div>' : '') +
+      (hasAmount ? '<div class="cw-payment-policy"><small>العربون المتفق عليه 10%: ' + money(project.depositRequired || Math.ceil(amount*0.10)) + ' · ' + (project.depositMet ? 'تم تسجيل استلامه' : 'لم يكتمل تسجيله بعد') + '</small><small>التسليم النهائي ونقل الحقوق بعد سداد 100% وموافقتك على المعاينة.</small>' + (unallocatedPaid > 0 ? '<small>دفعات سابقة مسجلة خارج العقد الحالي: ' + money(unallocatedPaid) + ' — لا تدخل ضمن رصيد هذا العقد، وتحتاج مراجعة تخصيص.</small>' : '') + '</div>' : '') +
       '<div class="cw-project-content">' +
        '<section class="cw-lane"><div class="cw-lane-heading"><h4>المهام</h4><small>' + (Array.isArray(project.tasks) ? project.tasks.length : 0) + ' TASKS</small></div>' + renderTasks(project.tasks) + '</section>' +
        '<section class="cw-lane"><div class="cw-lane-heading"><h4>التسليمات</h4><small>' + (Array.isArray(project.deliveries) ? project.deliveries.length : 0) + ' FILES</small></div>' + renderDeliveries(project.deliveries) + '</section>' +
