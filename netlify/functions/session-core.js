@@ -1,22 +1,14 @@
 const crypto = require('crypto');
 
 function env(name) {
-  // Prefer Netlify's runtime environment API so Functions read the value
-  // attached to this deploy context. Keep process.env as a compatibility fallback.
+  // Standard Netlify Node.js Functions expose runtime variables through process.env.
+  // Netlify.env is the Edge Functions API and is not needed for this Lambda handler.
   try {
-    const runtime = globalThis.Netlify?.env;
-    if (runtime && typeof runtime.get === 'function') {
-      const value = runtime.get(name);
-      if (value !== undefined && value !== null && String(value).length) return String(value);
-    }
-  } catch {}
-  try {
-    if (typeof process !== 'undefined') {
-      const value = process.env?.[name];
-      if (value !== undefined && value !== null && String(value).length) return String(value);
-    }
-  } catch {}
-  return '';
+    const value = process.env?.[name];
+    return value === undefined || value === null ? '' : String(value);
+  } catch {
+    return '';
+  }
 }
 
 function isDeployPreview(event) {
