@@ -19,7 +19,7 @@ test('every Lambda function using Netlify Blobs initializes its event context', 
     const parameters = handler?.[1] || handler?.[2] || '';
     const bodyStart = handler?.[3] || '';
     const contextArg = bodyStart.match(/\bconnectLambda\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/)?.[1];
-    const declaredParameters = parameters.split(',').map(parameter => parameter.trim().split(/[=\\s]/)[0]).filter(Boolean);
+    const declaredParameters = parameters.split(',').map(parameter => parameter.trim().split(/[=\s]/)[0]).filter(Boolean);
     if (!contextArg || !declaredParameters.includes(contextArg)) missing.push(file);
   }
 
