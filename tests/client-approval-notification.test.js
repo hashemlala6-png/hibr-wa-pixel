@@ -88,7 +88,12 @@ const envKeys = [
   'WHATSAPP_ACCESS_TOKEN',
   'WHATSAPP_PHONE_NUMBER_ID',
   'WHATSAPP_CLIENT_APPROVAL_TEMPLATE_NAME',
-  'WHATSAPP_CLIENT_APPROVAL_TEMPLATE_LANGUAGE'
+  'WHATSAPP_CLIENT_APPROVAL_TEMPLATE_LANGUAGE',
+  'LEADS_NOTIFY_EMAIL',
+  'LEADS_FROM_EMAIL',
+  'WHATSAPP_TEMPLATE_NAME',
+  'WHATSAPP_TEMPLATE_LANGUAGE',
+  'WHATSAPP_OWNER_NUMBER'
 ];
 
 async function withEnv(values, fn) {
@@ -338,7 +343,7 @@ test('owner retry sends only the channel that has not already been accepted', as
     assert.equal(body.ownerNotifications.email, 'accepted');
     assert.equal(body.ownerNotifications.whatsapp, 'accepted');
     assert.equal(calls.length, 1);
-    assert.match(calls[0].url, /graph\\.facebook\\.com/);
+    assert.match(calls[0].url, /graph\.facebook\.com/);
     assert.equal(calls[0].payload.to, '9647721971156');
   });
 });

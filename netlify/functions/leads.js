@@ -85,7 +85,7 @@ async function notifyOwner(lead, channels = ['email', 'whatsapp']) {
     const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
     const template = process.env.WHATSAPP_TEMPLATE_NAME;
     const ownerPhone = normalizePhoneForMatch(process.env.WHATSAPP_OWNER_NUMBER || '9647721971156');
-    const validRecipient = /^[1-9]\\d{7,14}$/.test(ownerPhone);
+    const validRecipient = /^[1-9]\d{7,14}$/.test(ownerPhone);
     if (waToken && phoneId && template && validRecipient) {
       try {
         const locale = process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'ar';
