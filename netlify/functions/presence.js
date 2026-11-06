@@ -1,8 +1,9 @@
 const crypto = require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { requireAdmin, verifySession, json } = require('./auth-utils');
 
-const store = () => getStore({ name: 'hbpx-presence', consistency: 'strong' });
+const store = () => getStore(blobOptions('hbpx-presence', 'strong'));
 const ACTIVE_MS = 5 * 60 * 1000;
 const clean = (v, n = 500) => String(v ?? '').trim().slice(0, n);
 
