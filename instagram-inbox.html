@@ -27,7 +27,7 @@ textarea{width:100%;min-height:90px;border:1px solid #cfe1ec;border-radius:10px;
 <body>
 <main class="wrap">
 <header class="top"><div><div class="eyebrow">HIBR & PIXEL · OWNER INBOX</div><h1>صندوق Instagram</h1><div class="muted">رسائل وتعليقات واردة إلى مساحة خاصة بالمالكة</div></div><div class="links"><a class="link secondary" href="/instagram.html">ربط الحساب</a><a class="link secondary" href="/admin.html">لوحة الإدارة</a></div></header>
-<section class="panel"><h2>حالة استقبال الإشعارات</h2><div id="status" class="status">جارٍ التحقق…</div><div id="callbackSetup" class="status warn hidden" style="margin-top:10px"><b>عنوان Callback URL في Meta</b><div class="meta">انسخي هذا العنوان إلى إعدادات Webhooks في تطبيق Meta، ثم ضعي Verify Token نفسه الموجود في متغيرات Netlify. فعّلي حقلي comments وmessages في إعدادات التطبيق أيضاً.</div><code id="callbackUrl" style="display:block;direction:ltr;text-align:left;overflow-wrap:anywhere;margin:9px 0"></code><button type="button" class="secondary" id="copyCallback">نسخ عنوان Callback</button><span id="callbackCopyStatus" class="meta" role="status" aria-live="polite"></span></div><div id="subscriptionStatus" class="status warn" style="margin-top:10px">جارٍ فحص اشتراك الحساب في Webhooks…</div><p class="muted">بعد نجاح توثيق Callback، افحصي وفعّلي اشتراك الحساب في استقبال الرسائل والتعليقات من الزر أدناه. لا يُرسل هذا الإجراء أي رسالة أو تعليق؛ صندوق الوارد يحفظ مسودات الرد للمراجعة فقط.</p><div class="actions"><button id="subscribeWebhooks" class="secondary" disabled>فحص / تفعيل استقبال الرسائل والتعليقات</button><button id="refresh" class="secondary">تحديث الوارد</button></div></section>
+<section class="panel"><h2>حالة استقبال الإشعارات</h2><div id="status" class="status">جارٍ التحقق…</div><div id="callbackSetup" class="status warn hidden" style="margin-top:10px"><b>عنوان Callback URL في Meta</b><div class="meta">انسخي هذا العنوان إلى إعدادات Webhooks في تطبيق Meta، ثم ضعي Verify Token نفسه الموجود في متغيرات Netlify. فعّلي حقلي comments وmessages في إعدادات التطبيق أيضاً.</div><code id="callbackUrl" style="display:block;direction:ltr;text-align:left;overflow-wrap:anywhere;margin:9px 0"></code><button type="button" class="secondary" id="copyCallback">نسخ عنوان Callback</button><span id="callbackCopyStatus" class="meta" role="status" aria-live="polite"></span></div><div id="subscriptionStatus" class="status warn" style="margin-top:10px">جارٍ فحص اشتراك الحساب في Webhooks…</div><p class="muted">بعد نجاح توثيق Callback، فعّلي استقبال الرسائل والتعليقات. تحفظ الوكالة مسودات الرد أولاً؛ لا تُرسل رسالة خاصة أو تنشر رداً علنياً إلا بعد ضغطك على زر الإرسال وتأكيدك. الرد الخاص يخضع لنافذة Instagram القياسية البالغة 24 ساعة.</p><div class="actions"><button id="subscribeWebhooks" class="secondary" disabled>فحص / تفعيل استقبال الرسائل والتعليقات</button><button id="refresh" class="secondary">تحديث الوارد</button></div></section>
 <section id="events"><div class="panel muted">جارٍ تحميل الإشعارات…</div></section>
 </main>
 <script>
@@ -48,7 +48,7 @@ textarea{width:100%;min-height:90px;border:1px solid #cfe1ec;border-radius:10px;
   root.innerHTML=ITEMS.map(item=>{
    const label=item.replyDraft?'مسودة رد محفوظة':'بانتظار المراجعة';
    const text=item.text||'وصل إشعار بلا نص؛ قد يحتوي مرفقاً أو تفاعلاً.';
-   return '<article class="event"><div class="event-head"><b>'+eventTitle(item)+'</b><span class="tag">'+label+'</span></div><div class="meta">المرسل: '+esc(item.senderUsername||item.senderId||'غير متاح')+' · التاريخ: '+esc(item.receivedAt||'')+'</div><div class="message">'+esc(text)+'</div>'+(Array.isArray(item.attachments)&&item.attachments.length?'<div class="meta">عدد المرفقات: '+item.attachments.length+'</div>':'')+(item.mediaId?'<div class="meta">معرّف الوسيط: '+esc(item.mediaId)+'</div>':'')+(item.replyDraft?'<div class="status">مسودة الرد الحالية:<div class="message">'+esc(item.replyDraft.text)+'</div></div>':'')+'<label class="meta" for="reply-'+esc(item.id)+'">مسودة رد مقترحة — لن تُرسل</label><textarea id="reply-'+esc(item.id)+'" maxlength="2000" placeholder="اكتبي الرد المقترح للمراجعة…">'+esc(item.replyDraft?.text||'')+'</textarea><button type="button" data-save="'+esc(item.id)+'">حفظ مسودة الرد</button><div class="result" id="result-'+esc(item.id)+'" role="status" aria-live="polite"></div></article>';
+   return '<article class="event"><div class="event-head"><b>'+eventTitle(item)+'</b><span class="tag">'+label+'</span></div><div class="meta">المرسل: '+esc(item.senderUsername||item.senderId||'غير متاح')+' · التاريخ: '+esc(item.receivedAt||'')+'</div><div class="message">'+esc(text)+'</div>'+(Array.isArray(item.attachments)&&item.attachments.length?'<div class="meta">عدد المرفقات: '+item.attachments.length+'</div>':'')+(item.mediaId?'<div class="meta">معرّف الوسيط: '+esc(item.mediaId)+'</div>':'')+(item.replyDraft?'<div class="status">مسودة الرد الحالية:<div class="message">'+esc(item.replyDraft.text)+'</div></div>':'')+(item.replyDraft?.sendStatus==='sent'?'<div class="status ok">تم تأكيد الإرسال لدى Instagram بتاريخ '+esc(item.replyDraft.sentAt||'—')+'.</div>':'')+(item.replyDraft?.sendStatus==='uncertain'||item.replyDraft?.sendStatus==='sending'?'<div class="status warn">نتيجة الإرسال غير محسومة. تحققي من Instagram يدوياً قبل أي إعادة محاولة.</div>':'')+'<label class="meta" for="reply-'+esc(item.id)+'">مسودة رد للمراجعة — لا تُرسل تلقائياً</label><textarea id="reply-'+esc(item.id)+'" maxlength="2000" placeholder="اكتبي الرد المقترح للمراجعة…">'+esc(item.replyDraft?.text||'')+'</textarea><button type="button" data-save="'+esc(item.id)+'" '+(item.replyDraft?.sendStatus==='sent'||item.replyDraft?.sendStatus==='sending'||item.replyDraft?.sendStatus==='uncertain'?'disabled':'')+'>حفظ مسودة الرد</button>'+(item.replyDraft?.text&&!['sent','sending','uncertain'].includes(item.replyDraft?.sendStatus)?'<button type="button" class="secondary" data-send="'+esc(item.id)+'">'+(item.eventType==='comment'?'نشر رد علني على التعليق':'إرسال رسالة خاصة')+'</button>':'')+'<div class="result" id="result-'+esc(item.id)+'" role="status" aria-live="polite"></div></article>';
   }).join('');
   root.querySelectorAll('[data-save]').forEach(button=>button.addEventListener('click',async()=>{
    const id=button.dataset.save,field=$('reply-'+id),result=$('result-'+id),reply=field?.value?.trim()||'';
@@ -56,6 +56,20 @@ textarea{width:100%;min-height:90px;border:1px solid #cfe1ec;border-radius:10px;
    button.disabled=true;result.textContent='جارٍ حفظ مسودة الرد…';
    try{const data=await api('POST',{action:'save_reply_draft',id,reply});result.textContent=data.message||'تم حفظ مسودة الرد. لم تُرسل.';await load();}
    catch(error){result.textContent=error.message;button.disabled=false}
+  }));
+  root.querySelectorAll('[data-send]').forEach(button=>button.addEventListener('click',async()=>{
+   const id=button.dataset.send,item=ITEMS.find(x=>x.id===id),result=$('result-'+id);
+   const isComment=item?.eventType==='comment';
+   const warning=isComment
+    ?'سيُنشر رد علني باسم حساب Instagram على هذا التعليق. هذا إجراء خارجي حقيقي ولا يمكن سحبه من هنا. هل تؤكدين النشر؟'
+    :'ستُرسل رسالة خاصة حقيقية من حساب Instagram إلى صاحب الرسالة. هل تراجعين النص وتؤكدين الإرسال الآن؟';
+   if(!confirm(warning))return;
+   button.disabled=true;result.textContent='يجري إرسال الرد الذي أكدتِه إلى Instagram…';
+   try{
+    const data=await api('POST',{action:'send_reply',id,confirmed:true});
+    result.textContent=data.message||'أكد Instagram الإرسال.';
+    await load();
+   }catch(error){result.textContent=error.message;await load().catch(()=>{});}
   }));
  }
  async function loadSubscription(verification){

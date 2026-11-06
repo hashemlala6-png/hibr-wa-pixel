@@ -22,7 +22,13 @@ function loadInbox({ events = {}, connection = null, denied = false, status = nu
       return {
         async list({ prefix = '' } = {}) { return { blobs: Object.keys(data).filter(key => key.startsWith(prefix)).map(key => ({ key })) }; },
         async get(key) { return data[key] ?? null; },
-        async setJSON(key, value) { data[key] = JSON.parse(JSON.stringify(value)); writes.push({ key, value }); }
+        async getWithMetadata(key) { return data[key] ? { data: JSON.parse(JSON.stringify(data[key])), etag: key + '-etag' } : null; },
+        async setJSON(key, value, options = {}) {
+          if (options.onlyIfNew && data[key]) return { modified: false };
+          if (options.onlyIfMatch && options.onlyIfMatch !== key + '-etag') return { modified: false };
+          data[key] = JSON.parse(JSON.stringify(value)); writes.push({ key, value });
+          return { modified: true, etag: key + '-etag' };
+        }
       };
     }
   };
@@ -158,6 +164,7 @@ test('owner can save an internal reply draft without sending a message', async (
   assert.equal(result.externalAction, false);
   assert.equal(result.item.status, 'reply_draft_saved');
   assert.equal(result.item.replyDraft.text, 'أهلاً بك، يسعدنا معرفة تفاصيل مشروعك.');
+  assert.equal(result.item.replyDraft.sendStatus, 'draft');
   assert.equal(service.stores['hbpx-instagram-events'][event.id].replyDraft.sentAt, null);
   assert.equal(service.writes.length, 1);
 });
@@ -311,4 +318,153 @@ test('Instagram webhook subscription fails closed when Meta does not confirm eve
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+
+test('a message reply is sent only after explicit owner confirmation and within the 24-hour window', async () => {
+  const now = Date.now();
+  const event = {
+    id: 'event-send-message', accountId: '123456', eventType: 'message',
+    senderId: '987654', timestamp: now - 60 * 1000, status: 'reply_draft_saved',
+    replyDraft: { text: 'أهلاً بك، يسعدنا مساعدتك.', savedAt: new Date(now).toISOString(), sendStatus: 'draft', sentAt: null }
+  };
+  const service = loadInbox({
+    connection: { token: encryptedToken('long-lived-instagram-token'), profile: { userId: '123456', username: 'hibr_pixels' } },
+    events: { [event.id]: event }
+  });
+  const originalFetch = global.fetch;
+  let request;
+  global.fetch = async (url, options = {}) => {
+    request = { url: new URL(String(url)), options };
+    return { ok: true, status: 200, async json() { return { recipient_id: '987654', message_id: 'message-ack-1' }; } };
+  };
+  try {
+    const response = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'send_reply', id: event.id, confirmed: true })
+    });
+    const data = body(response);
+    assert.equal(response.statusCode, 200);
+    assert.equal(data.sent, true);
+    assert.equal(data.externalAction, true);
+    assert.equal(data.item.replyDraft.sendStatus, 'sent');
+    assert.equal(data.item.replyDraft.approvedBy, 'owner');
+    assert.equal(data.item.replyDraft.providerId, 'message-ack-1');
+    assert.equal(request.url.origin, 'https://graph.instagram.com');
+    assert.equal(request.url.pathname, '/v26.0/123456/messages');
+    assert.equal(request.options.headers.Authorization, 'Bearer long-lived-instagram-token');
+    assert.deepEqual(JSON.parse(request.options.body), { recipient: { id: '987654' }, message: { text: 'أهلاً بك، يسعدنا مساعدتك.' } });
+  } finally { global.fetch = originalFetch; }
+});
+
+test('a public comment reply uses the comment edge and records the provider confirmation', async () => {
+  const event = {
+    id: 'event-send-comment', accountId: '123456', eventType: 'comment',
+    senderId: '987654', commentId: '555666', timestamp: Date.now(),
+    replyDraft: { text: 'شكراً على تعليقك.', savedAt: new Date().toISOString(), sendStatus: 'draft', sentAt: null }
+  };
+  const service = loadInbox({
+    connection: { token: encryptedToken('long-lived-instagram-token'), profile: { userId: '123456', username: 'hibr_pixels' } },
+    events: { [event.id]: event }
+  });
+  const originalFetch = global.fetch;
+  let request;
+  global.fetch = async (url, options = {}) => {
+    request = { url: new URL(String(url)), options };
+    return { ok: true, status: 200, async json() { return { id: 'comment-reply-1' }; } };
+  };
+  try {
+    const response = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'send_reply', id: event.id, confirmed: true })
+    });
+    const data = body(response);
+    assert.equal(response.statusCode, 200);
+    assert.equal(data.sent, true);
+    assert.equal(data.item.replyDraft.providerId, 'comment-reply-1');
+    assert.equal(request.url.pathname, '/v26.0/555666/replies');
+    assert.equal(request.options.headers.Authorization, 'Bearer long-lived-instagram-token');
+    assert.equal(new URLSearchParams(request.options.body).get('message'), 'شكراً على تعليقك.');
+  } finally { global.fetch = originalFetch; }
+});
+
+test('Instagram reply refuses missing owner confirmation and stale direct messages without contacting Meta', async () => {
+  const staleEvent = {
+    id: 'event-stale-message', accountId: '123456', eventType: 'message',
+    senderId: '987654', timestamp: Date.now() - 25 * 60 * 60 * 1000,
+    replyDraft: { text: 'رد قديم', savedAt: new Date().toISOString(), sendStatus: 'draft', sentAt: null }
+  };
+  const service = loadInbox({
+    connection: { token: encryptedToken('long-lived-instagram-token'), profile: { userId: '123456', username: 'hibr_pixels' } },
+    events: { [staleEvent.id]: staleEvent }
+  });
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async () => { calls++; throw new Error('Meta must not be called'); };
+  try {
+    const noApproval = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'send_reply', id: staleEvent.id })
+    });
+    assert.equal(noApproval.statusCode, 400);
+    assert.equal(calls, 0);
+
+    const expired = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'send_reply', id: staleEvent.id, confirmed: true })
+    });
+    assert.equal(expired.statusCode, 409);
+    assert.match(body(expired).error, /24 ساعة/);
+    assert.equal(calls, 0);
+    assert.equal(service.stores['hbpx-instagram-events'][staleEvent.id].replyDraft.sendStatus, 'draft');
+  } finally { global.fetch = originalFetch; }
+});
+
+test('a reply with uncertain provider outcome is locked against a duplicate send', async () => {
+  const event = {
+    id: 'event-uncertain-message', accountId: '123456', eventType: 'message',
+    senderId: '987654', timestamp: Date.now() - 1000,
+    replyDraft: { text: 'رد اختبار', savedAt: new Date().toISOString(), sendStatus: 'draft', sentAt: null }
+  };
+  const service = loadInbox({
+    connection: { token: encryptedToken('long-lived-instagram-token'), profile: { userId: '123456', username: 'hibr_pixels' } },
+    events: { [event.id]: event }
+  });
+  const originalFetch = global.fetch;
+  let calls = 0;
+  global.fetch = async () => { calls++; throw new Error('network interrupted'); };
+  try {
+    const first = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'send_reply', id: event.id, confirmed: true })
+    });
+    assert.equal(first.statusCode, 502);
+    assert.equal(body(first).uncertain, true);
+    assert.equal(service.stores['hbpx-instagram-events'][event.id].replyDraft.sendStatus, 'uncertain');
+
+    const second = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'send_reply', id: event.id, confirmed: true })
+    });
+    assert.equal(second.statusCode, 409);
+    assert.equal(calls, 1);
+  } finally { global.fetch = originalFetch; }
+});
+
+test('an already-sent reply cannot be overwritten by saving a new draft', async () => {
+  const event = {
+    id: 'event-already-sent', accountId: '123456', eventType: 'comment',
+    senderId: '987654', commentId: '555666',
+    replyDraft: { text: 'تم الرد', savedAt: new Date().toISOString(), sentAt: new Date().toISOString(), sendStatus: 'sent' }
+  };
+  const service = loadInbox({
+    connection: { token: encryptedToken('long-lived-instagram-token'), profile: { userId: '123456', username: 'hibr_pixels' } },
+    events: { [event.id]: event }
+  });
+  const response = await service.handler({
+    httpMethod: 'POST', headers: {},
+    body: JSON.stringify({ action: 'save_reply_draft', id: event.id, reply: 'رد جديد' })
+  });
+  assert.equal(response.statusCode, 409);
+  assert.equal(service.writes.length, 0);
 });
