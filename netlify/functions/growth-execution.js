@@ -1,13 +1,14 @@
 const crypto=require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
 const {getAIContext,saveAIHistory}=require('./ai-context');
 const stores={
- projects:()=>getStore({name:'hbpx-projects',consistency:'strong'}),
- tasks:()=>getStore({name:'hbpx-tasks',consistency:'strong'}),
- plans:()=>getStore({name:'hbpx-execution-plans',consistency:'strong'}),
- gates:()=>getStore({name:'hbpx-review-gates',consistency:'strong'})
+ projects:()=>getStore(blobOptions('hbpx-projects', 'strong')),
+ tasks:()=>getStore(blobOptions('hbpx-tasks', 'strong')),
+ plans:()=>getStore(blobOptions('hbpx-execution-plans', 'strong')),
+ gates:()=>getStore(blobOptions('hbpx-review-gates', 'strong'))
 };
 const clean=(v,n=3000)=>String(v??'').trim().slice(0,n);
 const list=async(name,prefix)=>{const st=stores[name](),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt));};
