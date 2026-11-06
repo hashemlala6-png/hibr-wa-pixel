@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
 
-function loadInbox({ events = {}, connection = null, denied = false, status = null } = {}) {
+function loadInbox({ events = {}, connection = null, denied = false, status = null, envOverrides = {} } = {}) {
   const resolved = require.resolve('../netlify/functions/instagram-inbox');
   delete require.cache[resolved];
   const originalLoad = Module._load;
@@ -33,7 +33,7 @@ function loadInbox({ events = {}, connection = null, denied = false, status = nu
       json(statusCode, body) { return { statusCode, body: JSON.stringify(body) }; }
     };
     if (request === './env' && parent && parent.filename === resolved) return {
-      env(name) { return name === 'INSTAGRAM_WEBHOOK_VERIFY_TOKEN' ? 'private-verify-token' : name === 'INSTAGRAM_APP_SECRET' ? 'private-app-secret' : name === 'URL' ? 'https://fabulous-bublanina-8d5626.netlify.app' : ''; }
+      env(name) { if (Object.prototype.hasOwnProperty.call(envOverrides,name)) return envOverrides[name]; return name === 'INSTAGRAM_WEBHOOK_VERIFY_TOKEN' ? 'private-verify-token' : name === 'INSTAGRAM_APP_SECRET' ? 'private-app-secret' : name === 'URL' ? 'https://fabulous-bublanina-8d5626.netlify.app' : ''; }
     };
     return originalLoad.call(this, request, parent, isMain);
   };
@@ -85,6 +85,40 @@ test('owner inbox verifies stored Meta handshake against current secrets and sho
   assert.equal(data.verification.verifiedAt, '2026-11-06T13:00:00.000Z');
   assert.equal(data.verification.lastReceivedAt, '2026-11-06T13:05:00.000Z');
   assert.deepEqual(data.verification.lastEventTypes, ['message','comment']);
+});
+
+
+test('rotating either webhook secret invalidates old verification and hides stale delivery timestamps', async t => {
+  const crypto = require('node:crypto');
+  const hash = value => crypto.createHash('sha256').update(value).digest('hex');
+  const status = {
+    verifiedAt: '2026-11-06T13:00:00.000Z',
+    verifyTokenFingerprint: hash('private-verify-token'),
+    appSecretFingerprint: hash('private-app-secret'),
+    lastReceivedAt: '2026-11-06T13:05:00.000Z',
+    lastSignatureVerifiedAt: '2026-11-06T13:05:00.000Z',
+    lastEventCount: 2,
+    lastEventTypes: ['message','comment']
+  };
+  const variants = [
+    { name: 'Verify Token', envOverrides: { INSTAGRAM_WEBHOOK_VERIFY_TOKEN: 'rotated-verify-token' } },
+    { name: 'App Secret', envOverrides: { INSTAGRAM_APP_SECRET: 'rotated-app-secret' } }
+  ];
+  for (const variant of variants) {
+    await t.test(variant.name, async () => {
+      const service = loadInbox({
+        connection: { token: { iv: 'iv', data: 'cipher', tag: 'tag' }, profile: { userId: 'ig-123', username: 'hibr_pixels' } },
+        events: {},
+        status,
+        envOverrides: variant.envOverrides
+      });
+      const data = body(await service.handler({ httpMethod: 'GET', headers: {} }));
+      assert.equal(data.verification.verifiedForCurrentConfig, false);
+      assert.equal(data.verification.verifiedAt, null);
+      assert.equal(data.verification.lastReceivedAt, null);
+      assert.deepEqual(data.verification.lastEventTypes, []);
+    });
+  }
 });
 
 test('owner can save an internal reply draft without sending a message', async () => {

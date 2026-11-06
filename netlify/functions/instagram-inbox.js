@@ -48,10 +48,10 @@ async function webhookStatus() {
     configured,
     verifiedForCurrentConfig,
     verifiedAt: verifiedForCurrentConfig ? record.verifiedAt : null,
-    lastReceivedAt: record?.lastReceivedAt || null,
-    lastSignatureVerifiedAt: record?.lastSignatureVerifiedAt || null,
-    lastEventCount: Number.isFinite(Number(record?.lastEventCount)) ? Number(record.lastEventCount) : null,
-    lastEventTypes: Array.isArray(record?.lastEventTypes) ? record.lastEventTypes.slice(0, 10) : []
+    lastReceivedAt: verifiedForCurrentConfig ? record.lastReceivedAt || null : null,
+    lastSignatureVerifiedAt: verifiedForCurrentConfig ? record.lastSignatureVerifiedAt || null : null,
+    lastEventCount: verifiedForCurrentConfig && Number.isFinite(Number(record?.lastEventCount)) ? Number(record.lastEventCount) : null,
+    lastEventTypes: verifiedForCurrentConfig && Array.isArray(record?.lastEventTypes) ? record.lastEventTypes.slice(0, 10) : []
   };
 }
 
