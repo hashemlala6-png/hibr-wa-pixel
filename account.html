@@ -7,25 +7,23 @@
  <meta name="theme-color" content="#f2eee5">
  <title>مساحة العمل — حبر وبكسل</title>
  <link rel="icon" type="image/svg+xml" href="favicon.svg">
- <link rel="stylesheet" href="public.css?v=45">
+ <link rel="stylesheet" href="public.css?v=46">
  <link rel="stylesheet" href="site-redesign.css?v=1">
- <link rel="stylesheet" href="experience.css?v=2">
+ <link rel="stylesheet" href="experience.css?v=4">
  <link rel="stylesheet" href="client-workspace.css?v=3">
 </head>
 <body class="cw-body">
- <header class="site nav cw-nav">
-  <a class="logo" href="index.html" aria-label="حبر وبكسل">حبر وبكسل<i></i></a>
-  <nav class="navlinks" aria-label="التنقل الرئيسي">
-   <a href="index.html">الرئيسية</a>
-   <a href="services.html">الخدمات</a>
-   <a href="portfolio.html">مختبر الأفكار</a>
-  </nav>
-  <div class="nav-actions">
-   <a class="solid-btn" href="order.html" data-funnel="client_new_project">طلب مشروع جديد</a>
-   <button id="logout" class="outline-btn cw-logout" type="button">تسجيل خروج</button>
-   <button class="menu" type="button" aria-label="فتح القائمة">☰</button>
-  </div>
- </header>
+ <header class="site nav hp-tabs-nav">
+ <a class="logo" href="index.html" aria-label="حبر وبكسل">حبر <span>&</span> بكسل<i></i></a>
+ <nav class="navlinks hp-page-tabs" aria-label="التنقل الرئيسي">
+ <a href="index.html">الرئيسية</a><a href="services.html">الخدمات</a><a href="portfolio.html">الأعمال</a><a href="process.html">آلية العمل</a>
+ </nav>
+ <div class="nav-actions">
+  <a class="solid-btn hp-start-tab" href="order.html">طلب مشروع</a>
+  <a class="outline-btn hp-login-tab" data-client-link href="login.html?next=account">حسابي</a>
+  <button class="menu" type="button" aria-label="فتح القائمة" aria-expanded="false">☰</button>
+ </div>
+</header>
 
  <main class="cw-shell">
   <section class="cw-welcome">
