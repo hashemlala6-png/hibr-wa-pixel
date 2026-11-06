@@ -18,7 +18,7 @@ async function listByProject(storeName,prefix,projectId,map){
   const st=s[storeName](),out=[];let cursor;
   do{
     const page=await st.list({prefix,limit:100,cursor});
-    for(const b of page.blobs||[]){const x=await st.get(b.key,{type:'json'}).catch(()=>null);if(x?.projectId===projectId)out.push(map(x));}
+    for(const b of page.blobs||[]){const x=await st.get(b.key,{type:'json'});if(x?.projectId===projectId)out.push(map(x));}
     cursor=page.cursor;
   }while(cursor);
   return out;
@@ -30,7 +30,7 @@ exports.handler=async e=>{
   try{
     const session=getClientSession(e);
     if(!session)return json(401,{error:'يجب تسجيل الدخول أولاً.',code:'LOGIN_REQUIRED'});
-    const account=await getStore(blobOptions('hbpx-client-accounts', 'eventual')).get(session.sub,{type:'json'}).catch(()=>null);
+    const account=await getStore(blobOptions('hbpx-client-accounts', 'eventual')).get(session.sub,{type:'json'});
     if(!account)return json(401,{error:'انتهت جلسة الحساب. سجّل الدخول من جديد.',code:'LOGIN_REQUIRED'});
     const projectsStore=s.projects(),projects=[];
     const financialData=await readProjectFinancialData();
@@ -38,9 +38,9 @@ exports.handler=async e=>{
     do{
      const projectPage=await projectsStore.list({prefix:'project-',limit:100,cursor:projectCursor});
      for(const b of projectPage.blobs||[]){
-      const p=await projectsStore.get(b.key,{type:'json'}).catch(()=>null);
+      const p=await projectsStore.get(b.key,{type:'json'});
       if(!p)continue;
-      const lead= p.leadId ? await s.leads().get(p.leadId,{type:'json'}).catch(()=>null) : null;
+      const lead= p.leadId ? await s.leads().get(p.leadId,{type:'json'}) : null;
       const belongs=ownsProject(p,account,lead);
       if(!belongs)continue;
       const payments=await listByProject('payments','payment-',p.id,x=>({amount:x.amount,method:x.method,createdAt:x.createdAt}));
@@ -55,9 +55,12 @@ exports.handler=async e=>{
       const amount=financial.total;
       const depositRequired=financial.depositRequired;
       const remaining=financial.remaining;
-      const latestPreview=deliveries.filter(x=>x.stage==='preview').sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))[0]||null;
+      const latestPreview=deliveries.filter(x=>x.stage==='preview').sort((a,b)=>{
+        const difference=new Date(b.createdAt||0)-new Date(a.createdAt||0);
+        return difference||String(b.id||'').localeCompare(String(a.id||''));
+      })[0]||null;
       const contentApproved=latestPreview?.clientApproval?.decision==='approved';
-      projects.push({id:p.id,name:p.name,status:p.status,startDate:p.startDate,dueDate:p.dueDate,amount,paid,remaining,depositRequired,depositMet:financial.depositMet,contractSigned:financial.contractSigned,fullyPaid:financial.fullyPaid,unallocatedPaid:financial.unallocatedPaid,unallocatedPaymentCount:financial.unallocatedPaymentCount,contentApproved,finalDeliveryEligible:Boolean(financial.fullyPaid&&contentApproved),payments,tasks,invoices,contracts,deliveries,clientResult:approvedResults[0]||null});
+      projects.push({id:p.id,name:p.name,status:p.status,startDate:p.startDate,dueDate:p.dueDate,amount,paid,remaining,depositRequired,depositMet:financial.depositMet,contractSigned:financial.contractSigned,fullyPaid:financial.fullyPaid,unallocatedPaid:financial.unallocatedPaid,unallocatedPaymentCount:financial.unallocatedPaymentCount,contentApproved,latestPreviewId:latestPreview?.id||null,finalDeliveryEligible:Boolean(financial.fullyPaid&&contentApproved),payments,tasks,invoices,contracts,deliveries,clientResult:approvedResults[0]||null});
      }
      projectCursor=projectPage.cursor;
     }while(projectCursor);

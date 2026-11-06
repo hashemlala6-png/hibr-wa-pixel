@@ -98,7 +98,10 @@ exports.handler=async e=>{
 
     if(!financial.fullyPaid)return json(409,{error:'التسليم النهائي ونقل الحقوق مقفولان حتى سداد كامل المبلغ (100%).',financial});
     const deliveries=await all('deliveries','delivery-');
-    const latestPreview=deliveries.filter(x=>x.projectId===projectId&&x.stage==='preview').sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))[0];
+    const latestPreview=deliveries.filter(x=>x.projectId===projectId&&x.stage==='preview').sort((a,b)=>{
+     const difference=new Date(b.createdAt||0)-new Date(a.createdAt||0);
+     return difference||String(b.id||'').localeCompare(String(a.id||''));
+    })[0];
     if(!latestPreview||latestPreview.clientApproval?.decision!=='approved')return json(409,{error:'يلزم اعتماد العميل لآخر معاينة قبل إتاحة الملفات النهائية.',previewId:latestPreview?.id||null});
     if(b.finalQualityConfirmed!==true||b.rightsTransferConfirmed!==true)return json(400,{error:'أكدي اجتياز النسخة النهائية لفحص الجودة، وأن الملفات أصلية كاملة الجودة ومن دون علامة مائية، قبل نقل الحقوق.'});
     const gate=await approvedGate(projectId);

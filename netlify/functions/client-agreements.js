@@ -4,19 +4,33 @@ const {json}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const {ownsProject}=require('./client-ownership');
 const stores={
- accounts:()=>getStore(blobOptions('hbpx-client-accounts', 'eventual')),
- projects:()=>getStore(blobOptions('hbpx-projects', 'eventual')),
- leads:()=>getStore(blobOptions('hbpx-leads', 'eventual')),
- contracts:()=>getStore(blobOptions('hbpx-contracts', 'eventual')),
- subscriptions:()=>getStore(blobOptions('hbpx-subscriptions', 'eventual'))
+ accounts:()=>getStore(blobOptions('hbpx-client-accounts', 'strong')),
+ projects:()=>getStore(blobOptions('hbpx-projects', 'strong')),
+ leads:()=>getStore(blobOptions('hbpx-leads', 'strong')),
+ contracts:()=>getStore(blobOptions('hbpx-contracts', 'strong')),
+ subscriptions:()=>getStore(blobOptions('hbpx-subscriptions', 'strong'))
 };
 const clean=(v,n=240)=>String(v??'').trim().slice(0,n);
-async function list(store,prefix){const st=stores[store](),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){const x=await st.get(b.key,{type:'json'}).catch(()=>null);if(x)out.push(x)}return out}
+async function list(store,prefix){
+ const st=stores[store](),out=[],seen=new Set();let cursor;
+ do{
+  const page=await st.list({prefix,limit:100,cursor});
+  for(const blob of page.blobs||[]){
+   const record=await st.get(blob.key,{type:'json'});
+   if(record)out.push(record);
+  }
+  const next=page.cursor||null;
+  if(next&&(next===cursor||seen.has(next)))throw new Error('Repeated Netlify Blobs cursor while reading '+store);
+  if(next)seen.add(next);
+  cursor=next;
+ }while(cursor);
+ return out;
+}
 async function ownedProjects(account){
  const all=await list('projects','project-'),out=[];
- for(const p of all){
-  const lead=p.leadId?await stores.leads().get(p.leadId,{type:'json'}).catch(()=>null):null;
-  if(ownsProject(p,account,lead))out.push(p);
+ for(const project of all){
+  const lead=project.leadId?await stores.leads().get(project.leadId,{type:'json'}):null;
+  if(ownsProject(project,account,lead))out.push(project);
  }
  return out;
 }
@@ -25,7 +39,7 @@ exports.handler=async e=>{
  if(e.httpMethod==='OPTIONS')return json(204,{});
  const session=getClientSession(e);if(!session)return json(401,{error:'سجّل الدخول أولاً.',code:'LOGIN_REQUIRED'});
  try{
-  const account=await stores.accounts().get(session.sub,{type:'json'}).catch(()=>null);if(!account)return json(401,{error:'الحساب غير موجود. سجّل الدخول من جديد.'});
+  const account=await stores.accounts().get(session.sub,{type:'json'});if(!account)return json(401,{error:'الحساب غير موجود. سجّل الدخول من جديد.'});
   const projects=await ownedProjects(account),ids=new Set(projects.map(p=>p.id));
   if(e.httpMethod==='GET'){
    const [contracts,subscriptions]=await Promise.all([list('contracts','contract-'),list('subscriptions','subscription-')]);
@@ -40,7 +54,7 @@ exports.handler=async e=>{
    let b={};try{b=JSON.parse(e.body||'{}')}catch{return json(400,{error:'البيانات غير صالحة.'})}
    const id=clean(b.contractId,180),name=clean(b.signedName,160);
    if(!id||name.length<4||b.acceptTerms!==true)return json(400,{error:'اكتب الاسم الكامل ووافق على بنود العقد قبل التوقيع.'});
-   const contract=await stores.contracts().get(id,{type:'json'}).catch(()=>null);
+   const contract=await stores.contracts().get(id,{type:'json'});
    if(!contract||!ids.has(contract.projectId))return json(404,{error:'العقد غير موجود ضمن مشاريع حسابك.'});
    if(contract.status==='signed'||contract.signedAt)return json(409,{error:'هذا العقد موقّع مسبقاً.'});
    if(!['pending','pending_signature','sent','awaiting_signature','review'].includes(String(contract.status||'pending')))return json(409,{error:'هذا العقد غير متاح للتوقيع حالياً. تواصل مع الإدارة.'});

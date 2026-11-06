@@ -14,6 +14,13 @@ function loadApproval(data) {
     getStore({ name }) {
       const store = data[name] ||= {};
       return {
+        async list({ prefix = '', limit = 100, cursor } = {}) {
+          const keys = Object.keys(store).filter(key => key.startsWith(prefix));
+          const offset = cursor ? Number(cursor) : 0;
+          const selected = keys.slice(offset, offset + limit);
+          const next = offset + selected.length < keys.length ? String(offset + selected.length) : null;
+          return { blobs: selected.map(key => ({ key })), cursor: next };
+        },
         async get(key) { return store[key] ?? null; },
         async setJSON(key, value) { store[key] = JSON.parse(JSON.stringify(value)); }
       };
@@ -125,6 +132,44 @@ test('a customer cannot record approval on a final delivery', async () => {
   });
   assert.equal(response.statusCode, 404);
   assert.equal(service.activity.length, 0);
+});
+
+test('customer decisions are accepted only for the newest preview across Blobs pages', async () => {
+  const data = fixture();
+  data['hbpx-deliveries']['delivery-a'].createdAt = '2026-11-01T10:00:00.000Z';
+  for (let i = 0; i < 105; i++) {
+    const id = 'delivery-a-history-' + String(i).padStart(3, '0');
+    data['hbpx-deliveries'][id] = {
+      id, projectId: 'project-a', stage: 'preview', status: 'ready',
+      createdAt: '2026-11-02T10:00:00.000Z'
+    };
+  }
+  data['hbpx-deliveries']['delivery-a-latest'] = {
+    id: 'delivery-a-latest', projectId: 'project-a', stage: 'preview', status: 'ready',
+    createdAt: '2026-11-06T10:00:00.000Z', watermarked: true, lowResolution: true
+  };
+
+  const service = loadApproval(data);
+  const stale = await service.handler({
+    httpMethod: 'POST',
+    headers: {},
+    session: { sub: 'acct-a' },
+    body: JSON.stringify({ deliveryId: 'delivery-a', decision: 'approved' })
+  });
+  assert.equal(stale.statusCode, 409);
+  assert.equal(body(stale).latestPreviewId, 'delivery-a-latest');
+  assert.equal(data['hbpx-deliveries']['delivery-a'].clientApproval, undefined);
+  assert.equal(service.activity.length, 0);
+
+  const latest = await service.handler({
+    httpMethod: 'POST',
+    headers: {},
+    session: { sub: 'acct-a' },
+    body: JSON.stringify({ deliveryId: 'delivery-a-latest', decision: 'approved' })
+  });
+  assert.equal(latest.statusCode, 200);
+  assert.equal(data['hbpx-deliveries']['delivery-a-latest'].clientApproval.decision, 'approved');
+  assert.equal(service.activity.length, 1);
 });
 
 test('a customer cannot reverse an approval on the same preview', async () => {

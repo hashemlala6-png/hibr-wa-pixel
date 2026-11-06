@@ -59,20 +59,28 @@
     )).join('') + '</div>';
   }
 
-  function renderDeliveries(deliveries) {
+  function renderDeliveries(deliveries, latestPreviewId) {
     if (!Array.isArray(deliveries) || !deliveries.length) return empty('لا توجد تسليمات مسجلة لهذا المشروع حتى الآن.');
+    const previewHistory = deliveries.filter((item) => item.stage === 'preview').slice().sort((a, b) => {
+      const difference = new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      return difference || String(b.id || '').localeCompare(String(a.id || ''));
+    });
+    const currentPreviewId = latestPreviewId || previewHistory[0]?.id || null;
     return '<div class="cw-item-list">' + deliveries.map((delivery) => {
       const url = safeUrl(delivery.url);
       const preview = delivery.stage === 'preview';
+      const isLatestPreview = preview && delivery.id === currentPreviewId;
       const approval = delivery.clientApproval || null;
       const approvalText = approval?.decision === 'approved'
         ? '<small class="cw-signed-note">تم اعتماد محتوى المعاينة بتاريخ ' + date(approval.at) + '</small>'
         : approval?.decision === 'needs_changes'
           ? '<small class="cw-note-muted">طلبت تعديلات: ' + esc(approval.note || 'لا توجد ملاحظة') + '</small>'
           : '';
-      const actions = preview && !approval
-        ? '<div class="cw-delivery-approval"><small>هذه نسخة مراجعة محمية، وليست الملفات الأصلية.</small><textarea class="cw-delivery-note" data-delivery-note="' + esc(delivery.id) + '" rows="2" maxlength="1000" placeholder="ملاحظة اختيارية أو تفاصيل التعديل"></textarea><div class="cw-delivery-actions"><button type="button" class="cw-primary" data-delivery-decision="approved" data-delivery-id="' + esc(delivery.id) + '">أوافق على المحتوى</button><button type="button" class="cw-secondary" data-delivery-decision="needs_changes" data-delivery-id="' + esc(delivery.id) + '">أطلب تعديلاً</button></div><small class="cw-delivery-message" data-delivery-message="' + esc(delivery.id) + '" role="status" aria-live="polite"></small></div>'
-        : approvalText;
+      const actions = preview && isLatestPreview && !approval
+        ? '<div class="cw-delivery-approval"><small>هذه أحدث نسخة مراجعة محمية، وليست الملفات الأصلية.</small><textarea class="cw-delivery-note" data-delivery-note="' + esc(delivery.id) + '" rows="2" maxlength="1000" placeholder="ملاحظة اختيارية أو تفاصيل التعديل"></textarea><div class="cw-delivery-actions"><button type="button" class="cw-primary" data-delivery-decision="approved" data-delivery-id="' + esc(delivery.id) + '">أوافق على المحتوى</button><button type="button" class="cw-secondary" data-delivery-decision="needs_changes" data-delivery-id="' + esc(delivery.id) + '">أطلب تعديلاً</button></div><small class="cw-delivery-message" data-delivery-message="' + esc(delivery.id) + '" role="status" aria-live="polite"></small></div>'
+        : preview && !isLatestPreview && !approval
+          ? '<small class="cw-note-muted">هذه معاينة سابقة؛ القرار يكون على أحدث نسخة مراجعة فقط.</small>'
+          : approvalText;
       const typeLabel = preview
         ? '<small class="cw-delivery-stage">معاينة محمية · علامة مائية / دقة منخفضة</small>'
         : '<small class="cw-delivery-stage">ملفات نهائية · كاملة الجودة · الحقوق منقولة</small>';
@@ -136,7 +144,7 @@
       (hasAmount ? '<div class="cw-payment-policy"><small>العربون المتفق عليه 10%: ' + money(project.depositRequired || Math.ceil(amount*0.10)) + ' · ' + (project.depositMet ? 'تم تسجيل استلامه' : 'لم يكتمل تسجيله بعد') + '</small><small>التسليم النهائي ونقل الحقوق بعد سداد 100% وموافقتك على المعاينة.</small>' + (unallocatedPaid > 0 ? '<small>' + (project.contractSigned ? 'دفعات سابقة مسجلة خارج العقد الحالي' : 'دفعات مسجلة بانتظار توقيع العقد') + ': ' + money(unallocatedPaid) + ' — لا تدخل ضمن رصيد هذا العقد، وتحتاج مراجعة تخصيص.</small>' : '') + '</div>' : '') +
       '<div class="cw-project-content">' +
        '<section class="cw-lane"><div class="cw-lane-heading"><h4>المهام</h4><small>' + (Array.isArray(project.tasks) ? project.tasks.length : 0) + ' TASKS</small></div>' + renderTasks(project.tasks) + '</section>' +
-       '<section class="cw-lane"><div class="cw-lane-heading"><h4>التسليمات</h4><small>' + (Array.isArray(project.deliveries) ? project.deliveries.length : 0) + ' FILES</small></div>' + renderDeliveries(project.deliveries) + '</section>' +
+       '<section class="cw-lane"><div class="cw-lane-heading"><h4>التسليمات</h4><small>' + (Array.isArray(project.deliveries) ? project.deliveries.length : 0) + ' FILES</small></div>' + renderDeliveries(project.deliveries, project.latestPreviewId) + '</section>' +
        '<section class="cw-lane"><div class="cw-lane-heading"><h4>الفواتير</h4><small>INVOICES</small></div>' + renderInvoices(invoices) + '</section>' +
        '<section class="cw-lane"><div class="cw-lane-heading"><h4>ملخص الاتفاق</h4><small>' + contracts.length + ' RECORDS</small></div>' +
         (contracts.length ? '<div class="cw-item-list">' + contracts.map((c) => itemRow(c.number ? 'عقد رقم ' + c.number : 'اتفاق المشروع', (c.amount ? money(c.amount) + ' · ' : '') + (c.startDate ? date(c.startDate) : '') + (c.dueDate ? ' — ' + date(c.dueDate) : ''), c.status)).join('') + '</div>' : empty('لا يوجد عقد مرتبط بالمشروع بعد.')) +

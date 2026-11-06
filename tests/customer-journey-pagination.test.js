@@ -57,7 +57,7 @@ function loadHandler(relativePath, initial = {}) {
     if (request === './client-auth-utils' && parent && parent.filename === resolved) {
       return {
         createClientSession(id) { return 'session-' + id; },
-        getClientSession() { return null; },
+        getClientSession(event) { return event.session || null; },
         sessionCookie(token) { return 'hbpx_client=' + token; },
         clearCookie() { return 'hbpx_client=; Max-Age=0'; }
       };
@@ -165,6 +165,53 @@ test('owner client registry aggregates customers beyond the first Blobs page', a
   const result = body(response);
   assert.equal(response.statusCode, 200);
   assert.equal(result.clients.length, 205);
+});
+
+test('client agreements read all projects, contracts, and subscriptions across Blobs pages', async () => {
+  const accountId = 'customer-account';
+  const shared = {
+    'hbpx-client-accounts': {
+      [accountId]: {
+        id: accountId, name: 'Customer', email: 'customer@example.com', whatsapp: '9647712345678'
+      }
+    },
+    'hbpx-leads': {
+      'lead-customer': {
+        id: 'lead-customer', email: 'customer@example.com', whatsapp: '9647712345678'
+      }
+    },
+    'hbpx-projects': {},
+    'hbpx-contracts': {},
+    'hbpx-subscriptions': {}
+  };
+
+  for (let i = 0; i < 125; i++) {
+    const suffix = String(i).padStart(3, '0');
+    const projectId = 'project-' + suffix;
+    shared['hbpx-projects'][projectId] = {
+      id: projectId, leadId: 'lead-customer', name: 'Project ' + suffix
+    };
+    shared['hbpx-contracts']['contract-' + suffix] = {
+      id: 'contract-' + suffix, projectId, amount: 1000 + i, status: 'pending_signature'
+    };
+    shared['hbpx-subscriptions']['subscription-' + suffix] = {
+      id: 'subscription-' + suffix, projectId, amount: 100 + i, status: 'active'
+    };
+  }
+
+  const service = loadHandler('../netlify/functions/client-agreements', shared);
+  const response = await service.handler({
+    httpMethod: 'GET',
+    headers: {},
+    session: { sub: accountId }
+  });
+  const result = body(response);
+  assert.equal(response.statusCode, 200);
+  assert.equal(result.services.length, 125);
+  assert.equal(result.contracts.length, 125);
+  assert.equal(result.subscriptions.length, 125);
+  assert.ok(result.contracts.some(item => item.id === 'contract-124'));
+  assert.ok(result.subscriptions.some(item => item.id === 'subscription-124'));
 });
 
 test('client registration is denied when either contact differs from the approved lead', async () => {
