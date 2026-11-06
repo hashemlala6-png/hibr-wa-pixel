@@ -247,14 +247,3 @@
 .cw-footer{border-color:var(--cw-line)!important}
 @media(max-width:700px){.cw-welcome{padding:25px 20px!important}.cw-welcome h1{font-size:2.15rem!important}.cw-section-heading h2{font-size:1.45rem!important}}
 
-
-.cw-payment-policy{display:flex;flex-wrap:wrap;gap:7px 18px;margin:-2px 0 12px;padding:10px 13px;background:#f1f9fd;border:1px solid #dceef7;border-radius:9px;color:#44677c;font-size:.7rem;line-height:1.8}
-.cw-delivery-stage{display:block;margin-top:5px;color:#277c9f;font-weight:700;font-size:.68rem}
-.cw-delivery-approval{margin-top:12px;padding:12px;background:#f4faff;border:1px solid #dcecf5;border-radius:10px}
-.cw-delivery-approval>small{display:block;color:#587286;font-size:.7rem;line-height:1.8}
-.cw-delivery-note{width:100%;min-height:54px;margin-top:8px;padding:9px;border:1px solid #d8e6ef;border-radius:8px;background:#fff;color:#20394d;font:inherit;font-size:.78rem}
-.cw-delivery-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.cw-delivery-actions button{font:inherit;font-size:.72rem;padding:9px 13px;border-radius:8px;cursor:pointer}
-.cw-delivery-actions .cw-secondary{background:#fff;border:1px solid #c8dce8;color:#176c91}
-.cw-delivery-actions button:disabled{opacity:.55;cursor:wait}
-.cw-delivery-message{display:block;margin-top:7px;color:#176c91;font-size:.7rem}

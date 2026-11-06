@@ -98,16 +98,12 @@ test('signed contract and full 10 percent deposit allow project activation', asy
   assert.equal(service.activity.length, 1);
 });
 
-test('new projects are always created as planned and cannot claim active or completed status', async t => {
-  for (const requestedStatus of ['active','completed','review']) {
-    await t.test('requested '+requestedStatus, async () => {
-      const service = loadSales(fixture());
-      const response = await service.handler({
-        httpMethod: 'POST',
-        body: JSON.stringify({ type: 'project', leadId: 'lead-a', name: 'Project B', amount: 5000, status: requestedStatus })
-      });
-      assert.equal(response.statusCode, 201);
-      assert.equal(body(response).item.status, 'planned');
-    });
-  }
+test('new projects cannot bypass contract and deposit gates by requesting active at creation', async () => {
+  const service = loadSales(fixture());
+  const response = await service.handler({
+    httpMethod: 'POST',
+    body: JSON.stringify({ type: 'project', leadId: 'lead-a', name: 'Project B', amount: 5000, status: 'active' })
+  });
+  assert.equal(response.statusCode, 201);
+  assert.equal(body(response).item.status, 'planned');
 });

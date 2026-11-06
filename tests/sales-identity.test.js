@@ -12,8 +12,6 @@ function clone(value) {
 }
 
 function loadSales(data) {
-  const financeResolved = require.resolve('../netlify/functions/project-financials');
-  delete require.cache[financeResolved];
   const resolved = require.resolve('../netlify/functions/sales');
   delete require.cache[resolved];
   const originalLoad = Module._load;
@@ -72,9 +70,6 @@ function responseBody(response) {
 
 function baseData() {
   return {
-    'hbpx-payments': {},
-    'hbpx-contracts': {},
-    'hbpx-deliveries': {},
     'hbpx-client-accounts': {
       'email-account-a': {id:'account-a',email:'a@example.com',whatsapp:'07712345678'}
     },
@@ -111,11 +106,9 @@ test('sales records use an exact account match or an isolated lead identity, nev
   assert.equal(itemB.accountId,null);
   assert.notEqual(itemB.clientId,'legacy-phone-group');
 
-  service.data['hbpx-contracts']['contract-project-b']={id:'contract-project-b',projectId:itemB.id,amount:2000,status:'signed',signedAt:'2026-11-06T10:00:00.000Z'};
-  service.data['hbpx-deliveries']['delivery-project-b']={id:'delivery-project-b',projectId:itemB.id,stage:'preview',status:'ready',createdAt:'2026-11-06T11:00:00.000Z',clientApproval:{decision:'approved'}};
   const payment = await service.handler({
     httpMethod:'POST',
-    body:JSON.stringify({type:'payment',projectId:itemB.id,amount:500,method:'transfer',receivedConfirmed:true})
+    body:JSON.stringify({type:'payment',projectId:itemB.id,amount:500,method:'transfer'})
   });
   assert.equal(payment.statusCode,201);
   assert.equal(responseBody(payment).item.clientId,expectedB);

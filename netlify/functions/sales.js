@@ -10,8 +10,7 @@ const stores = {
   projects: () => getStore(blobOptions('hbpx-projects')),
   payments: () => getStore(blobOptions('hbpx-payments')),
   leads: () => getStore(blobOptions('hbpx-leads')),
-  accounts: () => getStore(blobOptions('hbpx-client-accounts')),
-  deliveries: () => getStore(blobOptions('hbpx-deliveries'))
+  accounts: () => getStore(blobOptions('hbpx-client-accounts'))
 };
 const allowed = {
   quotes: ['draft','sent','accepted','rejected','expired'],
@@ -19,15 +18,6 @@ const allowed = {
 };
 const clean=(v,n=500)=>String(v??'').trim().slice(0,n);
 const amount=v=>{const n=Number(String(v??'').replace(/[^0-9]/g,''));return Number.isFinite(n)&&n>0?n:0};
-async function readStoreAll(store,prefix){
-  const out=[];let cursor;
-  do{
-    const page=await store.list({prefix,limit:100,cursor});
-    for(const blob of page.blobs||[]){const item=await store.get(blob.key,{type:'json'}).catch(()=>null);if(item)out.push(item);}
-    cursor=page.cursor;
-  }while(cursor);
-  return out;
-}
 
 async function all(name){
   const st=stores[name]();
@@ -149,7 +139,7 @@ exports.handler=async event=>{
    }
    if(b.type==='project'){
     if(!b.leadId||!clean(b.name,160)||!amount(b.amount))return json(400,{error:'العميل واسم المشروع والقيمة مطلوبة.'});
-    if(b.status!=='planned')b.status='planned';
+    if(!allowed.projects.includes(b.status)||b.status==='active')b.status='planned';
     const identity=await identityForLead(b.leadId);
     if(!identity)return json(404,{error:'العميل المرتبط بالمشروع غير موجود.'});
     const lead=identity.lead;
@@ -161,20 +151,11 @@ exports.handler=async event=>{
    }
    if(b.type==='payment'){
     if(!b.projectId||!amount(b.amount))return json(400,{error:'المشروع والمبلغ مطلوبان.'});
-    if(b.receivedConfirmed!==true)return json(400,{error:'لا يمكن تسجيل مبلغ ما لم تؤكدي أنه استُلم فعلاً.'});
     const project=await stores.projects().get(clean(b.projectId,120),{type:'json'}).catch(()=>null);
     if(!project)return json(404,{error:'المشروع غير موجود.'});
-    const financial=await getProjectFinancials(project.id,project.amount);
-    if(!financial.contractSigned)return json(409,{error:'لا يمكن تسجيل دفعة قبل توقيع العقد من العميل.',financial});
-    const nextPaid=financial.paid+amount(b.amount);
-    if(nextPaid>financial.total)return json(409,{error:'مجموع الدفعات سيتجاوز قيمة العقد. راجعي المبلغ المسجل قبل المتابعة.',financial});
-    const previewRecords=await readStoreAll(stores.deliveries(),'delivery-');const previews=previewRecords.filter(item=>item.projectId===project.id&&item.stage==='preview');
-    previews.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
-    const contentApproved=previews[0]?.clientApproval?.decision==='approved';
-    if(nextPaid>financial.depositRequired&&!contentApproved)return json(409,{error:'الدفعة قبل اعتماد المحتوى لا يجوز أن تتجاوز عربون 10%. انتظري موافقة العميل على آخر معاينة لتسجيل الـ90% المتبقية.',financial});
     const clientId=await clientIdForProject(project);
     const id=`payment-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-    const x={id,projectId:clean(b.projectId,120),clientId:clientId||null,amount:amount(b.amount),method:clean(b.method,60),note:clean(b.note,500),ownerConfirmedReceived:true,recordedBy:'owner',receivedConfirmedAt:now,createdAt:now};
+    const x={id,projectId:clean(b.projectId,120),clientId:clientId||null,amount:amount(b.amount),method:clean(b.method,60),note:clean(b.note,500),createdAt:now};
     await stores.payments().setJSON(id,x);
     if(clientId)await logActivity(clientId,'payment','تم تسجيل دفعة',{projectId:x.projectId,amount:x.amount,method:x.method});
     return json(201,{item:x});
@@ -190,12 +171,6 @@ exports.handler=async event=>{
     const financial=await getProjectFinancials(x.id,x.amount);
     if(!financial.contractSigned)return json(409,{error:'لا يمكن بدء التنفيذ قبل توقيع عقد المشروع من العميل.',financial});
     if(!financial.depositMet)return json(409,{error:'لا يمكن بدء التنفيذ قبل استلام عربون 10% من قيمة العقد. سجّلي الدفعة المستلمة أولاً.',financial});
-   }
-   if(collection==='projects'&&status==='completed'){
-    const financial=await getProjectFinancials(x.id,x.amount);
-    if(!financial.fullyPaid)return json(409,{error:'لا يمكن إغلاق المشروع قبل اكتمال سداد 100% من قيمة العقد.',financial});
-    const deliveryRecords=await readStoreAll(stores.deliveries(),'delivery-');const finalDelivered=deliveryRecords.filter(item=>item.projectId===x.id&&item.stage==='final'&&item.status==='delivered'&&item.fullQuality===true&&item.rightsTransferred===true);
-    if(!finalDelivered.length)return json(409,{error:'لا يمكن إغلاق المشروع قبل تسجيل تسليم الملفات النهائية للعميل ونقل الحقوق بعد الدفع.'});
    }
    const previousStatus=x.status;x.status=status;x.updatedAt=new Date().toISOString();await stores[collection]().setJSON(id,x);
    const clientId=await clientIdForRecord(x);

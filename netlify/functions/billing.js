@@ -8,12 +8,12 @@ const projectStore=()=>getStore({name:'hbpx-projects',consistency:'strong'});
 const qualityStore=()=>getStore({name:'hbpx-quality-gates',consistency:'strong'});
 const vqaStore=()=>getStore({name:'hbpx-visual-qa',consistency:'strong'});
 async function approvedGate(projectId){
+ const r=await qualityStore().list({prefix:'gate-'});
  let best=null;
- const rows=await readStoreAll(qualityStore(),'gate-');
- for(const x of rows){if(x?.projectId===projectId&&x.status==='approved'&&x.kind==='final'&&(!best||new Date(x.approvedAt||x.updatedAt)>new Date(best.approvedAt||best.updatedAt)))best=x;}
+ for(const b of r.blobs||[]){try{const x=await qualityStore().get(b.key,{type:'json'});if(x?.projectId===projectId&&x.status==='approved'&&x.kind==='final'&&(!best||new Date(x.approvedAt||x.updatedAt)>new Date(best.approvedAt||best.updatedAt)))best=x}catch{}}
  return best;
 }
-async function newestVQA(projectId){const rows=await readStoreAll(vqaStore(),'vqa-');let latest=null;for(const x of rows){if(x?.projectId===projectId&&(!latest||new Date(x.createdAt)>new Date(latest.createdAt)))latest=x;}return latest;}
+async function newestVQA(projectId){const r=await vqaStore().list({prefix:'vqa-'});let latest=null;for(const b of r.blobs||[]){try{const x=await vqaStore().get(b.key,{type:'json'});if(x?.projectId===projectId&&(!latest||new Date(x.createdAt)>new Date(latest.createdAt)))latest=x}catch{}}return latest;}
 const stores={
  invoices:()=>getStore({name:'hbpx-invoices',consistency:'strong'}),
  contracts:()=>getStore({name:'hbpx-contracts',consistency:'strong'}),
@@ -22,8 +22,7 @@ const stores={
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 const amount=v=>{const n=Number(String(v??'').replace(/[^0-9.]/g,''));return Number.isFinite(n)&&n>=0?n:0};
-async function readStoreAll(st,prefix){const out=[];let cursor;do{const page=await st.list({prefix,limit:100,cursor});for(const blob of page.blobs||[]){const x=await st.get(blob.key,{type:'json'}).catch(()=>null);if(x)out.push(x);}cursor=page.cursor;}while(cursor);return out;}
-async function all(name,prefix){const rows=await readStoreAll(stores[name](),prefix);return rows.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));}
+async function all(name,prefix){const st=stores[name](),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));}
 function renewalDate(start,cycle){const d=new Date(start+'T12:00:00');if(cycle==='yearly')d.setFullYear(d.getFullYear()+1);else if(cycle==='quarterly')d.setMonth(d.getMonth()+3);else d.setMonth(d.getMonth()+1);return d.toISOString().slice(0,10)}
 function num(prefix){return `${prefix}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`}
 exports.handler=async e=>{
@@ -97,10 +96,6 @@ exports.handler=async e=>{
    } const map={invoice:['issued','paid','cancelled','overdue'],contract:['draft','sent','accepted','rejected','expired'],delivery:['ready','delivered','archived']};
    if(!map[type]||!map[type].includes(b.status))return json(400,{error:'الحالة غير صحيحة.'});const name=type==='invoice'?'invoices':type==='contract'?'contracts':'deliveries';const x=await stores[name]().get(id,{type:'json'});if(!x)return json(404,{error:'العنصر غير موجود.'});
    if(type==='delivery'&&b.status==='delivered'&&(x.stage!=='final'||x.fullQuality!==true||x.watermarked!==false||x.rightsTransferred!==true))return json(409,{error:'لا يمكن تسليم نسخة مراجعة كملفات نهائية. التسليم النهائي يتطلب نسخة كاملة الجودة، بلا علامة مائية، وبعد نقل الحقوق.'});
-   if(type==='delivery'&&b.status==='delivered'){
-    const financial=await getProjectFinancials(x.projectId,0);
-    if(!financial.fullyPaid)return json(409,{error:'لا يمكن تأكيد التسليم النهائي قبل اكتمال سداد 100%.',financial});
-   }
    x.status=b.status;x.updatedAt=new Date().toISOString();await stores[name]().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,type,'تحديث '+type,{status:x.status});return json(200,{item:x});
   }
   return json(405,{error:'Method not allowed'});
