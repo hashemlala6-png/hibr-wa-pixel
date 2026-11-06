@@ -6,6 +6,7 @@ const { logActivity } = require('./client-activity');
 
 const STORE_NAME = 'hbpx-instagram-login';
 const CONNECTION_KEY = 'agency-instagram';
+const AGENCY_ACTIVITY_ID = 'hibr-wa-pixel';
 const API_VERSION = env('INSTAGRAM_API_VERSION') || 'v26.0';
 const SCOPES = [
   'instagram_business_basic',
@@ -175,7 +176,7 @@ async function callback(event) {
     if (!redirectUri) throw new Error('لم يتم ضبط عنوان العودة INSTAGRAM_REDIRECT_URI.');
     const connection = await exchangeCode(code, redirectUri);
     await writeConnection(connection);
-    await logActivity('', 'integration', 'تم ربط حساب Instagram الرسمي عبر Instagram Login', {
+    await logActivity(AGENCY_ACTIVITY_ID, 'integration', 'تم ربط حساب Instagram الرسمي عبر Instagram Login', {
       provider: 'instagram-login', username: connection.profile.username, accountType: connection.profile.accountType
     });
     return pageRedirect('connected=1');
@@ -259,7 +260,7 @@ exports.handler = async event => {
       if (body.action === 'refresh') return await refreshToken();
       if (body.action === 'disconnect') {
         await store().delete(CONNECTION_KEY);
-        await logActivity('', 'integration', 'تم فصل حساب Instagram من نظام حبر وبكسل', { provider: 'instagram-login' });
+        await logActivity(AGENCY_ACTIVITY_ID, 'integration', 'تم فصل حساب Instagram من نظام حبر وبكسل', { provider: 'instagram-login' });
         return json(200, { ok: true });
       }
       return json(400, { error: 'الإجراء غير معروف.' });
