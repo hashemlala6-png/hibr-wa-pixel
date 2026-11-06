@@ -1,6 +1,7 @@
 const crypto=require('crypto');
 const {getStore}=require('@netlify/blobs');
-const store=()=>getStore({name:'hbpx-platform-analytics',consistency:'strong'});
+const { blobOptions } = require('./blob-config');
+const store=()=>getStore(blobOptions('hbpx-platform-analytics', 'strong'));
 const clean=(v,n=80)=>String(v??'').trim().slice(0,n);
 async function record(type,details={}){
   const now=new Date().toISOString();
