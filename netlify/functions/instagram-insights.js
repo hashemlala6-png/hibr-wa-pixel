@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
 const { env } = require('./env');
 const { requireAdmin, json } = require('./auth-utils');
+const { blobOptions } = require('./blob-config');
 
 const CONNECTION_STORE = 'hbpx-instagram-login';
 const SNAPSHOT_STORE = 'hbpx-instagram-analytics';
@@ -10,11 +11,7 @@ const API_VERSION = env('INSTAGRAM_API_VERSION') || 'v26.0';
 const METRICS = ['views', 'reach', 'accounts_engaged', 'total_interactions', 'follows_and_unfollows', 'profile_links_taps'];
 
 function store(name) {
-  const options = { name, consistency: 'eventual' };
-  const siteID = env('NETLIFY_SITE_ID') || env('SITE_ID');
-  const token = env('NETLIFY_AUTH_TOKEN');
-  if (siteID && token) { options.siteID = siteID; options.token = token; }
-  return getStore(options);
+  return getStore(blobOptions(name, 'eventual'));
 }
 function clean(v, n = 500) { return String(v == null ? '' : v).trim().slice(0, n); }
 function secretKey() {
