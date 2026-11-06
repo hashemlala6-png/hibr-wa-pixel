@@ -1,12 +1,13 @@
 const { env } = require('./env');
 const crypto=require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
 const {getProjectFinancials}=require('./project-financials');
-const projectStore=()=>getStore({name:'hbpx-projects',consistency:'strong'});
-const qualityStore=()=>getStore({name:'hbpx-quality-gates',consistency:'strong'});
-const vqaStore=()=>getStore({name:'hbpx-visual-qa',consistency:'strong'});
+const projectStore=()=>getStore(blobOptions('hbpx-projects', 'strong'));
+const qualityStore=()=>getStore(blobOptions('hbpx-quality-gates', 'strong'));
+const vqaStore=()=>getStore(blobOptions('hbpx-visual-qa', 'strong'));
 async function approvedGate(projectId){
  const r=await qualityStore().list({prefix:'gate-'});
  let best=null;
@@ -15,10 +16,10 @@ async function approvedGate(projectId){
 }
 async function newestVQA(projectId){const r=await vqaStore().list({prefix:'vqa-'});let latest=null;for(const b of r.blobs||[]){try{const x=await vqaStore().get(b.key,{type:'json'});if(x?.projectId===projectId&&(!latest||new Date(x.createdAt)>new Date(latest.createdAt)))latest=x}catch{}}return latest;}
 const stores={
- invoices:()=>getStore({name:'hbpx-invoices',consistency:'strong'}),
- contracts:()=>getStore({name:'hbpx-contracts',consistency:'strong'}),
- deliveries:()=>getStore({name:'hbpx-deliveries',consistency:'strong'}),
- subscriptions:()=>getStore({name:'hbpx-subscriptions',consistency:'strong'})
+ invoices:()=>getStore(blobOptions('hbpx-invoices', 'strong')),
+ contracts:()=>getStore(blobOptions('hbpx-contracts', 'strong')),
+ deliveries:()=>getStore(blobOptions('hbpx-deliveries', 'strong')),
+ subscriptions:()=>getStore(blobOptions('hbpx-subscriptions', 'strong'))
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 const amount=v=>{const n=Number(String(v??'').replace(/[^0-9.]/g,''));return Number.isFinite(n)&&n>=0?n:0};
