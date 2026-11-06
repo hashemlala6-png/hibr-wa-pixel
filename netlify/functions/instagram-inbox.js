@@ -3,6 +3,7 @@
 const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const { env } = require('./env');
+const { blobOptions } = require('./blob-config');
 const crypto = require('crypto');
 
 const EVENT_STORE = 'hbpx-instagram-events';
@@ -15,7 +16,7 @@ const PREFIX = 'event-';
 const clean = (value, max = 4000) => String(value == null ? '' : value).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max);
 
 function store(name) {
-  return getStore({ name, consistency: 'strong' });
+  return getStore(blobOptions(name, 'strong'));
 }
 async function readEvents() {
   const s = store(EVENT_STORE), rows = [];
