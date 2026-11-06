@@ -11,8 +11,8 @@ const script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
   .map(match => match[1]).join('\n');
 
 function functionSource(name) {
-  const matcher = new RegExp('(?:async\\\\s+)?function\\\\s+' + name + '\\\\s*\\\\([^)]*\\\\)\\\\s*\\\\{');
-  const match = matcher.exec(script);
+  const matcher = /(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/g;
+  const match = [...script.matchAll(matcher)].find(entry => entry[1] === name);
   assert.ok(match, 'Missing function: ' + name);
 
   const open = script.indexOf('{', match.index);
@@ -21,6 +21,7 @@ function functionSource(name) {
   let escaped = false;
   let lineComment = false;
   let blockComment = false;
+  const templateQuote = String.fromCharCode(96);
 
   for (let i = open; i < script.length; i += 1) {
     const char = script[i];
@@ -40,7 +41,7 @@ function functionSource(name) {
     if (quote) {
       if (escaped) {
         escaped = false;
-      } else if (char === '\\\\') {
+      } else if (char === '\\') {
         escaped = true;
       } else if (char === quote) {
         quote = '';
@@ -57,7 +58,7 @@ function functionSource(name) {
       i += 1;
       continue;
     }
-    if (char === '"' || char === "'" || char === '\`') {
+    if (char === '"' || char === "'" || char === templateQuote) {
       quote = char;
       continue;
     }
