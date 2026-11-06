@@ -47,6 +47,7 @@ function loadSales(data) {
   }
 }
 function body(response) { return JSON.parse(response.body || '{}'); }
+const event = (payload, method = 'POST') => ({ httpMethod: method, headers: {}, body: JSON.stringify(payload) });
 function fixture({ contract = null, paid = 0, projectAmount = 100000 } = {}) {
   const data = {
     'hbpx-projects': { 'project-a': { id: 'project-a', leadId: 'lead-a', clientId: 'lead-identity', name: 'Project A', amount: projectAmount, status: 'planned' } },
