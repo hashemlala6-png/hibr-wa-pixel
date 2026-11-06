@@ -1,10 +1,11 @@
 const crypto=require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {requireAdmin,json}=require('./auth-utils');
 const clean=(v,n=5000)=>String(v??'').trim().slice(0,n);
-const projectsStore=()=>getStore({name:'hbpx-projects',consistency:'strong'});
-const contractsStore=()=>getStore({name:'hbpx-contracts',consistency:'strong'});
-const subscriptionsStore=()=>getStore({name:'hbpx-subscriptions',consistency:'strong'});
+const projectsStore=()=>getStore(blobOptions('hbpx-projects', 'strong'));
+const contractsStore=()=>getStore(blobOptions('hbpx-contracts', 'strong'));
+const subscriptionsStore=()=>getStore(blobOptions('hbpx-subscriptions', 'strong'));
 exports.handler=async e=>{
   connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});
