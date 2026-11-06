@@ -635,3 +635,68 @@ body{background:linear-gradient(145deg,#f8fcff 0%,#f2fbf8 48%,#fbfdf2 100%)!impo
 .hp-home-formula-equation strong{background:linear-gradient(110deg,#259bc2,#4ebd9f)!important}
 .hp-contact-footer,.brand-footer{background:linear-gradient(110deg,#174d70,#247f91 55%,#318c78)!important}
 .hp-contact-footer a{color:#fff0a6!important}
+
+
+/* COLOR FEEL REFINEMENT — calm canvas, confident color, deliberate contrast */
+:root{
+ --xp-paper:#f5f7f4;--xp-paper2:#fffefa;--xp-ink:#17384d;--xp-green:#167fa0;
+ --xp-orange:#159b91;--xp-gold:#f0c85b;--xp-muted:#536d79;--xp-line:#d8e3df;
+}
+html,body{background:#f5f7f4!important;color:#17384d!important}
+body{background:#f5f7f4!important}
+.nav,.hp-nav{background:rgba(255,254,250,.96)!important;border-color:#dce6e1!important}
+.nav .logo i,.hp-nav .logo i{background:linear-gradient(145deg,#167fa0,#1aa69b)!important}
+.nav .solid-btn,.hp-nav .solid-btn,.solid-btn,.xp-button{
+ background:#167fa0!important;color:#fff!important;border:1px solid #167fa0!important;
+ box-shadow:0 5px 14px rgba(22,127,160,.14)!important
+}
+.nav .solid-btn:hover,.hp-nav .solid-btn:hover,.solid-btn:hover,.xp-button:hover{background:#116b88!important}
+.brand-eyebrow,.brand-kicker,.kicker,.brand-step>b,.brand-pillar .pillar-mark,.xp-overline i,.xp-section-index,.xp-label{color:#167fa0!important}
+.brand-intro em,.brand-section-head h2 em,.brand-manifesto .big-line span,.intake-title em,.xp-hero h1 span{color:#168d83!important}
+.brand-final,.brand-bundle{background:#176f82!important;color:#fff!important}
+.brand-final h2,.brand-bundle h2,.brand-final p,.brand-bundle p{color:#fff!important}
+.brand-final .solid-btn,.brand-bundle .solid-btn{background:#f0c85b!important;color:#17384d!important;border-color:#f0c85b!important}
+.brand-offer-design,.brand-access-note{background:#e8f2f3!important}
+.brand-access-note{border-inline-start-color:#168d83!important}
+.brand-pillars,.brand-steps,.brand-offers,.brand-cases{border-color:#d5e2de!important}
+.brand-pillar:hover{background:#edf5f2!important}
+.intake-control,.intake-control:focus{background:#fffefa!important;border-bottom-color:#b9d1d2!important;color:#17384d!important}
+.intake-control:focus{border-color:#168d9a!important;outline:2px solid #168d9a20!important}
+.xp-hero{background:linear-gradient(118deg,#e8f3f5 0%,#f7f7ef 72%,#edf4e9 100%)!important}
+.xp-hero:before{background-image:linear-gradient(#1b60720a 1px,transparent 1px),linear-gradient(90deg,#1b60720a 1px,transparent 1px)!important}
+.xp-poster{background:linear-gradient(145deg,#126d91 0%,#168e91 100%)!important}
+.xp-poster-slice span{background:#f0c85b!important;color:#17384d!important}
+.xp-poster-slice b{background:#a8dfc5!important;color:#174c50!important}
+.xp-statement{background:#fffefa!important}
+.hp-home-hero{background:#f5f7f4!important}
+.hp-home-art{background:linear-gradient(145deg,#126d91 0%,#168e91 100%)!important}
+.hp-home-art-top,.hp-home-art-bottom{color:#e1f1ed!important}
+.hp-home-art-core>span,.hp-home-art-core i{color:#f5d878!important}
+.hp-home-pages{background:#f0f4ef!important;border-color:#d9e3dc!important}
+.hp-home-pages-head h2{color:#173f50!important}
+.hp-home-pages-head small,.hp-home-page-grid small{color:#167f83!important}
+.hp-home-page-grid{border-color:#d5e0d9!important}
+.hp-home-page-grid>a{border-color:#d5e0d9!important}
+.hp-home-page-grid strong{color:#167f83!important}
+.hp-home-page-grid span{color:#536d79!important}
+.hp-home-page-grid b{color:#167fa0!important}
+.hp-home-formula{background:#e9f1ed!important;border-color:#d5e0d9!important}
+.hp-home-formula:before{color:#167f8308!important}
+.hp-home-formula-intro h2{color:#173f50!important}
+.hp-home-formula-intro h2 em,.hp-home-formula-intro>small,.hp-home-formula-steps article>small{color:#167f83!important}
+.hp-home-formula-intro>p,.hp-home-formula-steps article p{color:#536d79!important}
+.hp-home-formula-equation span{background:#fffefa!important;border-color:#d2dfd8!important;color:#176f82!important}
+.hp-home-formula-equation b,.hp-home-formula-equation i{color:#167f83!important}
+.hp-home-formula-equation strong{background:#176f82!important;color:#fff!important}
+.hp-home-formula-steps{border-color:#d2dfd8!important}
+.hp-home-formula-steps article{border-color:#d2dfd8!important}
+.hp-home-formula-steps article>b{color:#9bb9ad!important}
+.hp-home-formula-steps article h3{color:#176f82!important}
+.hp-home-formula-note{color:#536d79!important}
+.hp-home-formula-note>span{color:#167f83!important}
+.hp-contact-footer,.brand-footer{background:#173f50!important}
+.hp-contact-footer a{color:#f5d878!important}
+@media(max-width:700px){
+ .hp-home-art{min-height:290px}
+ .hp-home-formula{background:#e9f1ed!important}
+}
