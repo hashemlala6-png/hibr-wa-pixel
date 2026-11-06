@@ -64,14 +64,17 @@ function verifyState(value, event) {
     Number(payload.expiresAt) - Number(payload.issuedAt) <= 10 * 60 * 1000 &&
     payload.sessionFingerprint === fingerprint);
 }
-function callbackUri(event) {
-  const configured = env('INSTAGRAM_REDIRECT_URI');
-  if (configured) return configured;
-  const headers = event.headers || {};
-  const host = headers['x-forwarded-host'] || headers.host || '';
-  const proto = headers['x-forwarded-proto'] || 'https';
-  const origin = host ? proto + '://' + host : (env('DEPLOY_PRIME_URL') || env('URL'));
-  return origin ? origin + '/.netlify/functions/instagram-oauth' : '';
+function callbackUri() {
+  const configured = clean(env('INSTAGRAM_REDIRECT_URI'), 1000);
+  if (!configured) return '';
+  try {
+    const url = new URL(configured);
+    if (url.protocol !== 'https:' || !url.hostname || url.username || url.password ||
+      url.search || url.hash || url.pathname !== '/.netlify/functions/instagram-oauth') return '';
+    return url.toString();
+  } catch {
+    return '';
+  }
 }
 function redirect(location) {
   return { statusCode: 302, headers: { Location: location, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }, body: '' };
@@ -129,14 +132,14 @@ async function exchangeCode(code, redirectUri) {
 }
 async function startConnect(event) {
   const appId = env('INSTAGRAM_APP_ID'), appSecret = env('INSTAGRAM_APP_SECRET');
-  const redirectUri = callbackUri(event);
+  const redirectUri = callbackUri();
   if (!appId || !appSecret || !redirectUri || !env('ADMIN_SESSION_SECRET')) {
     return json(503, {
       error: 'إعداد ربط Instagram غير مكتمل.',
       missing: [
         ...(!appId ? ['INSTAGRAM_APP_ID'] : []),
         ...(!appSecret ? ['INSTAGRAM_APP_SECRET'] : []),
-        ...(!redirectUri ? ['INSTAGRAM_REDIRECT_URI أو عنوان الموقع'] : []),
+        ...(!redirectUri ? ['INSTAGRAM_REDIRECT_URI (عنوان HTTPS ثابت ومسجل في Meta)'] : []),
         ...(!env('ADMIN_SESSION_SECRET') ? ['ADMIN_SESSION_SECRET'] : [])
       ],
       redirectUri: redirectUri || null
@@ -169,8 +172,8 @@ async function callback(event) {
     return pageRedirect('instagram_error=' + encodeURIComponent('تعذر التحقق من جلسة الربط أو انتهت صلاحية رابط التفويض. أعيدي المحاولة من لوحة المالك.'));
   }
   try {
-    const redirectUri = callbackUri(event);
-    if (!redirectUri) throw new Error('لم يتم ضبط عنوان العودة INSTAGRAM_REDIRECT_URI.');
+    const redirectUri = callbackUri();
+    if (!redirectUri) throw new Error('لم يتم ضبط عنوان العودة HTTPS الثابت INSTAGRAM_REDIRECT_URI.');
     const connection = await exchangeCode(code, redirectUri);
     await writeConnection(connection);
     await logActivity(AGENCY_ACTIVITY_ID, 'integration', 'تم ربط حساب Instagram الرسمي عبر Instagram Login', {
@@ -183,8 +186,8 @@ async function callback(event) {
 }
 async function status() {
   const connection = await readConnection();
-  const redirectUri = env('INSTAGRAM_REDIRECT_URI') || null;
-  const configured = Boolean(env('INSTAGRAM_APP_ID') && env('INSTAGRAM_APP_SECRET') && env('ADMIN_SESSION_SECRET'));
+  const redirectUri = callbackUri() || null;
+  const configured = Boolean(env('INSTAGRAM_APP_ID') && env('INSTAGRAM_APP_SECRET') && env('ADMIN_SESSION_SECRET') && redirectUri);
   return json(200, {
     connected: Boolean(connection && connection.token && connection.profile),
     configured, redirectUri, apiVersion: API_VERSION, requestedPermissions: connection?.requestedScopes || SCOPES,
