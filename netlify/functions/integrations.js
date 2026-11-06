@@ -3,8 +3,9 @@ const crypto = require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
+const { blobOptions } = require('./blob-config');
 
-const blobOptions = (name) => { const options={name,consistency:'strong'}; const siteID=env('NETLIFY_SITE_ID')||env('SITE_ID')||'76bd352d-826a-49dc-8f0f-5f576610b1ae'; const token=env('NETLIFY_AUTH_TOKEN'); if(siteID&&token){options.siteID=siteID;options.token=token;} return options; };
+
 const store = () => getStore(blobOptions('hbpx-integrations'));
 const MAX = 12000;
 const clean=(v,n=MAX)=>String(v??'').trim().slice(0,n);
@@ -98,7 +99,7 @@ exports.handler=async event=>{
     for(const r of out){if(r.error)continue;Object.assign(merged,{followers:Math.max(merged.followers,r.metrics.followers||0),reach:merged.reach+(r.metrics.reach||0),visits:merged.visits+(r.metrics.visits||0),inquiries:merged.inquiries+(r.metrics.inquiries||0),sales:merged.sales+(r.metrics.sales||0),engagement:Math.max(merged.engagement,r.metrics.engagement||0)});sources.push(r.provider)}
     if(!sources.length){await put(id,x);return json(502,{error:'فشل الاتصال بالمصادر.',results:out})}
     const stamp=new Date().toISOString(); const snap={id:'integration-snapshot-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex'),clientId:id,createdAt:stamp,updatedAt:stamp,date:until,metrics:merged,notes:`مزامنة آلية موثقة من: ${sources.join(' + ')} · الفترة ${since} → ${until}`,sources,verified:true};
-    await getStore({name:'hbpx-growth-snapshots',consistency:'strong'}).setJSON(snap.id,snap); await put(id,x); await logActivity(id,'growth','تمت مزامنة نتائج حقيقية من الحسابات المرتبطة',{sources,period:{since,until},snapshotId:snap.id});
+    await getStore(blobOptions('hbpx-growth-snapshots', 'strong')).setJSON(snap.id,snap); await put(id,x); await logActivity(id,'growth','تمت مزامنة نتائج حقيقية من الحسابات المرتبطة',{sources,period:{since,until},snapshotId:snap.id});
     return json(200,{ok:true,results:out,snapshot:snap});
   }
   return json(400,{error:'الإجراء غير معروف.'});
