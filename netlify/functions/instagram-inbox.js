@@ -46,7 +46,7 @@ function decryptToken(box) {
   ]).toString('utf8');
 }
 async function instagramGraph(path, token, method = 'GET', params = {}) {
-  const url = new URL('https://graph.instagram.com/' + API_VERSION + '/' + String(path).replace(/^\\/+/, ''));
+  const url = new URL('https://graph.instagram.com/' + API_VERSION + '/' + String(path).replace(/^\/+/, ''));
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
   }
