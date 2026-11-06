@@ -103,8 +103,20 @@ exports.handler = async event => {
 
     if (event.httpMethod === 'POST') {
       const payload = normalizePayload(body);
+      const clientRequestId = clean(body.clientRequestId, 120);
+      if (clientRequestId && !/^[A-Za-z0-9_-]{16,120}$/.test(clientRequestId)) {
+        return json(400, { error: 'معرّف طلب الحفظ غير صالح.' });
+      }
+      const id = clientRequestId
+        ? PREFIX + crypto.createHash('sha256').update(clientRequestId).digest('hex')
+        : PREFIX + Date.now() + '-' + crypto.randomBytes(5).toString('hex');
+      if (clientRequestId) {
+        const existing = await s.get(id, { type: 'json' });
+        if (existing) {
+          return json(200, { item: existing, duplicate: true, message: 'هذه المسودة محفوظة مسبقاً؛ لم تُنشأ نسخة مكررة.' });
+        }
+      }
       const now = new Date().toISOString();
-      const id = PREFIX + Date.now() + '-' + crypto.randomBytes(5).toString('hex');
       const item = {
         id,
         ...payload,

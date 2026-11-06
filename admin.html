@@ -70,12 +70,12 @@
 </div><div class="panel"><h3>أسعار الخدمات</h3><div class="detail"><label class="kv"><small>منشور منفرد</small><input id="p-single" class="search"></label><label class="kv"><small>الباقة الأساسية</small><input id="p-basic" class="search"></label><label class="kv"><small>الباقة الشاملة</small><input id="p-comprehensive" class="search"></label><label class="kv"><small>الباقة الموسعة</small><input id="p-extended" class="search"></label></div><button id="savePricing" class="primary">حفظ الأسعار</button><span id="settingsMsg" class="meta"></span></div><div class="panel"><h3>حدود النظام</h3><p class="note">الإعدادات الحساسة، الجلسات، الحسابات، الـFunctions والتكاملات تبقى محمية من الخادم. هذه الصفحة لا تعرض أسرار API.</p></div></section>
 </main></div></div>
 <script>
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];let U=null,CLIENTS=[],ORDERS=[],LEADS=[],SALES=null,GROWTH=null,NOTIFS=[];const fmt=n=>Number(n||0).toLocaleString('ar-IQ');const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));const dt=v=>v?new Intl.DateTimeFormat('ar-IQ',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'—';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];let U=null,CLIENTS=[],ORDERS=[],LEADS=[],SALES=null,GROWTH=null,NOTIFS=[];let AI_CAROUSEL_SLIDES=[],AI_CAROUSEL_UPLOADS={},AI_CAROUSEL_DRAFT_REQUEST_ID=null;const fmt=n=>Number(n||0).toLocaleString('ar-IQ');const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));const dt=v=>v?new Intl.DateTimeFormat('ar-IQ',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'—';
 async function api(url,opt={}){const r=await fetch(url,{cache:'no-store',credentials:'same-origin',...opt});let d={};try{d=await r.json()}catch{}if(r.status===401){try{const s=await fetch('/.netlify/functions/auth?action=me',{cache:'no-store',credentials:'same-origin'});const m=await s.json().catch(()=>({}));if(!m.authenticated){location.reload();throw Error('انتهت الجلسة')} }catch(e){if(e?.message==='انتهت الجلسة')throw e;throw Error('تعذر التحقق من جلسة المالك')}throw Error(d.error||'غير مصرح لهذا الإجراء');}if(!r.ok)throw Error(d.error||'تعذر تنفيذ العملية');return d}
 function fillAIClients(){const s=$('#aiClient');if(!s)return;const current=s.value;const list=(CLIENTS||[]).slice().sort((a,b)=>String(a.name||a.email||'').localeCompare(String(b.name||b.email||'')));s.innerHTML='<option value="">اختاري العميل...</option>'+list.map(x=>{const id=x.clientId||x.id;return '<option value="'+esc(id)+'">'+esc(x.name||x.email||id)+' — '+esc(x.email||'')+'</option>'}).join('');if(current&&list.some(x=>(x.clientId||x.id)===current))s.value=current;}
 function selectedAIClient(){const id=$('#aiClient')?.value||'';if(!id){throw Error('اختاري العميل أولاً.')}return id;}
 function setAIBusy(v){$('#aiBusy').textContent=v||'';if(v)$('#aiOutput').textContent='';}
-async function runAI(mode){try{const clientId=selectedAIClient();const topic=$('#aiTopic').value.trim();if(!topic)throw Error('اكتبي الموضوع أو بيانات التحليل.');setAIBusy(mode==='carousel'?'جاري بناء الكاروسيل وتوليد الصور...':'جاري التشغيل مع ذاكرة العميل...');$('#aiSlides').innerHTML='';if(mode==='carousel'){const d=await api('/.netlify/functions/generate-carousel-images',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,topic,slideCount:3})});const slides=d.slides||[];$('#aiOutput').textContent=slides.map(s=>`الشريحة ${s.slide}: ${s.overlay_text_arabic||''}`).join('\\n');$('#aiSlides').innerHTML=slides.map(s=>s.image_base64?`<div class="panel"><img src="${s.image_base64}" alt="" style="width:100%;display:block;border-radius:14px"><div class="meta" style="margin-top:8px">${s.overlay_text_arabic||''}</div></div>`:`<div class="panel"><div class="meta">الشريحة ${s.slide}: ${s.error||'تعذر توليد الصورة'}</div></div>`).join('');$('#aiBusy').textContent=d.memoryApplied?'تم توليد الكاروسيل والصور باستخدام ذاكرة العميل.':'تم توليد الكاروسيل.';return;}const d=await api('/.netlify/functions/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,mode,topic,tone:$('#aiTone').value,textType:$('#aiTextType').value,slideCount:3})});$('#aiOutput').textContent=d.text||'';$('#aiBusy').textContent=d.memoryApplied?'تم التشغيل باستخدام ذاكرة العميل.':'تم التشغيل بدون ذاكرة محفوظة.';}catch(e){$('#aiBusy').textContent=e.message}}
+async function runAI(mode){try{const clientId=selectedAIClient();const topic=$('#aiTopic').value.trim();if(!topic)throw Error('اكتبي الموضوع أو بيانات التحليل.');setAIBusy(mode==='carousel'?'جاري بناء الكاروسيل وتوليد الصور...':'جاري التشغيل مع ذاكرة العميل...');$('#aiSlides').innerHTML='';if(mode==='carousel'){AI_CAROUSEL_SLIDES=[];AI_CAROUSEL_UPLOADS={};AI_CAROUSEL_DRAFT_REQUEST_ID=null;const d=await api('/.netlify/functions/generate-carousel-images',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,topic,slideCount:3})});const slides=d.slides||[];AI_CAROUSEL_SLIDES=slides.filter(s=>s.image_base64).sort((a,b)=>a.slide-b.slide);AI_CAROUSEL_DRAFT_REQUEST_ID=makeDraftRequestId();$('#aiOutput').textContent=slides.map(s=>`الشريحة ${s.slide}: ${s.overlay_text_arabic||''}`).join('\\n');$('#aiSlides').innerHTML=slides.map(s=>s.image_base64?`<div class="panel"><img src="${s.image_base64}" alt="" style="width:100%;display:block;border-radius:14px"><div class="meta" style="margin-top:8px">${s.overlay_text_arabic||''}</div></div>`:`<div class="panel"><div class="meta">الشريحة ${s.slide}: ${s.error||'تعذر توليد الصورة'}</div></div>`).join('');$('#aiBusy').textContent=d.memoryApplied?'تم توليد الكاروسيل والصور باستخدام ذاكرة العميل.':'تم توليد الكاروسيل.';return;}const d=await api('/.netlify/functions/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,mode,topic,tone:$('#aiTone').value,textType:$('#aiTextType').value,slideCount:3})});$('#aiOutput').textContent=d.text||'';$('#aiBusy').textContent=d.memoryApplied?'تم التشغيل باستخدام ذاكرة العميل.':'تم التشغيل بدون ذاكرة محفوظة.';}catch(e){$('#aiBusy').textContent=e.message}}
 async function runResult(){try{const clientId=selectedAIClient();setAIBusy('جاري بناء خطة استراتيجية للعميل...');const d=await api('/.netlify/functions/results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,objective:$('#resultObjective').value.trim(),offer:$('#resultOffer').value.trim()})});$('#aiOutput').textContent=JSON.stringify(d.item?.plan||d.item,null,2);$('#aiBusy').textContent='تم حفظ الخطة وربطها بالعميل.';}catch(e){$('#aiBusy').textContent=e.message}}
 async function reviseCurrent(){try{const clientId=selectedAIClient();const instruction=$('#revInstruction').value.trim();const current=$('#aiOutput').textContent.trim();if(!instruction)throw Error('اكتبي التعديل المطلوب.');if(!current)throw Error('ولّدي نتيجة أولاً ثم عدّليها.');setAIBusy('جاري تنفيذ التعديل فقط...');const d=await api('/.netlify/functions/revise-ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,instruction,currentOutput:current,mode:$('#revMode').value,kind:'text',topic:$('#aiTopic').value.trim()})});$('#aiOutput').textContent=d.text||'';$('#aiBusy').textContent='تم التعديل مع الحفاظ على سياق العميل.';}catch(e){$('#aiBusy').textContent=e.message}}
 $('#aiClient')?.addEventListener('change',()=>{const id=$('#aiClient').value;$('#aiMemoryStatus').textContent=id?'عميل محدد — كل عمليات AI القادمة مرتبطة بهذه الهوية.':'لم يتم اختيار عميل.'});
@@ -83,8 +83,31 @@ $('#aiGenerate')?.addEventListener('click',()=>runAI($('#aiMode').value));
 $('#resultGenerate')?.addEventListener('click',runResult);
 $('#reviseText')?.addEventListener('click',reviseCurrent);
 $('#copyAIOutput')?.addEventListener('click',async()=>{const text=$('#aiOutput')?.textContent?.trim()||'';const status=$('#aiReviewStatus');if(!text){status.textContent='ولّدي نتيجة أولاً حتى تنسخيها.';return}try{await navigator.clipboard.writeText(text);status.textContent='تم نسخ النتيجة.'}catch{status.textContent='تعذر النسخ التلقائي؛ حددي النص وانسخيه يدوياً.'}});
+function makeDraftRequestId(){
+ const random=window.crypto?.randomUUID?.()||Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
+ return 'ai-carousel-'+Date.now()+'-'+random;
+}
+async function uploadCarouselSlide(slide,index){
+ if(AI_CAROUSEL_UPLOADS[index])return AI_CAROUSEL_UPLOADS[index];
+ const signature=await api('/.netlify/functions/instagram-media-signature',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({resourceType:'image'})});
+ const form=new FormData();
+ form.append('file',slide.image_base64);
+ form.append('api_key',signature.apiKey);
+ form.append('timestamp',String(signature.timestamp));
+ form.append('signature',signature.signature);
+ form.append('folder',signature.folder);
+ form.append('public_id',signature.publicId);
+ form.append('overwrite','false');
+ const response=await fetch(signature.uploadUrl,{method:'POST',body:form});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok||!data.secure_url)throw Error('فشل رفع الشريحة '+slide.slide+' إلى Cloudinary: '+(data.error?.message||response.status));
+ const url=new URL(data.secure_url);
+ if(url.protocol!=='https:')throw Error('رابط الشريحة '+slide.slide+' ليس HTTPS.');
+ AI_CAROUSEL_UPLOADS[index]=url.toString();
+ return AI_CAROUSEL_UPLOADS[index];
+}
 $('#saveInstagramDraft')?.addEventListener('click',async()=>{
- const status=$('#aiReviewStatus');
+ const status=$('#aiReviewStatus'),button=$('#saveInstagramDraft');
  try{
   const caption=$('#aiOutput')?.textContent?.trim()||'';
   if(!caption)throw Error('ولّدي نتيجة أولاً ثم احفظيها كمسودة.');
@@ -92,10 +115,27 @@ $('#saveInstagramDraft')?.addEventListener('click',async()=>{
   const mode=$('#aiMode')?.value||'writing';
   const client=CLIENTS.find(x=>(x.clientId||x.id)===clientId);
   const title='مسودة Instagram — '+(client?.name||client?.email||'حبر وبكسل');
-  status.textContent='جارٍ حفظ المسودة في استوديو Instagram…';
-  const r=await api('/.netlify/functions/instagram-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,caption,format:mode==='carousel'?'CAROUSEL':'IMAGE',clientId,source:'ai-studio'})});
-  status.textContent='تم حفظ المسودة. لم تُنشر. رقمها: '+r.item.id;
+  button.disabled=true;
+  if(mode==='carousel'){
+   if(AI_CAROUSEL_SLIDES.length<2)throw Error('يلزم توليد شريحتين ناجحتين على الأقل قبل حفظ كاروسيل Instagram.');
+   if(AI_CAROUSEL_SLIDES.length!==3)throw Error('نجح توليد '+AI_CAROUSEL_SLIDES.length+' من الشرائح المطلوبة. أعيدي توليد الكاروسيل حتى تكتمل الشرائح قبل رفعه.');
+   if(!confirm('سيتم رفع صور الكاروسيل إلى Cloudinary وحفظها كمسودة خاصة داخل الوكالة. لن يتم نشر أي شيء على Instagram. هل تتابعين؟'))return;
+   AI_CAROUSEL_DRAFT_REQUEST_ID=AI_CAROUSEL_DRAFT_REQUEST_ID||makeDraftRequestId();
+   const mediaUrls=[];
+   for(let i=0;i<AI_CAROUSEL_SLIDES.length;i++){
+    status.textContent='رفع الشريحة '+(i+1)+' من '+AI_CAROUSEL_SLIDES.length+' إلى التخزين السحابي…';
+    mediaUrls.push(await uploadCarouselSlide(AI_CAROUSEL_SLIDES[i],i));
+   }
+   status.textContent='تم رفع الصور. جارٍ حفظ مسودة الكاروسيل…';
+   const r=await api('/.netlify/functions/instagram-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,caption,format:'CAROUSEL',mediaUrls,clientId,source:'ai-studio',clientRequestId:AI_CAROUSEL_DRAFT_REQUEST_ID})});
+   status.textContent=(r.duplicate?'كانت المسودة محفوظة سابقاً. ':'تم حفظ مسودة الكاروسيل.')+'عدد الصور: '+mediaUrls.length+' — لم يتم النشر. رقم المسودة: '+r.item.id;
+   return;
+  }
+  status.textContent='جارٍ حفظ المسودة النصية في استوديو Instagram…';
+  const r=await api('/.netlify/functions/instagram-content',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,caption,format:'IMAGE',clientId,source:'ai-studio',clientRequestId:makeDraftRequestId()})});
+  status.textContent='تم حفظ المسودة النصية. أضيفي صورة قبل إرسالها للنشر. لم تُنشر. رقمها: '+r.item.id;
  }catch(e){status.textContent='تعذر حفظ المسودة: '+e.message}
+ finally{button.disabled=false}
 });$('#sendAIReview')?.addEventListener('click',async()=>{const status=$('#aiReviewStatus');try{const clientId=selectedAIClient();const deliverable=$('#aiOutput')?.textContent?.trim()||'';if(!deliverable)throw Error('ولّدي نتيجة أولاً ثم أرسليها للمراجعة.');const client=CLIENTS.find(x=>(x.clientId||x.id)===clientId);const mode=$('#aiMode')?.value||'writing';const phase=mode==='design'?'مراجعة الجودة':'إنتاج المحتوى';const title=`${({writing:'محتوى',design:'وصف تصميم',carousel:'خطة كاروسيل',analysis:'تحليل محتوى'}[mode]||'مخرج AI')} — ${client?.name||client?.email||clientId}`;const criteria='مراجعة صحة المعلومات، سلامة اللغة العربية، ملاءمة هوية العميل والجمهور، وضوح الهدف والدعوة إلى الإجراء، وعدم وجود ادعاءات أو نتائج غير موثقة. لا نشر أو إرسال خارجي قبل موافقة المالك.';status.textContent='جارٍ إرسال المخرج إلى بوابة المراجعة…';const d=await api('/.netlify/functions/review-gates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phase,title,deliverable,criteria})});status.textContent='تم حفظ المخرج في بوابة مراجعة المالك. لم يتم نشره أو إرساله للعميل.';if(d.item)status.textContent+=` رقم المراجعة: ${d.item.id}`;}catch(e){status.textContent='لم يُرسل للمراجعة: '+e.message}});
 
 function tab(t){$$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));$$('.view').forEach(v=>v.classList.toggle('active',v.id===t));if(t==='incoming-leads')loadIncomingLeads();if(t==='customers')renderCustomers();if(t==='sales')renderSales();if(t==='projects')renderProjects();if(t==='growth')renderGrowth();if(t==='intelligence')renderIntelligence();if(t==='ai-studio')fillAIClients();if(t==='settings')loadSystemHealth();if(t==='activity')renderActivity();}
