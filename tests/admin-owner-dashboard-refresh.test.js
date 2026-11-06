@@ -192,3 +192,40 @@ test('task status save is not retried as a failed mutation when task refresh fai
   assert.match(status.textContent, /تم حفظ حالة المهمة، لكن تعذر تحديث عرض المهام/);
   assert.equal(status.style.color, '#a94b4b');
 });
+
+
+test('owner tab navigation toggles every matching navigation and view element', () => {
+  const navButtons = ['overview', 'customers', 'sales'].map(tab => ({
+    dataset: { tab },
+    active: false,
+    classList: { toggle(name, enabled) { this.owner.active = enabled; }, owner: null }
+  }));
+  const views = ['overview', 'customers', 'sales'].map(id => ({
+    id,
+    active: false,
+    classList: { toggle(name, enabled) { this.owner.active = enabled; }, owner: null }
+  }));
+  for (const item of [...navButtons, ...views]) item.classList.owner = item;
+
+  const calls = [];
+  const context = {
+    $$: selector => selector === '.nav button' ? navButtons : selector === '.view' ? views : [],
+    loadIncomingLeads: () => calls.push('leads'),
+    renderCustomers: () => calls.push('customers'),
+    renderSales: () => calls.push('sales'),
+    renderProjects: () => calls.push('projects'),
+    renderGrowth: () => calls.push('growth'),
+    renderIntelligence: () => calls.push('intelligence'),
+    fillAIClients: () => calls.push('ai'),
+    loadSystemHealth: () => calls.push('health'),
+    renderActivity: () => calls.push('activity')
+  };
+  const tab = vm.runInNewContext(functionSource('tab') + '\ntab', context);
+  tab('customers');
+
+  assert.deepEqual(navButtons.map(item => item.active), [false, true, false]);
+  assert.deepEqual(views.map(item => item.active), [false, true, false]);
+  assert.deepEqual(calls, ['customers']);
+  assert.match(script, /\$\$\('\[data-go\]'\)\.forEach/);
+  assert.match(script, /\$\('#tabs'\)\.addEventListener\('click'/);
+});
