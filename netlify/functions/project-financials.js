@@ -1,6 +1,7 @@
 'use strict';
 
 const { getStore } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 
 const amount = value => {
   const parsed = Number(String(value == null ? '' : value).replace(/[^0-9.]/g, ''));
@@ -8,7 +9,7 @@ const amount = value => {
 };
 
 async function readAll(name, prefix) {
-  const store = getStore({ name, consistency: 'strong' });
+  const store = getStore(blobOptions(name, 'strong'));
   const page = await store.list({ prefix, limit: 1000 });
   const rows = [];
   for (const blob of page.blobs || []) {
