@@ -3,11 +3,11 @@ const {getStore,connectLambda}=require('@netlify/blobs');
 const {json,requireAdmin}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const {logActivity}=require('./client-activity');
-const blobOptions=(name)=>{const options={name,consistency:'eventual'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
-const accounts=()=>getStore(blobOptions('hbpx-client-accounts'));
-const orders=()=>getStore(blobOptions('hbpx-orders'));
-const leads=()=>getStore(blobOptions('hbpx-leads'));
-const leadIndex=()=>getStore(blobOptions('hbpx-lead-index'));
+const { blobOptions } = require('./blob-config');
+const accounts=()=>getStore(blobOptions('hbpx-client-accounts', 'eventual'));
+const orders=()=>getStore(blobOptions('hbpx-orders', 'eventual'));
+const leads=()=>getStore(blobOptions('hbpx-leads', 'eventual'));
+const leadIndex=()=>getStore(blobOptions('hbpx-lead-index', 'eventual'));
 const clean=(v,n=3000)=>String(v??'').trim().slice(0,n);
 exports.handler=async e=>{
   connectLambda(e);
