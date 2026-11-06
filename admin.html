@@ -106,7 +106,8 @@ function notificationLabel(v){return ({accepted:'قُبل طلب الإرسال 
 function leadNotificationCell(x){
  const n=x.customerNotifications||{};
  if(x.status!=='approved')return '<span class="meta">—</span>';
- const retry=n.email!=='sent'||n.whatsapp!=='sent';
+ const wasAccepted=v=>v==='sent'||v==='accepted';
+ const retry=!wasAccepted(n.email)||!wasAccepted(n.whatsapp);
  return '<div class="meta">البريد: '+notificationLabel(n.email)+'<br>واتساب: '+notificationLabel(n.whatsapp)+'</div>'+(retry?'<button class="ghost" style="margin-top:6px" onclick="retryLeadNotifications(\''+esc(x.id)+'\')">إعادة محاولة غير المرسل</button>':'');
 }
 async function retryLeadNotifications(id){
