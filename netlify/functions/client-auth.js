@@ -1,14 +1,14 @@
 const { env } = require('./env');
 const crypto=require('crypto');
 const {getStore,connectLambda}=require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {json,requireAdmin}=require('./auth-utils');
 const {createClientSession,getClientSession,sessionCookie,clearCookie}=require('./client-auth-utils');
 const {sameClientContact}=require('./client-ownership');
-const blobOptions=(name)=>{const options={name,consistency:'eventual'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID;const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return options;};
-const accounts=()=>getStore(blobOptions('hbpx-client-accounts'));
-const leads=()=>getStore(blobOptions('hbpx-leads'));
-const leadIndex=()=>getStore(blobOptions('hbpx-lead-index'));
-const rate=()=>getStore(blobOptions('hbpx-client-auth-rate'));
+const accounts=()=>getStore(blobOptions('hbpx-client-accounts', 'eventual'));
+const leads=()=>getStore(blobOptions('hbpx-leads', 'eventual'));
+const leadIndex=()=>getStore(blobOptions('hbpx-lead-index', 'eventual'));
+const rate=()=>getStore(blobOptions('hbpx-client-auth-rate', 'eventual'));
 const memoryRate = new Map();
 function memoryLimited(e,kind){ const k=kind+'-'+crypto.createHash('sha256').update(ip(e)).digest('hex').slice(0,32), now=Date.now(), win=10*60*1000, max=12; const cur=memoryRate.get(k); if(!cur||now-cur.startedAt>win){memoryRate.set(k,{startedAt:now,count:1});return true;} if(Number(cur.count||0)>=max)return false; cur.count=Number(cur.count||0)+1; return true; }
 const clean=(v,n=240)=>String(v??'').trim().slice(0,n);
