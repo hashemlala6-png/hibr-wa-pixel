@@ -46,7 +46,7 @@ exports.handler=async event=>{
  if(event.httpMethod==='OPTIONS')return json(204,{});
  const denied=requireAdmin(event);if(denied)return denied;
  if(event.httpMethod==='GET'){
-  try{const s=getStore({name:'hbpx-ceo-briefings',consistency:'eventual'});const r=await s.list({prefix:'briefing-',limit:1});const b=(r.blobs||[])[0];const latest=b?await s.get(b.key,{type:'json'}):null;return json(200,{latest:latest||null,available:hasTextProvider()})}catch{return json(200,{latest:null,available:!!env('ANTHROPIC_API_KEY')})}
+  try{const s=getStore({name:'hbpx-ceo-briefings',consistency:'eventual'});const r=await s.list({prefix:'briefing-',limit:1});const b=(r.blobs||[])[0];const latest=b?await s.get(b.key,{type:'json'}):null;return json(200,{latest:latest||null,available:hasTextProvider()})}catch{return json(200,{latest:null,available:hasTextProvider()})}
  }
  if(event.httpMethod!=='POST')return json(405,{error:'Method not allowed'});
  

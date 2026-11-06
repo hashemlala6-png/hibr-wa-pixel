@@ -130,3 +130,27 @@ test('AI status is unavailable when no text provider key exists', async () => {
     /لا يوجد مزوّد نصوص مهيأ/
   );
 });
+
+test('an empty successful response from the first provider falls back instead of being treated as generated content', async () => {
+  const provider = loadProvider({
+    AI_PRIMARY_PROVIDER: 'openai',
+    OPENAI_API_KEY: 'openai-secret',
+    ANTHROPIC_API_KEY: 'anthropic-secret'
+  });
+  const originalFetch = global.fetch;
+  const calls = [];
+  global.fetch = async (url) => {
+    calls.push(String(url));
+    if (String(url).includes('openai.com')) return response(200, { output: [] });
+    return response(200, { content: [{ type: 'text', text: 'بديل صالح' }] });
+  };
+  try {
+    const result = await provider.requestText({ systemPrompt: 's', userPrompt: 'u' });
+    assert.equal(calls.length, 2);
+    assert.equal(result.provider, 'anthropic');
+    assert.equal(result.fallbackUsed, true);
+    assert.equal(result.text, 'بديل صالح');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});

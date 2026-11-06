@@ -1,6 +1,6 @@
 const { requestText } = require('./ai-provider');
-// Netlify Function: يحمي مفتاح Claude API بالكامل عن الزوار
-// المفتاح يُقرأ من متغير بيئة (Environment Variable) مخزّن بإعدادات Netlify، وليس بالكود
+// Netlify Function: يحمي مفاتيح مزودي الذكاء الاصطناعي عن الزوار.
+// تُقرأ المفاتيح من متغيرات بيئة Netlify فقط، ولا تُرسل إلى المتصفح.
 
 const { requireAdmin, json } = require('./auth-utils');
 const { getAIContext, contextPrompt, saveAIHistory } = require('./ai-context');

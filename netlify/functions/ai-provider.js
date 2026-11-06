@@ -119,7 +119,7 @@ async function requestProvider(item, options) {
   if (!text) {
     const error = new Error(item.provider + ' أعاد استجابة بلا نص قابل للاستخدام.');
     error.provider = item.provider;
-    error.status = response.status;
+    error.status = 502;
     throw error;
   }
   return { text, provider: item.provider, model: item.model };
