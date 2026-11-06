@@ -7,7 +7,7 @@ const path = require('node:path');
 
 test('AI carousel preview escapes provider text, errors, slide IDs and image data before HTML insertion', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'admin.html'), 'utf8');
-  const renderStart = html.indexOf("$('#aiSlides').innerHTML=");
+  const renderStart = html.indexOf("$('#aiSlides').innerHTML=slides.map");
   const renderEnd = html.indexOf('const generatedCount=', renderStart);
   assert.ok(renderStart >= 0 && renderEnd > renderStart, 'AI carousel renderer block must exist');
   const renderer = html.slice(renderStart, renderEnd);
