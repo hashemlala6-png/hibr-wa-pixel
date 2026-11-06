@@ -1,15 +1,12 @@
 const { getStore, connectLambda } = require('@netlify/blobs');
 const { env } = require('./env');
+const { blobOptions } = require('./blob-config');
 
 const CONTENT_STORE = 'hbpx-instagram-content';
 const NOTIFICATION_STORE = 'hbpx-owner-notifications';
 
 function store(name) {
-  const options = { name, consistency: 'eventual' };
-  const siteID = env('NETLIFY_SITE_ID') || env('SITE_ID');
-  const token = env('NETLIFY_AUTH_TOKEN');
-  if (siteID && token) { options.siteID = siteID; options.token = token; }
-  return getStore(options);
+  return getStore(blobOptions(name, 'eventual'));
 }
 
 async function listDue(now) {
