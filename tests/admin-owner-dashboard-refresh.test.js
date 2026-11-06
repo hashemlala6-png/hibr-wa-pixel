@@ -451,7 +451,7 @@ test('owner dashboard boot is idempotent when session check and manual login fin
     setInterval: (fn, ms) => { calls.push(['interval', ms]); return calls.length; },
     dt: () => 'now'
   };
-  const show = vm.runInNewContext(functionSource('show') + '\\nshow', context);
+  const show = vm.runInNewContext(functionSource('show') + '\nshow', context);
   await Promise.all([show(), show()]);
   assert.equal(calls.filter(item => item === 'loadAll').length, 1);
   assert.equal(calls.filter(item => Array.isArray(item) && item[0] === 'interval').length, 4);
@@ -470,7 +470,7 @@ test('owner logout verifies the session is gone before reloading the dashboard',
     },
     location: { reload: () => calls.push('reload') }
   };
-  const logoutOwner = vm.runInNewContext(functionSource('logoutOwner') + '\\nlogoutOwner', context);
+  const logoutOwner = vm.runInNewContext(functionSource('logoutOwner') + '\nlogoutOwner', context);
   await logoutOwner();
   assert.deepEqual(calls, [
     '/.netlify/functions/auth?action=logout',
@@ -493,7 +493,7 @@ test('owner logout keeps the owner informed and does not reload when server stil
     },
     location: { reload: () => calls.push('reload') }
   };
-  const logoutOwner = vm.runInNewContext(functionSource('logoutOwner') + '\\nlogoutOwner', context);
+  const logoutOwner = vm.runInNewContext(functionSource('logoutOwner') + '\nlogoutOwner', context);
   await logoutOwner();
   assert.equal(calls.includes('reload'), false);
   assert.match(status.textContent, /لم يتم تأكيد إغلاق الجلسة/);
