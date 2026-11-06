@@ -72,7 +72,7 @@ async function notifyOwner(lead) {
           html: '<h2>طلب جديد — حبر وبكسل</h2><pre style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.8">' + htmlEscape(summary) + '</pre>'
         })
       });
-      results.email = r.ok ? 'sent' : 'failed';
+      results.email = r.ok ? 'accepted' : 'failed';
       if (!r.ok) console.error('lead email notification failed', r.status, (await r.text()).slice(0,300));
     } catch (err) { results.email = 'failed'; console.error('lead email notification failed', err?.message || err); }
   }
@@ -96,7 +96,7 @@ async function notifyOwner(lead) {
           ] }] }
         })
       });
-      results.whatsapp = r.ok ? 'sent' : 'failed';
+      results.whatsapp = r.ok ? 'accepted' : 'failed';
       if (!r.ok) console.error('lead WhatsApp notification failed', r.status, (await r.text()).slice(0,300));
     } catch (err) { results.whatsapp = 'failed'; console.error('lead WhatsApp notification failed', err?.message || err); }
   }
@@ -193,6 +193,10 @@ exports.handler = async (event) => {
     catch (err) { console.error('lead activity write failed', err?.message || err); }
     // Notifications are best-effort: email or WhatsApp outages must not undo a saved lead.
     const notifications = await notifyOwner(lead);
+    lead.ownerNotifications = notifications;
+    lead.ownerNotificationAt = new Date().toISOString();
+    try { await store().setJSON(id, lead); }
+    catch (err) { console.error('owner notification status persistence failed', err?.message || err); }
     return json(201, { ok: true, leadId: id, notifications });
   }
 

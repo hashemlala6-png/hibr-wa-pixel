@@ -278,6 +278,27 @@ test('retry only sends notification channels that have not already succeeded', a
 });
 
 
+test('public lead intake stores owner notification status with the lead record', async () => {
+  await withEnv({
+    RESEND_API_KEY: 'test-resend',
+    LEADS_NOTIFY_EMAIL: 'owner@example.com',
+    LEADS_FROM_EMAIL: 'studio@example.com'
+  }, async () => {
+    const service = loadLeads(baseData('07712345678'));
+    global.fetch = async url => {
+      assert.match(String(url), /api\\.resend\\.com\\/emails/);
+      return { ok: true, status: 200, async text() { return ''; } };
+    };
+    const { response, body } = await submitLead(service.handler, validLeadPayload(), '192.0.2.14');
+    assert.equal(response.statusCode, 201);
+    assert.equal(body.notifications.email, 'accepted');
+    const saved = service.stores['hbpx-leads'][body.leadId];
+    assert.equal(saved.ownerNotifications.email, 'accepted');
+    assert.equal(saved.ownerNotifications.whatsapp, 'not_configured');
+    assert.ok(saved.ownerNotificationAt);
+  });
+});
+
 test('public lead intake rejects a populated anti-bot honeypot field', async () => {
   await withEnv({}, async () => {
     const service = loadLeads(baseData('07712345678'));
