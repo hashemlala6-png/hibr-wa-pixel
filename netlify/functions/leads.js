@@ -257,7 +257,13 @@ exports.handler = async (event) => {
     current.updatedAt = new Date().toISOString();
     await store().setJSON(b.id, current);
     const identity = await resolveLeadIdentity(current);
-    await logActivity(identity.clientId,'status','تغيير حالة العميل',{from:previousStatus,to:current.status,retryCustomerNotifications,retryOwnerNotifications});
+    try {
+      await logActivity(identity.clientId,'status','تغيير حالة العميل',{from:previousStatus,to:current.status,retryCustomerNotifications,retryOwnerNotifications});
+    } catch (err) {
+      // The lead status is already persisted. Activity logging is secondary
+      // and must not prevent approval notifications or misreport the decision.
+      console.error('lead status activity logging failed', err?.message || err);
+    }
 
     let ownerNotifications = null;
     if (retryOwnerNotifications) {
