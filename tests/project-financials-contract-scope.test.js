@@ -94,3 +94,23 @@ test('a draft contract does not displace legacy payments from the sole signed ag
   assert.equal(result.paid, 10000);
   assert.equal(result.unallocatedPaid, 0);
 });
+
+
+test('payments received before any signed contract remain visible but never count as deposit or balance paid', async () => {
+  const getProjectFinancials = loadFinancials({
+    'hbpx-payments': {
+      'payment-before-contract': { id: 'payment-before-contract', projectId: 'project-a', amount: 10000 }
+    },
+    'hbpx-contracts': {}
+  });
+  const result = await getProjectFinancials('project-a', 100000);
+  assert.equal(result.contractSigned, false);
+  assert.equal(result.contractId, null);
+  assert.equal(result.total, 100000);
+  assert.equal(result.paid, 0);
+  assert.equal(result.remaining, 100000);
+  assert.equal(result.depositMet, false);
+  assert.equal(result.fullyPaid, false);
+  assert.equal(result.unallocatedPaid, 10000);
+  assert.equal(result.unallocatedPaymentCount, 1);
+});

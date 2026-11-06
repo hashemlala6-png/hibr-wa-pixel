@@ -722,5 +722,7 @@ test('owner agreements screen explains and quantifies payments outside the curre
   assert.match(agreements, /unallocatedPaid/);
   assert.match(agreements, /unallocatedPaymentCount/);
   assert.match(agreements, /لم تدخل في حساب العربون أو المتبقي/);
+  assert.match(agreements, /دفعات مسجلة قبل توقيع العقد/);
+  assert.match(agreements, /دفعات بانتظار توقيع العقد/);
   assert.match(agreements, /contractId/);
 });

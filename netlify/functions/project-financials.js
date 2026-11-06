@@ -45,10 +45,9 @@ async function getProjectFinancials(projectId, fallbackAmount = 0, financialData
         ? paymentContractId === String(signedContract.id || '')
         : signedContracts.length === 1;
     })
-    : projectPayments;
-  const unallocatedPayments = signedContract
-    ? projectPayments.filter(payment => !matchingPayments.includes(payment))
     : [];
+  // Without a signed agreement, every receipt stays visible but cannot count toward a deposit or balance.
+  const unallocatedPayments = projectPayments.filter(payment => !matchingPayments.includes(payment));
   const total = amount(signedContract?.amount) || amount(fallbackAmount);
   const paid = matchingPayments.reduce((sum, payment) => sum + amount(payment.amount), 0);
   const unallocatedPaid = unallocatedPayments.reduce((sum, payment) => sum + amount(payment.amount), 0);

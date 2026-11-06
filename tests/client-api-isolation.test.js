@@ -198,4 +198,5 @@ test('client workspace explains when recorded payments are not allocated to the 
   const source = fs.readFileSync(require.resolve('../client-workspace.js'),'utf8');
   assert.match(source,/unallocatedPaid/);
   assert.match(source,/دفعات سابقة مسجلة خارج العقد الحالي/);
+  assert.match(source,/دفعات مسجلة بانتظار توقيع العقد/);
 });

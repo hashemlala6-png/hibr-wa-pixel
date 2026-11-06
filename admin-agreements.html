@@ -40,7 +40,7 @@ async function loadProjectFinance(){
   const x=data.financial||{},preview=data.latestPreview||null;
   const facts=[
    ['قيمة العقد',moneyIQD(x.total)],
-   ['المدفوع المرتبط بالعقد الحالي',moneyIQD(x.paid)],
+   [x.contractSigned?'المدفوع المرتبط بالعقد الحالي':'دفعات مسجلة قبل توقيع العقد',moneyIQD(x.paid)],
    ['العربون المطلوب 10%',moneyIQD(x.depositRequired)],
    ['المتبقي على العقد الحالي',moneyIQD(x.remaining)]
   ];
@@ -48,8 +48,8 @@ async function loadProjectFinance(){
   const unallocatedCount=Number(x.unallocatedPaymentCount||0);
   if(unallocatedPaid>0)facts.push(['دفعات خارج العقد الحالي',moneyIQD(unallocatedPaid)]);
   const unallocatedNotice=unallocatedPaid>0
-   ?'<div role="alert" style="margin-top:12px;padding:12px;border:1px solid #e8b8a8;background:#fff5f1;border-radius:10px;color:#8d3d30"><b>تحتاج مراجعة تخصيص يدوية</b><p class="note">توجد '+unallocatedCount+' دفعة محفوظة بقيمة '+moneyIQD(unallocatedPaid)+' غير مرتبطة بالعقد الموقّع الحالي. لم تدخل في حساب العربون أو المتبقي، ولم يتم نقلها تلقائياً. راجعي الإيصالات والعقود قبل أي تصحيح.</p></div>'
-   :'<p class="note">لا توجد دفعات خارج العقد الحالي ضمن السجلات المقروءة.</p>';
+   ?'<div role="alert" style="margin-top:12px;padding:12px;border:1px solid #e8b8a8;background:#fff5f1;border-radius:10px;color:#8d3d30"><b>'+(x.contractSigned?'تحتاج مراجعة تخصيص يدوية':'دفعات بانتظار توقيع العقد')+'</b><p class="note">'+(x.contractSigned?'توجد '+unallocatedCount+' دفعة محفوظة بقيمة '+moneyIQD(unallocatedPaid)+' غير مرتبطة بالعقد الموقّع الحالي. ':'لا يوجد عقد موقّع حتى الآن؛ توجد '+unallocatedCount+' دفعة محفوظة بقيمة '+moneyIQD(unallocatedPaid)+' وتبقى خارج حساب العربون والسداد حتى توقيع الاتفاق. ')+'لم تدخل في حساب العربون أو المتبقي، ولم يتم نقلها تلقائياً. راجعي الإيصالات والعقود قبل أي تصحيح.</p></div>'
+   :'<p class="note">لا توجد دفعات بانتظار التخصيص ضمن السجلات المقروءة.</p>';
   root.innerHTML='<div class="grid">'+facts.map(([label,value])=>'<div style="background:#f1f9fd;border:1px solid #dcecf5;border-radius:10px;padding:12px"><small>'+label+'</small><b style="display:block;color:#176c91;margin-top:5px">'+value+'</b></div>').join('')+'</div>'+unallocatedNotice+
    '<p class="note">مرجع العقد الموقّع الحالي: '+String(x.contractId||'لا يوجد عقد موقّع').replace(/[&<>"']/g,'')+'</p>'+
    '<p class="note" style="margin-top:10px">العقد: '+(x.contractSigned?'موقّع من العميل':'بانتظار توقيع العميل')+' · العربون: '+(x.depositMet?'مكتمل':'غير مكتمل')+' · موافقة المحتوى: '+(data.latestPreviewApproval==='approved'?'معتمد':data.latestPreviewApproval==='needs_changes'?'يحتاج تعديلاً':'بانتظار العميل')+' · السداد: '+(x.fullyPaid?'مكتمل 100%':'غير مكتمل')+'</p>'+
