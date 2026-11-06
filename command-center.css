@@ -2,7 +2,7 @@
 /* H&P COMMAND DESK — owner operations interface */
 :root{
  --cd-paper:#f0f6f8;--cd-paper2:#f7fafb;--cd-ink:#24424f;--cd-green:#5f91a7;
- --cd-orange:#a6cad9;--cd-gold:#f7e7a1;--cd-muted:#647d79;--cd-line:#dce5e9;
+ --cd-orange:#a6cad9;--cd-gold:#f7e7a1;--cd-muted:#7d7664;--cd-line:#dce5e9;
  --cd-white:#ffffff;--cd-shadow:0 18px 48px rgba(28,42,48,.08)
 }
 html,body{background:var(--cd-paper)!important;color:var(--cd-ink)!important;font-family:'IBM Plex Sans Arabic',Arial,sans-serif!important}
@@ -128,7 +128,7 @@ html,body{background:var(--cd-paper)!important;color:var(--cd-ink)!important;fon
 #app #overview>.three>.panel h3{font-size:.88rem!important}
 #app #tabs{counter-reset:command-tab}
 #app #tabs button{counter-increment:command-tab!important;position:relative!important}
-#app #tabs button:before{content:counter(command-tab,decimal-leading-zero)!important;width:24px!important;height:auto!important;flex:0 0 24px!important;display:inline-flex!important;align-items:center!important;justify-content:flex-start!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;color:#8aa29b!important;font:800 .59rem Arial,sans-serif!important}
+#app #tabs button:before{content:counter(command-tab,decimal-leading-zero)!important;width:24px!important;height:auto!important;flex:0 0 24px!important;display:inline-flex!important;align-items:center!important;justify-content:flex-start!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;color:#a29b8a!important;font:800 .59rem Arial,sans-serif!important}
 #app #tabs button.active:before{width:24px!important;height:auto!important;color:var(--cd-orange)!important;background:transparent!important;box-shadow:none!important}
 #app #tabs button.active:after{content:"";width:2px;height:22px;background:var(--cd-orange);position:absolute;right:0;top:50%;transform:translateY(-50%)}
 @media(max-width:1000px){
