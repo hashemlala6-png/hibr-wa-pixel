@@ -96,6 +96,10 @@ exports.handler=async e=>{
    } const map={invoice:['issued','paid','cancelled','overdue'],contract:['draft','sent','accepted','rejected','expired'],delivery:['ready','delivered','archived']};
    if(!map[type]||!map[type].includes(b.status))return json(400,{error:'الحالة غير صحيحة.'});const name=type==='invoice'?'invoices':type==='contract'?'contracts':'deliveries';const x=await stores[name]().get(id,{type:'json'});if(!x)return json(404,{error:'العنصر غير موجود.'});
    if(type==='delivery'&&b.status==='delivered'&&(x.stage!=='final'||x.fullQuality!==true||x.watermarked!==false||x.rightsTransferred!==true))return json(409,{error:'لا يمكن تسليم نسخة مراجعة كملفات نهائية. التسليم النهائي يتطلب نسخة كاملة الجودة، بلا علامة مائية، وبعد نقل الحقوق.'});
+   if(type==='delivery'&&b.status==='delivered'){
+    const financial=await getProjectFinancials(x.projectId,0);
+    if(!financial.fullyPaid)return json(409,{error:'لا يمكن تأكيد التسليم النهائي قبل اكتمال سداد 100%.',financial});
+   }
    x.status=b.status;x.updatedAt=new Date().toISOString();await stores[name]().setJSON(id,x);const p=await projectStore().get(x.projectId,{type:'json'});if(p?.leadId)await logActivity(p.leadId,type,'تحديث '+type,{status:x.status});return json(200,{item:x});
   }
   return json(405,{error:'Method not allowed'});

@@ -10,6 +10,8 @@ function loadSales() {
   const originalLoad = Module._load;
   const stores = {
     'hbpx-projects': { 'project-a': { id: 'project-a', leadId: 'lead-a', status: 'planned', amount: 100000 } },
+    'hbpx-contracts': { 'contract-a': { id:'contract-a', projectId:'project-a', amount:100000, status:'signed', signedAt:'2026-11-06T10:00:00.000Z' } },
+    'hbpx-deliveries': { 'delivery-preview': { id:'delivery-preview', projectId:'project-a', stage:'preview', status:'ready', createdAt:'2026-11-06T11:00:00.000Z', clientApproval:{decision:'approved'} } },
     'hbpx-leads': { 'lead-a': { id: 'lead-a', email: 'client@example.com', whatsapp: '9647700000000' } },
     'hbpx-client-accounts': {},
     'hbpx-payments': {}

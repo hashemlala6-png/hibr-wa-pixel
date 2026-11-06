@@ -10,7 +10,8 @@ const stores = {
   projects: () => getStore(blobOptions('hbpx-projects')),
   payments: () => getStore(blobOptions('hbpx-payments')),
   leads: () => getStore(blobOptions('hbpx-leads')),
-  accounts: () => getStore(blobOptions('hbpx-client-accounts'))
+  accounts: () => getStore(blobOptions('hbpx-client-accounts')),
+  deliveries: () => getStore(blobOptions('hbpx-deliveries'))
 };
 const allowed = {
   quotes: ['draft','sent','accepted','rejected','expired'],
@@ -154,6 +155,15 @@ exports.handler=async event=>{
     if(b.receivedConfirmed!==true)return json(400,{error:'لا يمكن تسجيل مبلغ ما لم تؤكدي أنه استُلم فعلاً.'});
     const project=await stores.projects().get(clean(b.projectId,120),{type:'json'}).catch(()=>null);
     if(!project)return json(404,{error:'المشروع غير موجود.'});
+    const financial=await getProjectFinancials(project.id,project.amount);
+    if(!financial.contractSigned)return json(409,{error:'لا يمكن تسجيل دفعة قبل توقيع العقد من العميل.',financial});
+    const nextPaid=financial.paid+amount(b.amount);
+    if(nextPaid>financial.total)return json(409,{error:'مجموع الدفعات سيتجاوز قيمة العقد. راجعي المبلغ المسجل قبل المتابعة.',financial});
+    const deliveries=stores.deliveries();const deliveryPage=await deliveries.list({prefix:'delivery-',limit:1000});const previews=[];
+    for(const blob of deliveryPage.blobs||[]){const item=await deliveries.get(blob.key,{type:'json'}).catch(()=>null);if(item?.projectId===project.id&&item.stage==='preview')previews.push(item);}
+    previews.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+    const contentApproved=previews[0]?.clientApproval?.decision==='approved';
+    if(nextPaid>financial.depositRequired&&!contentApproved)return json(409,{error:'الدفعة قبل اعتماد المحتوى لا يجوز أن تتجاوز عربون 10%. انتظري موافقة العميل على آخر معاينة لتسجيل الـ90% المتبقية.',financial});
     const clientId=await clientIdForProject(project);
     const id=`payment-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
     const x={id,projectId:clean(b.projectId,120),clientId:clientId||null,amount:amount(b.amount),method:clean(b.method,60),note:clean(b.note,500),ownerConfirmedReceived:true,recordedBy:'owner',receivedConfirmedAt:now,createdAt:now};
@@ -172,6 +182,13 @@ exports.handler=async event=>{
     const financial=await getProjectFinancials(x.id,x.amount);
     if(!financial.contractSigned)return json(409,{error:'لا يمكن بدء التنفيذ قبل توقيع عقد المشروع من العميل.',financial});
     if(!financial.depositMet)return json(409,{error:'لا يمكن بدء التنفيذ قبل استلام عربون 10% من قيمة العقد. سجّلي الدفعة المستلمة أولاً.',financial});
+   }
+   if(collection==='projects'&&status==='completed'){
+    const financial=await getProjectFinancials(x.id,x.amount);
+    if(!financial.fullyPaid)return json(409,{error:'لا يمكن إغلاق المشروع قبل اكتمال سداد 100% من قيمة العقد.',financial});
+    const deliveries=stores.deliveries();const page=await deliveries.list({prefix:'delivery-',limit:1000});const finalDelivered=[];
+    for(const blob of page.blobs||[]){const item=await deliveries.get(blob.key,{type:'json'}).catch(()=>null);if(item?.projectId===x.id&&item.stage==='final'&&item.status==='delivered'&&item.fullQuality===true&&item.rightsTransferred===true)finalDelivered.push(item);}
+    if(!finalDelivered.length)return json(409,{error:'لا يمكن إغلاق المشروع قبل تسجيل تسليم الملفات النهائية للعميل ونقل الحقوق بعد الدفع.'});
    }
    const previousStatus=x.status;x.status=status;x.updatedAt=new Date().toISOString();await stores[collection]().setJSON(id,x);
    const clientId=await clientIdForRecord(x);
