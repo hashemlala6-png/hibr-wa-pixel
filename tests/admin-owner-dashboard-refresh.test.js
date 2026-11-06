@@ -536,3 +536,81 @@ test('AI Studio lock preserves the current result during upload and owner review
   assert.equal(begin('جارٍ الحفظ…',false),true);
   assert.equal(output.textContent,'approved draft');
 });
+
+
+test('AI revision sends the captured current output before acquiring the busy lock', async () => {
+  const calls = [];
+  const fields = {
+    '#aiBusy': { textContent: '' },
+    '#aiOutput': { textContent: 'النص الأصلي الذي يجب تعديله' },
+    '#revInstruction': { value: 'عدّل العنوان فقط' },
+    '#revMode': { value: 'writing' },
+    '#aiTopic': { value: 'حملة تعريفية' },
+    '#aiClient': { value: 'client-a', options: [{value:'client-a'}] }
+  };
+  const context = {
+    AI_STUDIO_BUSY: false,
+    AI_OUTPUT_CLIENT_ID: 'client-a',
+    $: selector => fields[selector] || {disabled:false},
+    selectedAIClient: () => 'client-a',
+    assertAIOutputClient: id => id,
+    beginAIStudioAction: (message, clearOutput) => {
+      assert.equal(clearOutput, false, 'revision must not clear its source output');
+      context.AI_STUDIO_BUSY = true;
+      fields['#aiBusy'].textContent = message;
+      return true;
+    },
+    endAIStudioAction: () => { context.AI_STUDIO_BUSY = false; },
+    api: async (url, options) => {
+      calls.push({url,body:JSON.parse(options.body)});
+      return {text:'النص المعدل مع الحفاظ على بقية المحتوى'};
+    }
+  };
+  const revise = vm.runInNewContext(functionSource('reviseCurrent')+'\\nreviseCurrent',context);
+  await revise();
+  assert.equal(calls.length,1);
+  assert.equal(calls[0].url,'/.netlify/functions/revise-ai');
+  assert.equal(calls[0].body.currentOutput,'النص الأصلي الذي يجب تعديله');
+  assert.equal(calls[0].body.clientId,'client-a');
+  assert.equal(fields['#aiOutput'].textContent,'النص المعدل مع الحفاظ على بقية المحتوى');
+  assert.equal(context.AI_OUTPUT_CLIENT_ID,'client-a');
+  assert.equal(context.AI_STUDIO_BUSY,false);
+});
+
+test('AI revision refuses to apply a result to a different selected client', async () => {
+  const calls=[];
+  const fields={
+    '#aiBusy':{textContent:''},
+    '#aiOutput':{textContent:'نتيجة العميل الأول'},
+    '#revInstruction':{value:'غيّر العنوان'},
+    '#revMode':{value:'writing'},
+    '#aiTopic':{value:'موضوع'},
+  };
+  const context={
+    AI_STUDIO_BUSY:false,
+    AI_OUTPUT_CLIENT_ID:'client-a',
+    $:selector=>fields[selector]||{disabled:false},
+    selectedAIClient:()=> 'client-b',
+    assertAIOutputClient:id=>{if(id!=='client-a')throw Error('هذه النتيجة مرتبطة بعميل آخر.');return id;},
+    api:async()=>{calls.push('api');}
+  };
+  const revise=vm.runInNewContext(functionSource('reviseCurrent')+'\\nreviseCurrent',context);
+  await revise();
+  assert.deepEqual(calls,[]);
+  assert.equal(fields['#aiOutput'].textContent,'نتيجة العميل الأول');
+  assert.match(fields['#aiBusy'].textContent,/مرتبطة بعميل آخر/);
+  assert.equal(context.AI_STUDIO_BUSY,false);
+});
+
+test('saving and reviewing AI output must use the client that generated that output', () => {
+  const context={
+    AI_OUTPUT_CLIENT_ID:'client-a',
+    assertAIOutputClient: id => {
+      if(String(id)!==context.AI_OUTPUT_CLIENT_ID)throw Error('النتيجة الحالية مرتبطة بعميل آخر.');
+      return context.AI_OUTPUT_CLIENT_ID;
+    }
+  };
+  const assertOwner=vm.runInNewContext(functionSource('assertAIOutputClient')+'\\nassertAIOutputClient',context);
+  assert.equal(assertOwner('client-a'),'client-a');
+  assert.throws(()=>assertOwner('client-b'),/مرتبطة بعميل آخر/);
+});

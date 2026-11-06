@@ -71,11 +71,33 @@
 </div><div class="panel"><h3>أسعار الخدمات</h3><div class="detail"><label class="kv"><small>منشور منفرد</small><input id="p-single" class="search"></label><label class="kv"><small>الباقة الأساسية</small><input id="p-basic" class="search"></label><label class="kv"><small>الباقة الشاملة</small><input id="p-comprehensive" class="search"></label><label class="kv"><small>الباقة الموسعة</small><input id="p-extended" class="search"></label></div><button id="savePricing" class="primary">حفظ الأسعار</button><span id="settingsMsg" class="meta" role="status" aria-live="polite"></span></div><div class="panel"><h3>حدود النظام</h3><p class="note">الإعدادات الحساسة، الجلسات، الحسابات، الـFunctions والتكاملات تبقى محمية من الخادم. هذه الصفحة لا تعرض أسرار API.</p></div></section>
 </main></div></div>
 <script>
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];let ownerBootPromise=null;let U=null,UNIVERSE_ERROR='',CLIENTS=[],ORDERS=[],LEADS=[],SALES=null,GROWTH=null,NOTIFS=[],NOTIFS_ERROR='',OPS_ERROR='',GROWTH_ERROR='',CLIENTS_ERROR='',ORDERS_ERROR='',SALES_ERROR='';let AI_STUDIO_BUSY=false;let AI_CAROUSEL_SLIDES=[],AI_CAROUSEL_UPLOADS={},AI_CAROUSEL_DRAFT_REQUEST_ID=null,AI_CAROUSEL_REQUESTED_COUNT=3;const fmt=n=>Number(n||0).toLocaleString('ar-IQ');const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));const jsArg=v=>esc(JSON.stringify(String(v??'')));const dt=v=>v?new Intl.DateTimeFormat('ar-IQ',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'—';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];let ownerBootPromise=null;let U=null,UNIVERSE_ERROR='',CLIENTS=[],ORDERS=[],LEADS=[],SALES=null,GROWTH=null,NOTIFS=[],NOTIFS_ERROR='',OPS_ERROR='',GROWTH_ERROR='',CLIENTS_ERROR='',ORDERS_ERROR='',SALES_ERROR='';let AI_STUDIO_BUSY=false,AI_OUTPUT_CLIENT_ID='';let AI_CAROUSEL_SLIDES=[],AI_CAROUSEL_UPLOADS={},AI_CAROUSEL_DRAFT_REQUEST_ID=null,AI_CAROUSEL_REQUESTED_COUNT=3;const fmt=n=>Number(n||0).toLocaleString('ar-IQ');const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));const jsArg=v=>esc(JSON.stringify(String(v??'')));const dt=v=>v?new Intl.DateTimeFormat('ar-IQ',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v)):'—';
 async function api(url,opt={}){const r=await fetch(url,{cache:'no-store',credentials:'same-origin',...opt});let d={};try{d=await r.json()}catch{}if(r.status===401){try{const s=await fetch('/.netlify/functions/auth?action=me',{cache:'no-store',credentials:'same-origin'});const m=await s.json().catch(()=>({}));if(!m.authenticated){location.reload();throw Error('انتهت الجلسة')} }catch(e){if(e?.message==='انتهت الجلسة')throw e;throw Error('تعذر التحقق من جلسة المالك')}throw Error(d.error||'غير مصرح لهذا الإجراء');}if(!r.ok)throw Error(d.error||'تعذر تنفيذ العملية');return d}
 function fillAIClients(){const s=$('#aiClient');if(!s)return;const current=s.value;const list=(CLIENTS||[]).slice().sort((a,b)=>String(a.name||a.email||'').localeCompare(String(b.name||b.email||'')));s.innerHTML='<option value="">اختاري العميل...</option>'+list.map(x=>{const id=x.clientId||x.id;return '<option value="'+esc(id)+'">'+esc(x.name||x.email||id)+' — '+esc(x.email||'')+'</option>'}).join('');if(current&&list.some(x=>(x.clientId||x.id)===current))s.value=current;}
 function selectedAIClient(){const id=$('#aiClient')?.value||'';if(!id){throw Error('اختاري العميل أولاً.')}return id;}
-function setAIBusy(v){$('#aiBusy').textContent=v||'';if(v)$('#aiOutput').textContent='';}
+function assertAIOutputClient(clientId){
+ const expected=String(AI_OUTPUT_CLIENT_ID||'');
+ if(!expected)throw Error('النتيجة الحالية غير مرتبطة بعميل. ولّدي المحتوى من جديد داخل استوديو العميل.');
+ if(expected!==String(clientId||''))throw Error('هذه النتيجة مرتبطة بعميل آخر. اختاري العميل المرتبط بها أو أعيدي توليد المحتوى قبل الحفظ.');
+ return expected;
+}
+function selectAIClient(id){
+ if(AI_STUDIO_BUSY){
+  $('#aiMemoryStatus').textContent='هناك عملية ذكاء اصطناعي قيد التنفيذ؛ لم يتغير العميل المرتبط بالنتيجة.';
+  return false;
+ }
+ const select=$('#aiClient');
+ if(!select)return false;
+ const value=String(id||'');
+ if(![...select.options].some(option=>option.value===value)){
+  $('#aiMemoryStatus').textContent='ملف العميل غير موجود ضمن القائمة المحمّلة.';
+  return false;
+ }
+ select.value=value;
+ $('#aiMemoryStatus').textContent=value?'عميل محدد — جميع النتائج الجديدة سترتبط بهذا الملف.':'لم يتم اختيار عميل.';
+ return true;
+}
+function setAIBusy(v){$('#aiBusy').textContent=v||'';if(v){$('#aiOutput').textContent='';AI_OUTPUT_CLIENT_ID='';AI_CAROUSEL_SLIDES=[];AI_CAROUSEL_UPLOADS={};AI_CAROUSEL_DRAFT_REQUEST_ID=null;}}
 function beginAIStudioAction(message,clearOutput=true){
  if(AI_STUDIO_BUSY){
   const status=$('#aiReviewStatus');
@@ -110,6 +132,7 @@ async function runAI(mode){
    AI_CAROUSEL_SLIDES=slides.filter(s=>s.image_base64).sort((a,b)=>a.slide-b.slide);
    AI_CAROUSEL_DRAFT_REQUEST_ID=makeDraftRequestId();
    $('#aiOutput').textContent=slides.map(s=>`الشريحة ${s.slide}: ${s.overlay_text_arabic||''}`).join('\\n');
+   AI_OUTPUT_CLIENT_ID=String(clientId);
    $('#aiSlides').innerHTML=slides.map(s=>s.image_base64?`<div class="panel"><img src="${esc(s.image_base64)}" alt="" style="width:100%;display:block;border-radius:14px"><div class="meta" style="margin-top:8px">${esc(s.overlay_text_arabic||'')}</div></div>`:`<div class="panel"><div class="meta">الشريحة ${esc(s.slide)}: ${esc(s.error||'تعذر توليد الصورة')}</div></div>`).join('');
    const generatedCount=AI_CAROUSEL_SLIDES.length;
    $('#aiBusy').textContent=generatedCount===AI_CAROUSEL_REQUESTED_COUNT?(d.memoryApplied?'اكتمل توليد '+generatedCount+' شرائح باستخدام ذاكرة العميل.':'اكتمل توليد '+generatedCount+' شرائح.'):('تولدت '+generatedCount+' من '+AI_CAROUSEL_REQUESTED_COUNT+' شرائح. أصلحي الشرائح غير الناجحة ثم أعيدي التوليد قبل الحفظ.');
@@ -117,6 +140,7 @@ async function runAI(mode){
   }
   const d=await api('/.netlify/functions/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,mode,topic,tone:$('#aiTone').value,textType:$('#aiTextType').value,slideCount:3})});
   $('#aiOutput').textContent=d.text||'';
+  AI_OUTPUT_CLIENT_ID=String(clientId);
   $('#aiBusy').textContent=d.memoryApplied?'تم التشغيل باستخدام ذاكرة العميل.':'تم التشغيل بدون ذاكرة محفوظة.';
  }catch(e){$('#aiBusy').textContent=e.message||'تعذر تشغيل أداة الذكاء الاصطناعي.';}
  finally{endAIStudioAction();}
@@ -128,18 +152,27 @@ async function runResult(){
   if(!objective&&!offer)throw Error('اكتبي الهدف أو العرض حتى تُبنى الخطة.');
   const d=await api('/.netlify/functions/results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,objective,offer})});
   $('#aiOutput').textContent=JSON.stringify(d.item?.plan||d.item,null,2);
+  AI_OUTPUT_CLIENT_ID=String(clientId);
   $('#aiBusy').textContent='تم حفظ الخطة وربطها بالعميل.';
  }catch(e){$('#aiBusy').textContent=e.message||'تعذر بناء الخطة.';}
  finally{endAIStudioAction();}
 }
 async function reviseCurrent(){
- if(!beginAIStudioAction('جاري تنفيذ التعديل فقط...',true))return;
+ if(AI_STUDIO_BUSY)return;
+ let clientId,instruction,current;
  try{
-  const clientId=selectedAIClient(),instruction=$('#revInstruction').value.trim(),current=$('#aiOutput').textContent.trim();
+  clientId=assertAIOutputClient(selectedAIClient());
+  instruction=$('#revInstruction').value.trim();
+  current=$('#aiOutput').textContent.trim();
   if(!instruction)throw Error('اكتبي التعديل المطلوب.');
   if(!current)throw Error('ولّدي نتيجة أولاً ثم عدّليها.');
+ }catch(e){$('#aiBusy').textContent=e.message||'تعذر تجهيز التعديل.';return;}
+ if(!beginAIStudioAction('جاري تنفيذ التعديل فقط...',false))return;
+ try{
   const d=await api('/.netlify/functions/revise-ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clientId,instruction,currentOutput:current,mode:$('#revMode').value,kind:'text',topic:$('#aiTopic').value.trim()})});
-  $('#aiOutput').textContent=d.text||'';
+  if(!String(d.text||'').trim())throw Error('لم يُرجع الخادم نتيجة تعديل صالحة؛ احتفظت بالنص السابق.');
+  $('#aiOutput').textContent=d.text;
+  AI_OUTPUT_CLIENT_ID=String(clientId);
   $('#aiBusy').textContent='تم التعديل مع الحفاظ على سياق العميل.';
  }catch(e){$('#aiBusy').textContent=e.message||'تعذر تعديل النتيجة.';}
  finally{endAIStudioAction();}
@@ -179,7 +212,7 @@ $('#saveInstagramDraft')?.addEventListener('click',async()=>{
  try{
   const caption=$('#aiOutput')?.textContent?.trim()||'';
   if(!caption)throw Error('ولّدي نتيجة أولاً ثم احفظيها كمسودة.');
-  const clientId=selectedAIClient();
+  const clientId=assertAIOutputClient(selectedAIClient());
   const mode=$('#aiMode')?.value||'writing';
   const client=CLIENTS.find(x=>(x.clientId||x.id)===clientId);
   const title='مسودة Instagram — '+(client?.name||client?.email||'حبر وبكسل');
@@ -207,7 +240,7 @@ $('#saveInstagramDraft')?.addEventListener('click',async()=>{
  const status=$('#aiReviewStatus');
  if(!beginAIStudioAction('جارٍ إرسال المخرج إلى بوابة المراجعة…',false))return;
  try{
-  const clientId=selectedAIClient(),deliverable=$('#aiOutput')?.textContent?.trim()||'';
+  const clientId=assertAIOutputClient(selectedAIClient()),deliverable=$('#aiOutput')?.textContent?.trim()||'';
   if(!deliverable)throw Error('ولّدي نتيجة أولاً ثم أرسليها للمراجعة.');
   const client=CLIENTS.find(x=>(x.clientId||x.id)===clientId),mode=$('#aiMode')?.value||'writing';
   const phase=mode==='design'?'مراجعة الجودة':'إنتاج المحتوى';
@@ -399,7 +432,7 @@ function stat(label,val,key){return `<div class="stat"><button ${key?`onclick="t
 function renderOverview(){if(!U)return;const c=U.counts||{};$('#stats').innerHTML=[stat('الزوار الفريدون 30 يوم',c.visitors30,'activity'),stat('الزوار الآن',c.activeVisitors,'activity'),stat('الحسابات المسجلة',c.registered,'customers'),stat('سجّلوا آخر 30 يوم',c.registered30,'customers'),stat('دخلوا آخر 30 يوم',c.loggedIn30,'customers'),stat('الطلبات',c.orders,'sales'),stat('المشاريع النشطة',c.activeProjects,'projects'),stat('التحصيل',fmt(c.revenue)+' د.ع','sales')].join('');$('#reasons').innerHTML=(GROWTH?.reasons||[]).map(x=>`<div class="row"><div><b>${esc(x.title)}</b><div class="meta">${esc(x.detail)}</div></div><span class="badge">${x.type==='up'?'↑':x.type==='down'?'↓':'•'}</span></div>`).join('')||'<p class="note">لا توجد إشارات كافية بعد.</p>';$('#feed').innerHTML=(U.activityFeed||[]).slice(0,10).map(x=>`<div class="row"><div><b>${esc(x.title)}</b><div class="meta">${esc(x.meta)}</div></div><span class="meta">${dt(x.at)}</span></div>`).join('')||'<p class="note">لا نشاط.</p>';$('#liveSummary').innerHTML=`<div class="row"><b>الزوار الآن</b><strong>${fmt(c.activeVisitors)}</strong></div><div class="row"><b>العملاء الآن</b><strong>${fmt(c.activeClients)}</strong></div><div class="row"><b>الملاك الآن</b><strong>${fmt(c.activeOwners)}</strong></div>`;$('#pages').innerHTML=(U.topPages||[]).slice(0,7).map(x=>`<div class="row"><span>${esc(x.path)}</span><b>${fmt(x.views)}</b></div>`).join('');$('#sources').innerHTML=(U.sources||[]).slice(0,7).map(x=>`<div class="row"><span>${esc(x.name)}</span><b>${fmt(x.count)}</b></div>`).join('')}
 function renderCustomers(){if(!U)return;const rows=(U.recentRegistrations||[]);$('#customersTable').innerHTML=rows.map(x=>`<tr><td><b>${esc(x.name||'بدون اسم')}</b></td><td>${esc(x.email||'—')}</td><td>${esc(x.whatsapp||'—')}</td><td>${dt(x.createdAt)}</td><td>${dt(x.lastLoginAt)}</td><td><button class="ghost" onclick="openClient(${jsArg(x.id)})">فتح الملف</button></td></tr>`).join('');renderSearch('')}
 function renderSearch(q){const box=$('#searchResults');if(!q){box.innerHTML='';return}const n=q.toLowerCase();const hits=[];for(const x of (U?.recentRegistrations||[])){if([x.name,x.email,x.whatsapp,x.id].some(v=>String(v||'').toLowerCase().includes(n)))hits.push(`<div class="search-item"><b>${esc(x.name||x.email)}</b><div class="meta">${esc(x.email||'')} · ${esc(x.whatsapp||'')}</div><button class="ghost" onclick="openClient(${jsArg(x.id)})">فتح الملف</button></div>`)}for(const x of (U?.recentOrders||[])){if([x.name,x.email,x.service,x.id].some(v=>String(v||'').toLowerCase().includes(n)))hits.push(`<div class="search-item"><b>طلب — ${esc(x.service||'مشروع')}</b><div class="meta">${esc(x.name||x.email||'')} · ${dt(x.createdAt)}</div></div>`)}box.innerHTML=hits.slice(0,20).join('')||'<div class="search-item">لا توجد نتيجة.</div>'}
-$('#globalSearch').oninput=e=>renderSearch(e.target.value.trim());async function openClient(id){const x=(CLIENTS||[]).find(c=>c.id===id||c.clientId===id);if(x){const s=$('#aiClient');if(s)s.value=x.clientId||x.id;$('#aiMemoryStatus').textContent='عميل محدد — أدوات AI ستستخدم هذه الذاكرة.'}if(!x){alert(CLIENTS_ERROR?'تعذر تحميل ملفات العملاء: '+CLIENTS_ERROR:'العميل غير موجود في سجل العملاء المحمّل.');return}const d=$('#customerDetail');d.classList.remove('hidden');d.innerHTML=`<h3>${esc(x.name||'عميل')}</h3><div class="detail"><div class="kv"><small>واتساب</small>${esc(x.whatsapp||'—')}</div><div class="kv"><small>الحالة</small>${esc(x.status||'—')}</div><div class="kv"><small>المصدر</small>${esc(x.source||'—')}</div><div class="kv"><small>المشاريع</small>${fmt(x.stats?.projects)}</div><div class="kv"><small>المدفوع</small>${fmt(x.stats?.totalPaid)} د.ع</div><div class="kv"><small>المهام المفتوحة</small>${fmt(x.stats?.openTasks)}</div></div><div class="actions" style="margin:16px 0"><button class="primary" onclick="tab('ai-studio');document.getElementById('aiClient').value=${jsArg(x.clientId||x.id)};document.getElementById('aiMemoryStatus').textContent='عميل محدد — أدوات الذكاء الاصطناعي مرتبطة بهذا الملف.';document.getElementById('aiTopic').focus()">فتح أدوات الذكاء الاصطناعي لهذا العميل</button><button class="ghost" onclick="tab('projects')">عرض المشاريع والمهام</button></div><h3 style="margin-top:20px">ذاكرة العميل</h3><div class="detail">${Object.entries(x.memory||{}).filter(([k])=>k!=='updatedAt').map(([k,v])=>`<div class="kv"><small>${esc(k)}</small>${esc(v||'—')}</div>`).join('')}</div><h3 style="margin-top:20px">آخر النشاط</h3>${(x.activityTimeline||[]).slice(0,20).map(a=>`<div class="row"><div><b>${esc(a.label)}</b><div class="meta">${esc(a.type)}</div></div><span class="meta">${dt(a.at)}</span></div>`).join('')}`;d.scrollIntoView({behavior:'smooth',block:'start'})}
+$('#globalSearch').oninput=e=>renderSearch(e.target.value.trim());async function openClient(id){const x=(CLIENTS||[]).find(c=>c.id===id||c.clientId===id);if(x&&!AI_STUDIO_BUSY){selectAIClient(x.clientId||x.id)}else if(x&&AI_STUDIO_BUSY){$('#aiMemoryStatus').textContent='عملية ذكاء اصطناعي جارية؛ بقي ارتباط النتيجة بالعميل الأصلي.'}if(!x){alert(CLIENTS_ERROR?'تعذر تحميل ملفات العملاء: '+CLIENTS_ERROR:'العميل غير موجود في سجل العملاء المحمّل.');return}const d=$('#customerDetail');d.classList.remove('hidden');d.innerHTML=`<h3>${esc(x.name||'عميل')}</h3><div class="detail"><div class="kv"><small>واتساب</small>${esc(x.whatsapp||'—')}</div><div class="kv"><small>الحالة</small>${esc(x.status||'—')}</div><div class="kv"><small>المصدر</small>${esc(x.source||'—')}</div><div class="kv"><small>المشاريع</small>${fmt(x.stats?.projects)}</div><div class="kv"><small>المدفوع</small>${fmt(x.stats?.totalPaid)} د.ع</div><div class="kv"><small>المهام المفتوحة</small>${fmt(x.stats?.openTasks)}</div></div><div class="actions" style="margin:16px 0"><button class="primary" onclick="tab('ai-studio');selectAIClient(${jsArg(x.clientId||x.id)});document.getElementById('aiTopic').focus()">فتح أدوات الذكاء الاصطناعي لهذا العميل</button><button class="ghost" onclick="tab('projects')">عرض المشاريع والمهام</button></div><h3 style="margin-top:20px">ذاكرة العميل</h3><div class="detail">${Object.entries(x.memory||{}).filter(([k])=>k!=='updatedAt').map(([k,v])=>`<div class="kv"><small>${esc(k)}</small>${esc(v||'—')}</div>`).join('')}</div><h3 style="margin-top:20px">آخر النشاط</h3>${(x.activityTimeline||[]).slice(0,20).map(a=>`<div class="row"><div><b>${esc(a.label)}</b><div class="meta">${esc(a.type)}</div></div><span class="meta">${dt(a.at)}</span></div>`).join('')}`;d.scrollIntoView({behavior:'smooth',block:'start'})}
 function renderSales(){
  const c=U?.counts||{};
  $('#salesStats').innerHTML=SALES_ERROR
