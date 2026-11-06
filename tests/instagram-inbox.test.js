@@ -33,7 +33,7 @@ function loadInbox({ events = {}, connection = null, denied = false, status = nu
       json(statusCode, body) { return { statusCode, body: JSON.stringify(body) }; }
     };
     if (request === './env' && parent && parent.filename === resolved) return {
-      env(name) { if (Object.prototype.hasOwnProperty.call(envOverrides,name)) return envOverrides[name]; return name === 'INSTAGRAM_WEBHOOK_VERIFY_TOKEN' ? 'private-verify-token' : name === 'INSTAGRAM_APP_SECRET' ? 'private-app-secret' : name === 'URL' ? 'https://fabulous-bublanina-8d5626.netlify.app' : ''; }
+      env(name) { if (Object.prototype.hasOwnProperty.call(envOverrides,name)) return envOverrides[name]; return name === 'INSTAGRAM_WEBHOOK_VERIFY_TOKEN' ? 'private-verify-token' : name === 'INSTAGRAM_APP_SECRET' ? 'private-app-secret' : name === 'ADMIN_SESSION_SECRET' ? 'test-admin-session-secret' : name === 'INSTAGRAM_API_VERSION' ? 'v26.0' : name === 'URL' ? 'https://fabulous-bublanina-8d5626.netlify.app' : ''; }
     };
     return originalLoad.call(this, request, parent, isMain);
   };
@@ -41,6 +41,27 @@ function loadInbox({ events = {}, connection = null, denied = false, status = nu
   finally { Module._load = originalLoad; delete require.cache[resolved]; }
 }
 function body(response) { return JSON.parse(response.body || '{}'); }
+function encryptedToken(value, secret = 'test-admin-session-secret') {
+  const crypto = require('node:crypto');
+  const key = crypto.createHash('sha256').update(secret).digest();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const data = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
+  return {
+    iv: iv.toString('base64url'),
+    data: data.toString('base64url'),
+    tag: cipher.getAuthTag().toString('base64url')
+  };
+}
+function webhookVerification() {
+  const crypto = require('node:crypto');
+  const hash = value => crypto.createHash('sha256').update(value).digest('hex');
+  return {
+    verifiedAt: '2026-11-06T13:00:00.000Z',
+    verifyTokenFingerprint: hash('private-verify-token'),
+    appSecretFingerprint: hash('private-app-secret')
+  };
+}
 
 test('owner inbox filters webhook events to the currently connected Instagram account', async () => {
   const service = loadInbox({
@@ -159,4 +180,135 @@ test('owner inbox refuses draft replies for another Instagram account and unauth
   });
   assert.equal(wrongAccount.statusCode, 404);
   assert.equal(service.writes.length, 0);
+});
+
+
+test('owner can inspect the live Instagram account webhook subscription without exposing its token', async () => {
+  const originalFetch = global.fetch;
+  const connection = {
+    token: encryptedToken('long-lived-instagram-token'),
+    profile: { userId: 'ig-123', username: 'hibr_pixels' }
+  };
+  let requestUrl, requestHeaders;
+  global.fetch = async (url, options = {}) => {
+    requestUrl = new URL(url);
+    requestHeaders = options.headers || {};
+    return {
+      ok: true, status: 200,
+      async json() { return { data: [{ id: 'ig-123', subscribed_fields: ['messages', 'comments'] }] }; }
+    };
+  };
+  try {
+    const service = loadInbox({ connection });
+    const response = await service.handler({
+      httpMethod: 'GET', headers: {},
+      queryStringParameters: { action: 'webhook_subscription' }
+    });
+    const data = body(response);
+    assert.equal(response.statusCode, 200);
+    assert.equal(requestUrl.origin, 'https://graph.instagram.com');
+    assert.equal(requestUrl.pathname, '/v26.0/me/subscribed_apps');
+    assert.equal(requestHeaders.Authorization, 'Bearer long-lived-instagram-token');
+    assert.equal(data.subscribed, true);
+    assert.deepEqual(data.subscribedFields, ['comments', 'messages']);
+    assert.equal(data.callbackVerified, false);
+    assert.equal(JSON.stringify(data).includes('long-lived-instagram-token'), false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('owner can explicitly subscribe the connected account to comments and messages after callback verification', async () => {
+  const originalFetch = global.fetch;
+  const connection = {
+    token: encryptedToken('long-lived-instagram-token'),
+    profile: { userId: 'ig-123', username: 'hibr_pixels' }
+  };
+  const requests = [];
+  global.fetch = async (url, options = {}) => {
+    const parsed = new URL(url);
+    requests.push({ url: parsed, method: options.method || 'GET', authorization: options.headers?.Authorization });
+    if ((options.method || 'GET') === 'POST') {
+      return { ok: true, status: 200, async json() { return { success: true }; } };
+    }
+    return {
+      ok: true, status: 200,
+      async json() { return { data: [{ id: 'ig-123', subscribed_fields: ['comments', 'messages'] }] }; }
+    };
+  };
+  try {
+    const service = loadInbox({ connection, status: webhookVerification() });
+    const response = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'subscribe_webhooks' })
+    });
+    const data = body(response);
+    assert.equal(response.statusCode, 200);
+    assert.equal(data.ok, true);
+    assert.equal(data.subscribed, true);
+    assert.equal(data.externalMessageSent, false);
+    assert.match(data.message, /لم نرسل أي رسالة أو تعليق/);
+    assert.equal(requests.length, 2);
+    assert.equal(requests[0].method, 'POST');
+    assert.equal(requests[0].url.pathname, '/v26.0/me/subscribed_apps');
+    assert.equal(requests[0].url.searchParams.get('subscribed_fields'), 'comments,messages');
+    assert.equal(requests[0].authorization, 'Bearer long-lived-instagram-token');
+    assert.equal(requests[1].method, 'GET');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('Instagram webhook subscription cannot be changed before the current callback secrets are verified', async () => {
+  const originalFetch = global.fetch;
+  let externalCalls = 0;
+  global.fetch = async () => { externalCalls++; throw new Error('Unexpected network call'); };
+  try {
+    const service = loadInbox({
+      connection: {
+        token: encryptedToken('long-lived-instagram-token'),
+        profile: { userId: 'ig-123', username: 'hibr_pixels' }
+      }
+    });
+    const response = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'subscribe_webhooks' })
+    });
+    assert.equal(response.statusCode, 409);
+    assert.match(body(response).error, /توثيق Callback URL/);
+    assert.equal(externalCalls, 0);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('Instagram webhook subscription fails closed when Meta does not confirm every required field', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async (_url, options = {}) => {
+    if (options.method === 'POST') {
+      return { ok: true, status: 200, async json() { return { success: true }; } };
+    }
+    return {
+      ok: true, status: 200,
+      async json() { return { data: [{ id: 'ig-123', subscribed_fields: ['comments'] }] }; }
+    };
+  };
+  try {
+    const service = loadInbox({
+      connection: {
+        token: encryptedToken('long-lived-instagram-token'),
+        profile: { userId: 'ig-123', username: 'hibr_pixels' }
+      },
+      status: webhookVerification()
+    });
+    const response = await service.handler({
+      httpMethod: 'POST', headers: {},
+      body: JSON.stringify({ action: 'subscribe_webhooks' })
+    });
+    assert.equal(response.statusCode, 409);
+    assert.equal(body(response).subscribed, false);
+    assert.deepEqual(body(response).missingFields, ['messages']);
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
