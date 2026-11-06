@@ -25,3 +25,25 @@ jobs:
         shell: bash
         run: |
           find netlify/functions tests -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Check inline JavaScript in HTML pages
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const files = fs.readdirSync('.').filter(name => name.endsWith('.html'));
+          let failed = false;
+          for (const file of files) {
+            const html = fs.readFileSync(file, 'utf8');
+            const scripts = [...html.matchAll(/<script\\b(?![^>]*\\bsrc=)[^>]*>([\\s\\S]*?)<\\/script>/gi)];
+            scripts.forEach((match, index) => {
+              if (!match[1].trim()) return;
+              try { new Function(match[1]); }
+              catch (error) {
+                failed = true;
+                console.error(file + ' inline script #' + (index + 1) + ': ' + error.message);
+              }
+            });
+          }
+          if (failed) process.exit(1);
+          console.log('Inline JavaScript syntax passed for ' + files.length + ' HTML pages.');
+          NODE

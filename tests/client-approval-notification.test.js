@@ -286,7 +286,7 @@ test('public lead intake stores owner notification status with the lead record',
   }, async () => {
     const service = loadLeads(baseData('07712345678'));
     global.fetch = async url => {
-      assert.match(String(url), /api\\.resend\\.com\\/emails/);
+      assert.ok(String(url).includes('https://api.resend.com/emails'));
       return { ok: true, status: 200, async text() { return ''; } };
     };
     const { response, body } = await submitLead(service.handler, validLeadPayload(), '192.0.2.14');
