@@ -11,9 +11,13 @@ test('every Lambda function using Netlify Blobs initializes its event context', 
   const files = fs.readdirSync(functionsDir).filter(file => file.endsWith('.js'));
   const missing = [];
 
+  // These functions access Netlify Blobs through ai-context.js rather than importing getStore directly.
+  const indirectBlobConsumers = new Set(['generate.js', 'generate-carousel-images.js']);
+
   for (const file of files) {
     const source = fs.readFileSync(path.join(functionsDir, file), 'utf8');
-    if (!/\bgetStore\s*\(/.test(source) || !/exports\.handler\s*=/.test(source)) continue;
+    const usesBlobsDirectly = /\bgetStore\s*\(/.test(source);
+    if ((!usesBlobsDirectly && !indirectBlobConsumers.has(file)) || !/exports\.handler\s*=/.test(source)) continue;
 
     const handler = source.match(/exports\.handler\s*=\s*async\s*(?:\(([^)]*)\)|([A-Za-z_$][\w$]*))\s*=>\s*\{([\s\S]{0,500})/);
     const parameters = handler?.[1] || handler?.[2] || '';

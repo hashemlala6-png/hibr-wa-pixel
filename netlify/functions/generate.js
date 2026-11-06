@@ -1,4 +1,5 @@
 const { requestText } = require('./ai-provider');
+const { connectLambda } = require('@netlify/blobs');
 // Netlify Function: يحمي مفاتيح مزودي الذكاء الاصطناعي عن الزوار.
 // تُقرأ المفاتيح من متغيرات بيئة Netlify فقط، ولا تُرسل إلى المتصفح.
 
@@ -7,6 +8,7 @@ const { getAIContext, contextPrompt, saveAIHistory } = require('./ai-context');
 const { logActivity } = require('./client-activity');
 
 exports.handler = async function (event) {
+  connectLambda(event);
   const corsHeaders = {
     "Access-Control-Allow-Origin": "same-origin",
     "Access-Control-Allow-Headers": "Content-Type",

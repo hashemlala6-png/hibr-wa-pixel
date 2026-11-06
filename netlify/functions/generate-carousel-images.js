@@ -1,5 +1,6 @@
 const { env } = require('./env');
 const { requestText } = require('./ai-provider');
+const { connectLambda } = require('@netlify/blobs');
 // Netlify Function: يولّد وصف شرائح الكاروسيل عبر Claude، ثم صور فعلية
 // لكل شريحة عبر DALL-E (OpenAI). المفاتيح تُقرأ من متغيرات البيئة فقط.
 
@@ -8,6 +9,7 @@ const { getAIContext, contextPrompt, saveAIHistory } = require('./ai-context');
 const { logActivity } = require('./client-activity');
 
 exports.handler = async function (event) {
+  connectLambda(event);
   const corsHeaders = {
     "Access-Control-Allow-Origin": "same-origin",
     "Access-Control-Allow-Headers": "Content-Type",
