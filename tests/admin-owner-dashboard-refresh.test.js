@@ -566,7 +566,7 @@ test('AI revision sends the captured current output before acquiring the busy lo
       return {text:'النص المعدل مع الحفاظ على بقية المحتوى'};
     }
   };
-  const revise = vm.runInNewContext(functionSource('reviseCurrent')+'\\nreviseCurrent',context);
+  const revise = vm.runInNewContext(functionSource('reviseCurrent')+'\nreviseCurrent',context);
   await revise();
   assert.equal(calls.length,1);
   assert.equal(calls[0].url,'/.netlify/functions/revise-ai');
@@ -594,7 +594,7 @@ test('AI revision refuses to apply a result to a different selected client', asy
     assertAIOutputClient:id=>{if(id!=='client-a')throw Error('هذه النتيجة مرتبطة بعميل آخر.');return id;},
     api:async()=>{calls.push('api');}
   };
-  const revise=vm.runInNewContext(functionSource('reviseCurrent')+'\\nreviseCurrent',context);
+  const revise=vm.runInNewContext(functionSource('reviseCurrent')+'\nreviseCurrent',context);
   await revise();
   assert.deepEqual(calls,[]);
   assert.equal(fields['#aiOutput'].textContent,'نتيجة العميل الأول');
@@ -610,7 +610,7 @@ test('saving and reviewing AI output must use the client that generated that out
       return context.AI_OUTPUT_CLIENT_ID;
     }
   };
-  const assertOwner=vm.runInNewContext(functionSource('assertAIOutputClient')+'\\nassertAIOutputClient',context);
+  const assertOwner=vm.runInNewContext(functionSource('assertAIOutputClient')+'\nassertAIOutputClient',context);
   assert.equal(assertOwner('client-a'),'client-a');
   assert.throws(()=>assertOwner('client-b'),/مرتبطة بعميل آخر/);
 });

@@ -30,7 +30,7 @@ test('admin inline handlers pass dynamic IDs as HTML-escaped JSON string literal
   assert.match(source, /orderStatus\(\$\{jsArg\(o\.id\)\},this\.value\)/);
   assert.match(source, /projectStatus\('\+jsArg\(p\.id\)\+'/);
   assert.match(source, /taskStatus\('\+jsArg\(t\.id\)\+'/);
-  assert.match(source, /aiClient'\)\.value=\$\{jsArg\(x\.clientId\|\|x\.id\)\}/);
+  assert.match(source, /selectAIClient\(\$\{jsArg\(x\.clientId\|\|x\.id\)\}\)/);\n  assert.doesNotMatch(source, /document\.getElementById\('aiClient'\)\.value=/);
   assert.doesNotMatch(source, /openClient\('\$\{esc\(x\.id\)\}'\)/);
   assert.doesNotMatch(source, /orderStatus\('\$\{esc\(o\.id\)\}'/);
 });
