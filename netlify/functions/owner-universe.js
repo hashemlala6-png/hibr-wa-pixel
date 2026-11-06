@@ -1,13 +1,14 @@
 const crypto=require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
+const { blobOptions } = require('./blob-config');
 
 const defs={
  accounts:['hbpx-client-accounts','email-'], leads:['hbpx-leads','lead-'], orders:['hbpx-orders','order-'], quotes:['hbpx-quotes','quote-'], projects:['hbpx-projects','project-'], payments:['hbpx-payments','payment-'], tasks:['hbpx-tasks','task-'], expenses:['hbpx-expenses','expense-'], resultPlans:['hbpx-result-plans','result-'], activities:['hbpx-client-activity','activity-'], funnel:['hbpx-funnel','event-'], metrics:['hbpx-platform-analytics','metric-'], presence:['hbpx-presence',''], invoices:['hbpx-invoices','invoice-'], contracts:['hbpx-contracts','contract-'], subscriptions:['hbpx-subscriptions','subscription-'], deliveries:['hbpx-deliveries','delivery-'], qualityGates:['hbpx-quality-gates',''], integrations:['hbpx-integrations',''], growthSnapshots:['hbpx-growth-snapshots',''], growthBaselines:['hbpx-growth-baselines',''], growthReports:['hbpx-growth-reports',''], executionPlans:['hbpx-execution-plans',''], creativeDna:['hbpx-creative-dna',''], autopilot:['hbpx-autopilot','']
 };
 const clean=(v,n=300)=>String(v??'').trim().slice(0,n);
 const num=v=>Number(v||0)||0;
-function store(name){const options={name,consistency:'strong'};const siteID=process.env.NETLIFY_SITE_ID||process.env.SITE_ID||'76bd352d-826a-49dc-8f0f-5f576610b1ae';const token=process.env.NETLIFY_AUTH_TOKEN;if(siteID&&token){options.siteID=siteID;options.token=token;}return getStore(options);}
+function store(name){return getStore(blobOptions(name, 'strong'));}
 async function all(name,prefix){
   const st=store(name),out=[]; let cursor;
   do{
