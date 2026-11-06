@@ -366,7 +366,7 @@ test('owner universe polling handles failures without leaking rejected promises 
     renderProjects: () => calls.push('projects'),
     renderIntelligence: () => calls.push('intelligence')
   };
-  const loadUniverse = vm.runInNewContext(functionSource('loadUniverse') + '\\nloadUniverse', context);
+  const loadUniverse = vm.runInNewContext(functionSource('loadUniverse') + '\nloadUniverse', context);
 
   await assert.doesNotReject(() => loadUniverse());
   assert.equal(context.U, previous, 'the last successful snapshot remains available');
@@ -384,7 +384,7 @@ test('strict owner universe refresh propagates errors to the all-sections refres
     api: async () => { throw new Error('owner API down'); },
     $: selector => selector === '#loadStatus' ? status : null
   };
-  const loadUniverse = vm.runInNewContext(functionSource('loadUniverse') + '\\nloadUniverse', context);
+  const loadUniverse = vm.runInNewContext(functionSource('loadUniverse') + '\nloadUniverse', context);
   await assert.rejects(() => loadUniverse({ propagate: true }), /owner API down/);
   assert.match(status.textContent, /آخر نسخة ناجحة/);
   assert.match(functionSource('loadAll'), /\\(\\)=>loadUniverse\\(\\{propagate:true\\}\\)/);
@@ -408,7 +408,7 @@ test('pricing save adopts the exact values confirmed by the server and prevents 
       return { pricing: { single: '19000', basic: '142,000', comprehensive: '252,000', extended: '372,000' } };
     }
   };
-  const savePricing = vm.runInNewContext(functionSource('savePricing') + '\\nsavePricing', context);
+  const savePricing = vm.runInNewContext(functionSource('savePricing') + '\nsavePricing', context);
   const result = await savePricing();
   assert.deepEqual(calls[0].body, { single: '19,000 IQD', basic: '142,000', comprehensive: '252,000', extended: '372,000' });
   assert.equal(calls[0].disabledDuringRequest, true);
@@ -426,7 +426,7 @@ test('pricing save keeps entered values and clearly reports an unconfirmed save 
     $: selector => selector === '#savePricing' ? button : selector === '#settingsMsg' ? status : fields[selector],
     api: async () => { throw new Error('storage unavailable'); }
   };
-  const savePricing = vm.runInNewContext(functionSource('savePricing') + '\\nsavePricing', context);
+  const savePricing = vm.runInNewContext(functionSource('savePricing') + '\nsavePricing', context);
   const result = await savePricing();
   assert.equal(result, null);
   assert.equal(fields['#p-single'].value, '100');
