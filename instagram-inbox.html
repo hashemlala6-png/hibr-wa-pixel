@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>صندوق Instagram — حبر وبكسل</title>
+<style>
+:root{--ink:#1e3b50;--blue:#148fc0;--sky:#eaf7fc;--line:#d7e9f2;--muted:#637b8d}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#f7fbff,#edf7fc);color:var(--ink);font-family:Arial,"Noto Sans Arabic",sans-serif}
+.wrap{max-width:1050px;margin:auto;padding:22px}.top,.panel,.event{background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px;margin-bottom:14px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.eyebrow{color:var(--blue);font-size:11px;font-weight:700;letter-spacing:.08em}
+h1{font-size:25px;margin:5px 0}h2{font-size:17px;margin:0 0 8px}p{line-height:1.8;color:var(--muted);margin:6px 0}
+.links,.actions{display:flex;gap:8px;flex-wrap:wrap}.link,button{font:inherit;border:0;border-radius:9px;padding:10px 14px;background:var(--blue);color:#fff;text-decoration:none;cursor:pointer}
+.link.secondary,button.secondary{background:#e9f5fb;color:#24627f;border:1px solid var(--line)}
+.status{padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--sky);font-size:13px;line-height:1.8}
+.status.warn{background:#fff8df;border-color:#f0dfa0;color:#745d20}
+.muted{color:var(--muted);font-size:13px}.event{padding:16px}.event-head{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.tag{border-radius:20px;padding:4px 9px;background:#eaf7fc;color:#21698d;font-size:11px}
+.meta{font-size:12px;color:var(--muted);line-height:1.8;margin:5px 0}.message{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9;background:#f7fbfe;border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}
+textarea{width:100%;min-height:90px;border:1px solid #cfe1ec;border-radius:10px;padding:11px;font:inherit;line-height:1.7;resize:vertical}
+.event button{margin-top:8px}.result{font-size:12px;color:var(--blue);margin-top:7px}
+@media(max-width:620px){.wrap{padding:12px}.top{align-items:flex-start}h1{font-size:21px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="top"><div><div class="eyebrow">HIBR & PIXEL · OWNER INBOX</div><h1>صندوق Instagram</h1><div class="muted">رسائل وتعليقات واردة إلى مساحة خاصة بالمالكة</div></div><div class="links"><a class="link secondary" href="/instagram.html">ربط الحساب</a><a class="link secondary" href="/admin.html">لوحة الإدارة</a></div></header>
+<section class="panel"><h2>حالة استقبال الإشعارات</h2><div id="status" class="status">جارٍ التحقق…</div><p class="muted">يُستقبل الإشعار بعد إعداد Callback URL وVerify Token في لوحة Meta. هذه الصفحة تحفظ مسودات الردود فقط؛ لا ترسل رسائل أو تعليقات تلقائياً.</p><div class="actions"><button id="refresh">تحديث الوارد</button></div></section>
+<section id="events"><div class="panel muted">جارٍ تحميل الإشعارات…</div></section>
+</main>
+<script>
+(()=>{
+ const $=id=>document.getElementById(id);
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ let ITEMS=[];
+ async function api(method='GET',body){
+  const response=await fetch('/.netlify/functions/instagram-inbox',{method,credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error||'تعذر الاتصال بصندوق Instagram.');
+  return data;
+ }
+ function eventTitle(item){return item.eventType==='message'?'رسالة خاصة واردة':item.eventType==='comment'?'تعليق وارد':item.eventType==='postback'?'تفاعل وارد':'إشعار Instagram';}
+ function render(){
+  const root=$('events');
+  if(!ITEMS.length){root.innerHTML='<div class="panel muted">لا توجد إشعارات واردة محفوظة لهذا الحساب بعد.</div>';return}
+  root.innerHTML=ITEMS.map(item=>{
+   const label=item.replyDraft?'مسودة رد محفوظة':'بانتظار المراجعة';
+   const text=item.text||'وصل إشعار بلا نص؛ قد يحتوي مرفقاً أو تفاعلاً.';
+   return '<article class="event"><div class="event-head"><b>'+eventTitle(item)+'</b><span class="tag">'+label+'</span></div><div class="meta">المرسل: '+esc(item.senderUsername||item.senderId||'غير متاح')+' · التاريخ: '+esc(item.receivedAt||'')+'</div><div class="message">'+esc(text)+'</div>'+(Array.isArray(item.attachments)&&item.attachments.length?'<div class="meta">عدد المرفقات: '+item.attachments.length+'</div>':'')+(item.mediaId?'<div class="meta">معرّف الوسيط: '+esc(item.mediaId)+'</div>':'')+(item.replyDraft?'<div class="status">مسودة الرد الحالية:<div class="message">'+esc(item.replyDraft.text)+'</div></div>':'')+'<label class="meta" for="reply-'+esc(item.id)+'">مسودة رد مقترحة — لن تُرسل</label><textarea id="reply-'+esc(item.id)+'" maxlength="2000" placeholder="اكتبي الرد المقترح للمراجعة…">'+esc(item.replyDraft?.text||'')+'</textarea><button type="button" data-save="'+esc(item.id)+'">حفظ مسودة الرد</button><div class="result" id="result-'+esc(item.id)+'" role="status" aria-live="polite"></div></article>';
+  }).join('');
+  root.querySelectorAll('[data-save]').forEach(button=>button.addEventListener('click',async()=>{
+   const id=button.dataset.save,field=$('reply-'+id),result=$('result-'+id),reply=field?.value?.trim()||'';
+   if(!reply){result.textContent='اكتبي الرد أولاً.';return}
+   button.disabled=true;result.textContent='جارٍ حفظ مسودة الرد…';
+   try{const data=await api('POST',{action:'save_reply_draft',id,reply});result.textContent=data.message||'تم حفظ مسودة الرد. لم تُرسل.';await load();}
+   catch(error){result.textContent=error.message;button.disabled=false}
+  }));
+ }
+ async function load(){
+  $('refresh').disabled=true;$('status').textContent='جارٍ تحميل صندوق Instagram…';
+  try{
+   const data=await api();ITEMS=data.items||[];
+   $('status').className='status'+(data.webhookConfigured&&data.connected?'':' warn');
+   $('status').textContent=(data.account?'الحساب المرتبط: @'+data.account.username+' · ':'')+(data.webhookConfigured?'متغيرات Webhook موجودة.':'أضيفي INSTAGRAM_WEBHOOK_VERIFY_TOKEN وINSTAGRAM_APP_SECRET في Netlify.')+(data.connected?' · إشعارات هذا الحساب فقط.':' · اربطي حساب Instagram أولاً.')+' استقبال الإشعار لا يعني تشغيل رد تلقائي.';
+   render();
+  }catch(error){$('status').className='status warn';$('status').textContent=error.message;$('events').innerHTML='';}
+  finally{$('refresh').disabled=false}
+ }
+ $('refresh').addEventListener('click',load);
+ fetch('/.netlify/functions/auth?action=me',{credentials:'same-origin',cache:'no-store'})
+  .then(async response=>{const data=await response.json();if(!response.ok||!data.authenticated)throw new Error('سجّلي الدخول إلى لوحة المالك أولاً.');await load();})
+  .catch(error=>{$('status').className='status warn';$('status').textContent=error.message;$('events').innerHTML='';});
+})();
+</script>
+</body></html>
