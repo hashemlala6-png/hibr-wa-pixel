@@ -228,3 +228,21 @@ html,body{background:#f3f6f3!important;color:#17384d!important}
 #lock .lockbox:before{background:linear-gradient(90deg,#167fa0,#168d83,#f0c85b)!important}
 #lock .lockbox .eyebrow{color:#167fa0!important}
 @media(max-width:1100px){#app #tabs{background:#fffefa!important}}
+
+
+/* OWNER DASHBOARD — sky blue replaces green throughout the interface */
+:root{--cd-orange:#159bd0;--cd-green:#168fc5;--cd-paper:#f1f6fa;--cd-line:#d5e3ec}
+html,body{background:#f1f6fa!important}
+#app .today.command-banner{background:linear-gradient(112deg,#087fba 0%,#159bd0 100%)!important}
+#app #tabs button.active{background:#e3f2fa!important;color:#0876ad!important}
+#app #tabs button.active:before,#app #tabs button.active:after{color:#168fc5!important;background:#159bd0!important}
+#app .desk-brief{border-inline-start-color:#159bd0!important}
+#app .stat:hover{border-color:#9bcde3!important}
+#app .badge{background:#e5f2f9!important;color:#087fba!important}
+#app .table th{background:#eaf3f8!important}
+#app .kv,#app #aiOutput{background:#edf5fa!important;border-color:#d5e3ec!important}
+#app #overview .columns>.panel:first-child{background:linear-gradient(112deg,#087fba 0%,#159bd0 100%)!important}
+#app .primary{background:#087fba!important;border-color:#087fba!important}
+#app .primary:hover{background:#066b9d!important}
+#lock .lockbox:before{background:linear-gradient(90deg,#087fba,#35b9df,#f0c85b)!important}
+#app #tabs{scrollbar-color:#b8d9e9 transparent}
