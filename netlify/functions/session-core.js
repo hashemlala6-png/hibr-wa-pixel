@@ -1,16 +1,22 @@
 const crypto = require('crypto');
 
 function env(name) {
-  // Netlify Functions expose process.env reliably at runtime.
-  // Keep Netlify.env as a secondary compatibility path.
+  // Prefer Netlify's runtime environment API so Functions read the value
+  // attached to this deploy context. Keep process.env as a compatibility fallback.
   try {
-    const value = process?.env?.[name];
-    if (value !== undefined && value !== null && String(value).length) return String(value);
+    const runtime = globalThis.Netlify?.env;
+    if (runtime && typeof runtime.get === 'function') {
+      const value = runtime.get(name);
+      if (value !== undefined && value !== null && String(value).length) return String(value);
+    }
   } catch {}
   try {
-    const value = globalThis.Netlify?.env?.get?.(name);
-    return value === undefined || value === null ? '' : String(value);
-  } catch { return ''; }
+    if (typeof process !== 'undefined') {
+      const value = process.env?.[name];
+      if (value !== undefined && value !== null && String(value).length) return String(value);
+    }
+  } catch {}
+  return '';
 }
 
 function isDeployPreview(event) {
@@ -21,8 +27,8 @@ function isDeployPreview(event) {
   if (!host && rawUrl) {
     try { host = new URL(rawUrl).hostname.toLowerCase(); } catch {}
   }
-  host = host.replace(/:\d+$/, '');
-  return /^deploy-preview-\d+--[a-z0-9-]+\.netlify\.app$/.test(host);
+  host = host.replace(/:\\d+$/, '');
+  return /^deploy-preview-\\d+--[a-z0-9-]+\\.netlify\\.app$/.test(host);
 }
 
 function adminPassword(_event) {
