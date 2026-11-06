@@ -229,3 +229,27 @@ test('owner tab navigation toggles every matching navigation and view element', 
   assert.match(script, /\$\$\('\[data-go\]'\)\.forEach/);
   assert.match(script, /\$\('#tabs'\)\.addEventListener\('click'/);
 });
+
+
+test('client, order, and sales loaders preserve explicit request errors for strict refresh', () => {
+  assert.match(functionSource('loadClients'), /\{propagate=false\}=\{\}/);
+  assert.match(functionSource('loadClients'), /CLIENTS_ERROR=e\.message/);
+  assert.match(functionSource('loadOrders'), /\{propagate=false\}=\{\}/);
+  assert.match(functionSource('loadOrders'), /ORDERS_ERROR=e\.message/);
+  assert.match(functionSource('loadSales'), /\{propagate=false\}=\{\}/);
+  assert.match(functionSource('loadSales'), /SALES_ERROR=e\.message/);
+  const fullRefresh = functionSource('loadAll');
+  assert.match(fullRefresh, /loadClients\(\{propagate:true\}\)/);
+  assert.match(fullRefresh, /loadOrders\(\{propagate:true\}\)/);
+  assert.match(fullRefresh, /loadSales\(\{propagate:true\}\)/);
+});
+
+test('sales and project views distinguish failed data requests from empty datasets', () => {
+  const sales = functionSource('renderSales');
+  const projects = functionSource('renderProjects');
+  assert.match(sales, /ORDERS_ERROR/);
+  assert.match(sales, /SALES_ERROR/);
+  assert.match(projects, /SALES_ERROR/);
+  assert.match(projects, /OPS_ERROR/);
+  assert.match(functionSource('openClient'), /تعذر تحميل ملفات العملاء/);
+});
