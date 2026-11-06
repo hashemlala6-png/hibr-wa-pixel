@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { getStore } = require('@netlify/blobs');
 const { createSession, sessionCookie, clearCookie, verifySession, json } = require('./auth-utils');
-const { adminPassword } = require('./session-core');
+const { adminPassword, isDeployPreview } = require('./session-core');
 
 const presenceStore = () => getStore({ name: 'hbpx-presence', consistency: 'strong' });
 const authStore = () => getStore({ name: 'hbpx-auth-rate', consistency: 'strong' });
@@ -56,7 +56,15 @@ exports.handler = async (event) => {
   if (!expected) return json(503, { error: 'إعداد دخول المالك ناقص في Netlify: ADMIN_PASSWORD غير متاح لوظائف الخادم.' });
   const supplied = String(body.password || '');
   const a = Buffer.from(supplied), b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return json(401, { error: 'كلمة المرور غير صحيحة.' });
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    const preview = isDeployPreview(event);
+    return json(401, {
+      error: preview
+        ? 'المعاينة استلمت كلمة مرور مختلفة عن المدخلة. قيمة ADMIN_PASSWORD في سياق Deploy Previews لا تطابق كلمة مرور الموقع الأساسي بعد.'
+        : 'كلمة المرور غير صحيحة.',
+      code: preview ? 'PREVIEW_PASSWORD_MISMATCH' : 'PASSWORD_MISMATCH'
+    });
+  }
   let token;
   try { token = createSession(event); } catch { return json(503, { error: 'إعداد جلسة المالك ناقص في Netlify.' }); }
   try { await presenceStore().setJSON(`owner-${hashToken(token)}`, { kind: 'owner', updatedAt: new Date().toISOString(), page: '/admin.html' }); } catch {}
