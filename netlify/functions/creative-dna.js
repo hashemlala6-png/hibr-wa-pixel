@@ -1,9 +1,10 @@
 const { env } = require('./env');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { requireAdmin, json } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
 const crypto = require('crypto');
-const store=()=>getStore({name:'hbpx-creative-dna',consistency:'strong'});
+const store=()=>getStore(blobOptions('hbpx-creative-dna', 'strong'));
 const clean=(v,n=5000)=>String(v??'').trim().slice(0,n);
 async function list(clientId){const r=await store().list({prefix:`dna-${clientId}-`});const out=[];for(const b of r.blobs||[]){try{const x=await store().get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,50)}
 exports.handler=async e=>{
