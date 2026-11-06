@@ -700,3 +700,32 @@ body{background:#f5f7f4!important}
  .hp-home-art{min-height:290px}
  .hp-home-formula{background:#e9f1ed!important}
 }
+
+
+/* SKY BLUE ONLY — replace every green accent with clear, confident sky blue */
+:root{--xp-orange:#159bd0;--xp-green:#168fc5;--xp-paper:#f1f7fb;--xp-line:#d5e5ee}
+html,body,body{background:#f1f7fb!important}
+.nav .logo i,.hp-nav .logo i{background:linear-gradient(135deg,#087fba,#35b9df)!important}
+.brand-intro em,.brand-section-head h2 em,.brand-manifesto .big-line span,.intake-title em,.xp-hero h1 span,
+.hp-home-pages-head small,.hp-home-page-grid small,.hp-home-page-grid strong,
+.hp-home-formula-intro h2 em,.hp-home-formula-intro>small,.hp-home-formula-steps article>small,
+.hp-home-formula-note>span{color:#087fba!important}
+.brand-access-note{border-inline-start-color:#168fc5!important}
+.brand-pillar:hover{background:#e7f4fb!important}
+.xp-hero{background:linear-gradient(118deg,#e5f3fb 0%,#f7f8f2 72%,#edf5fa 100%)!important}
+.xp-poster{background:linear-gradient(145deg,#087fba 0%,#159bd0 100%)!important}
+.xp-poster-slice b{background:#a9def3!important;color:#124c69!important}
+.hp-home-art{background:linear-gradient(145deg,#087fba 0%,#159bd0 100%)!important}
+.hp-home-pages{background:#edf4f8!important;border-color:#d5e5ee!important}
+.hp-home-page-grid,.hp-home-page-grid>a{border-color:#d5e5ee!important}
+.hp-home-formula{background:#e8f2f8!important;border-color:#d5e5ee!important}
+.hp-home-formula-equation span{background:#f8fcff!important;border-color:#c9dfec!important;color:#087fba!important}
+.hp-home-formula-equation b,.hp-home-formula-equation i{color:#168fc5!important}
+.hp-home-formula-equation strong{background:#087fba!important}
+.hp-home-formula-steps,.hp-home-formula-steps article{border-color:#c9dfec!important}
+.hp-home-formula-steps article h3{color:#087fba!important}
+.hp-home-formula-steps article>b{color:#8ebbd2!important}
+.hp-home-formula-note i{color:#159bd0!important}
+.brand-offer-design,.brand-access-note{background:#e8f3f9!important}
+.brand-pillars,.brand-steps,.brand-offers,.brand-cases{border-color:#d5e5ee!important}
+@media(max-width:700px){.hp-home-formula{background:#e8f2f8!important}}
