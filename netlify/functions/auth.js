@@ -1,10 +1,11 @@
 const crypto = require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const { createSession, sessionCookie, clearCookie, verifySession, json } = require('./auth-utils');
 const { adminPassword, isDeployPreview } = require('./session-core');
 
-const presenceStore = () => getStore({ name: 'hbpx-presence', consistency: 'strong' });
-const authStore = () => getStore({ name: 'hbpx-auth-rate', consistency: 'strong' });
+const presenceStore = () => getStore(blobOptions('hbpx-presence', 'strong'));
+const authStore = () => getStore(blobOptions('hbpx-auth-rate', 'strong'));
 const memoryRate = new Map();
 function memoryLimited(ip) {
   const key = `admin:${ip || 'unknown'}`;
