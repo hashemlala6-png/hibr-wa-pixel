@@ -121,6 +121,8 @@ async function notifyClientApproval(lead) {
       const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: phone, type: 'template', template: { name: template, language: { code: process.env.WHATSAPP_CLIENT_APPROVAL_TEMPLATE_LANGUAGE || 'ar' }, components: [{ type: 'body', parameters: [{ type: 'text', text: String(lead.name || 'عميل').slice(0,200) }, { type: 'text', text: String(lead.service || 'الخدمة المطلوبة').slice(0,200) }] }] } }) });
       result.whatsapp = r.ok ? 'sent' : 'failed'; if (!r.ok) console.error('client approval WhatsApp failed', r.status, (await r.text()).slice(0,300));
     } catch (e) { result.whatsapp = 'failed'; console.error('client approval WhatsApp failed', e.message || e); }
+  } else if (token && phoneId && template && phone && !validRecipient) {
+    result.whatsapp = 'invalid_recipient';
   }
   return result;
 }
