@@ -614,3 +614,96 @@ test('saving and reviewing AI output must use the client that generated that out
   assert.equal(assertOwner('client-a'),'client-a');
   assert.throws(()=>assertOwner('client-b'),/مرتبطة بعميل آخر/);
 });
+
+
+test('review gate records preserve the originating client identity for owner review', async () => {
+  const Module = require('node:module');
+  const resolved = require.resolve('../netlify/functions/review-gates');
+  delete require.cache[resolved];
+  const originalLoad = Module._load;
+  const saved = {};
+  const writes = [];
+  const blobs = {
+    connectLambda() {},
+    getStore({name}) {
+      return {
+        async get(key) { return saved[key] ? JSON.parse(JSON.stringify(saved[key])) : null; },
+        async setJSON(key,value) { saved[key]=JSON.parse(JSON.stringify(value));writes.push({key,value:saved[key]}); },
+        async list({prefix=''}) { return {blobs:Object.keys(saved).filter(key=>key.startsWith(prefix)).map(key=>({key}))}; }
+      };
+    }
+  };
+  Module._load=function(request,parent,isMain){
+    if(request==='@netlify/blobs')return blobs;
+    if(request==='./blob-config'&&parent&&parent.filename===resolved)return {blobOptions:name=>({name})};
+    if(request==='./auth-utils'&&parent&&parent.filename===resolved)return {
+      requireAdmin:()=>null,
+      json:(statusCode,payload)=>({statusCode,body:JSON.stringify(payload)})
+    };
+    return originalLoad.call(this,request,parent,isMain);
+  };
+  let handler;
+  try { handler=require(resolved).handler; }
+  finally { Module._load=originalLoad;delete require.cache[resolved]; }
+
+  const created=await handler({
+    httpMethod:'POST',
+    body:JSON.stringify({
+      phase:'إنتاج المحتوى',
+      title:'خطة محتوى — عميل أ',
+      deliverable:'خطة منشورات الأسبوع',
+      criteria:'مراجعة الدقة واللغة',
+      clientId:'email-client-a',
+      clientName:'عميل أ'
+    })
+  });
+  const payload=JSON.parse(created.body);
+  assert.equal(created.statusCode,201);
+  assert.equal(payload.item.clientId,'email-client-a');
+  assert.equal(payload.item.clientName,'عميل أ');
+  assert.equal(saved[payload.item.id].externalAction,false);
+
+  const listed=await handler({httpMethod:'GET'});
+  const item=JSON.parse(listed.body).items.find(x=>x.id===payload.item.id);
+  assert.equal(item.clientId,'email-client-a');
+  assert.equal(item.clientName,'عميل أ');
+  assert.equal(writes.length,1);
+});
+
+test('review gate identity fields are optional and bounded', async () => {
+  const Module = require('node:module');
+  const resolved = require.resolve('../netlify/functions/review-gates');
+  delete require.cache[resolved];
+  const originalLoad = Module._load;
+  const saved = {};
+  const blobs = {
+    connectLambda() {},
+    getStore({name}) {
+      return {
+        async get(key) { return saved[key] || null; },
+        async setJSON(key,value) { saved[key]=value; },
+        async list({prefix=''}) { return {blobs:Object.keys(saved).filter(key=>key.startsWith(prefix)).map(key=>({key}))}; }
+      };
+    }
+  };
+  Module._load=function(request,parent,isMain){
+    if(request==='@netlify/blobs')return blobs;
+    if(request==='./blob-config'&&parent&&parent.filename===resolved)return {blobOptions:name=>({name})};
+    if(request==='./auth-utils'&&parent&&parent.filename===resolved)return {
+      requireAdmin:()=>null,
+      json:(statusCode,payload)=>({statusCode,body:JSON.stringify(payload)})
+    };
+    return originalLoad.call(this,request,parent,isMain);
+  };
+  let handler;
+  try { handler=require(resolved).handler; }
+  finally { Module._load=originalLoad;delete require.cache[resolved]; }
+  const response=await handler({
+    httpMethod:'POST',
+    body:JSON.stringify({phase:'مرحلة',title:'مخرج',deliverable:'محتوى'})
+  });
+  const item=JSON.parse(response.body).item;
+  assert.equal(response.statusCode,201);
+  assert.equal(item.clientId,null);
+  assert.equal(item.clientName,null);
+});
