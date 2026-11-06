@@ -147,10 +147,16 @@ exports.handler = async (event) => {
     if(!limit.ok)return json(429,{error:'طلبات كثيرة. حاول لاحقاً.',retryAfter:limit.retryAfter});
     let b;
     try { b = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'بيانات غير صالحة' }); }
-    const name = clean(b.name, 120), whatsapp = clean(b.whatsapp, 40), email = clean(b.email, 254), service = clean(b.service, 120), budget = clean(b.budget, 120), details = clean(b.details, 3000);
+    const name = clean(b.name, 120), whatsappInput = clean(b.whatsapp, 40), email = clean(b.email, 254).toLowerCase(), service = clean(b.service, 120), budget = clean(b.budget, 120), details = clean(b.details, 3000);
     if (String(b.website || '').trim()) return json(400, { error: 'تعذر معالجة الطلب.' });
-    if (!name || !whatsapp) return json(400, { error: 'الاسم ورقم واتساب مطلوبان.' });
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: 'البريد الإلكتروني غير صحيح.' });
+    if (!name) return json(400, { error: 'الاسم مطلوب.' });
+    if (!email) return json(400, { error: 'البريد الإلكتروني مطلوب حتى نربط طلبك بحساب العميل لاحقاً.' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json(400, { error: 'البريد الإلكتروني غير صحيح.' });
+    if (!whatsappInput) return json(400, { error: 'رقم واتساب مطلوب.' });
+    const whatsapp = normalizePhoneForMatch(whatsappInput);
+    if (!/^[1-9]\d{7,14}$/.test(whatsapp)) return json(400, { error: 'رقم واتساب غير صحيح. أدخله مع مفتاح الدولة أو بصيغة الرقم المحلي.' });
+    if (!service) return json(400, { error: 'اختيار الخدمة مطلوب.' });
+    if (!details) return json(400, { error: 'اكتب تفاصيل مختصرة عن المشروع حتى نقدر نراجع الطلب.' });
     const id = `lead-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     // Resolve an account only when exactly one account matches BOTH normalized contacts.
     // If none (or multiple) match, keep this lead under its own pair-specific identity.

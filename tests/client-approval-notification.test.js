@@ -167,3 +167,63 @@ test('invalid WhatsApp recipients are not sent to the Cloud API', async () => {
     assert.equal(calls, 0);
   });
 });
+
+
+function validLeadPayload(overrides = {}) {
+  return {
+    name: 'عميل اختبار',
+    whatsapp: '07712345678',
+    email: 'TEST@EXAMPLE.COM',
+    service: 'design',
+    budget: 'أحتاج توجيه',
+    details: 'أحتاج تصاميم لمشروعي.',
+    source: 'public-onboarding',
+    ...overrides
+  };
+}
+
+async function submitLead(handler, payload, ip = '192.0.2.10') {
+  const response = await handler({
+    httpMethod: 'POST',
+    headers: { 'x-forwarded-for': ip },
+    body: JSON.stringify(payload)
+  });
+  return { response, body: JSON.parse(response.body || '{}') };
+}
+
+test('public lead intake requires an email for later client-account matching', async () => {
+  await withEnv({}, async () => {
+    const service = loadLeads(baseData('07712345678'));
+    const { response, body } = await submitLead(service.handler, validLeadPayload({ email: '' }));
+    assert.equal(response.statusCode, 400);
+    assert.match(body.error, /البريد الإلكتروني مطلوب/);
+    assert.equal(Object.keys(service.stores['hbpx-leads']).length, 1);
+  });
+});
+
+test('public lead intake rejects malformed WhatsApp numbers before saving', async () => {
+  await withEnv({}, async () => {
+    const service = loadLeads(baseData('07712345678'));
+    const { response, body } = await submitLead(service.handler, validLeadPayload({ whatsapp: '123' }), '192.0.2.11');
+    assert.equal(response.statusCode, 400);
+    assert.match(body.error, /واتساب غير صحيح/);
+    assert.equal(Object.keys(service.stores['hbpx-leads']).length, 1);
+  });
+});
+
+test('valid public lead intake stores a normalized Iraqi WhatsApp number and required account contacts', async () => {
+  await withEnv({}, async () => {
+    const service = loadLeads(baseData('07712345678'));
+    const { response, body } = await submitLead(service.handler, validLeadPayload(), '192.0.2.12');
+    assert.equal(response.statusCode, 201);
+    assert.equal(body.ok, true);
+    const saved = service.stores['hbpx-leads'][body.leadId];
+    assert.ok(saved);
+    assert.equal(saved.email, 'test@example.com');
+    assert.equal(saved.whatsapp, '9647712345678');
+    assert.equal(saved.service, 'design');
+    assert.equal(saved.details, 'أحتاج تصاميم لمشروعي.');
+    assert.equal(body.notifications.email, 'not_configured');
+    assert.equal(body.notifications.whatsapp, 'not_configured');
+  });
+});
