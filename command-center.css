@@ -246,3 +246,46 @@ html,body{background:#f1f6fa!important}
 #app .primary:hover{background:#066b9d!important}
 #lock .lockbox:before{background:linear-gradient(90deg,#087fba,#35b9df,#f0c85b)!important}
 #app #tabs{scrollbar-color:#b8d9e9 transparent}
+
+
+/* FINAL OWNER DASHBOARD IDENTITY — white / bright sky / soft blue / warm yellow */
+:root{
+ --cd-paper:#f4f9fd;--cd-paper2:#fff;--cd-ink:#20394d;--cd-green:#168fbe;
+ --cd-orange:#5c91b5;--cd-gold:#f2c84b;--cd-muted:#647b8c;--cd-line:#dce9f1;
+ --cd-white:#fff;--cd-shadow:0 12px 32px rgba(35,103,139,.075)
+}
+html,body{background:linear-gradient(145deg,#f7fbff 0%,#eef7fc 58%,#fffdf4 100%)!important;color:var(--cd-ink)!important;font-family:'IBM Plex Sans Arabic',Arial,sans-serif!important}
+#app .brand h1{font-size:1.2rem!important;color:var(--cd-ink)!important}
+#app .brand small,#app #tabs:before,#app .desk-brief small,#lock .lockbox .eyebrow{color:#168fbe!important}
+#app .today.command-banner{background:linear-gradient(112deg,#118fc2 0%,#22addb 58%,#66b9d9 100%)!important;border-radius:18px!important;color:#fff!important;box-shadow:0 14px 30px rgba(25,169,220,.15)!important}
+#app .command-banner h2{font-size:clamp(1.9rem,3.4vw,2.8rem)!important;line-height:1.25!important;letter-spacing:-.035em!important}
+#app .command-banner .eyebrow,#app .command-banner .live b{color:#ffe17a!important}
+#app .command-banner .command-policy{border-inline-start-color:#f2c84b!important;background:#ffffff18!important}
+#app #tabs{background:#fff!important;border:1px solid var(--cd-line)!important;border-radius:14px!important;box-shadow:0 7px 22px rgba(35,103,139,.045)!important}
+#app #tabs button{border-radius:8px!important;color:var(--cd-muted)!important}
+#app #tabs button:hover{background:#edf6fc!important}
+#app #tabs button.active{background:#e3f3fb!important;color:#087fae!important}
+#app #tabs button.active:before,#app #tabs button.active:after{background:#19a9dc!important;color:#19a9dc!important}
+#app .desk-brief{background:#fff!important;border:1px solid var(--cd-line)!important;border-inline-start:4px solid #19a9dc!important;border-radius:12px!important}
+#app .desk-stamp,#app .stat strong{color:#168fbe!important}
+#app .stat,#app .panel{background:#fff!important;border:1px solid var(--cd-line)!important;border-radius:13px!important;box-shadow:0 7px 22px rgba(35,103,139,.045)!important}
+#app .stat{min-height:94px!important}
+#app .stat strong{font-size:1.35rem!important}
+#app .panel h3{font-size:.98rem!important;line-height:1.55!important}
+#app #overview .columns>.panel:first-child{background:linear-gradient(135deg,#168fbe,#38b3dc)!important;border:0!important;border-radius:14px!important;color:#fff!important}
+#app #overview .columns>.panel:first-child h3{color:#fff!important}
+#app #overview .columns>.panel:first-child .badge{background:#ffffff28!important;color:#fff4c2!important}
+#app .badge{background:#e7f4fb!important;color:#247da3!important;border-radius:7px!important}
+#app .table-wrap{border:1px solid var(--cd-line)!important;border-radius:12px!important;overflow:auto}
+#app .table th{background:#edf6fc!important;color:#52778d!important}
+#app .table td{border-color:var(--cd-line)!important}
+#app .primary{background:linear-gradient(110deg,#159fd1,#32b9e5)!important;border:0!important;border-radius:9px!important;color:#fff!important;box-shadow:0 5px 14px #19a9dc20!important}
+#app .search,#app .select,#app input,#app textarea,#app select{border:1px solid #d5e6f0!important;border-radius:9px!important;background:#fff!important;color:var(--cd-ink)!important}
+#app .kv,#app #aiOutput{background:#f0f8fd!important;border:1px solid var(--cd-line)!important;border-radius:10px!important}
+#app .tool-menu,#lock .lockbox{background:#fff!important;border:1px solid var(--cd-line)!important;border-radius:15px!important;box-shadow:var(--cd-shadow)!important}
+#lock .lockbox:before{background:linear-gradient(90deg,#19a9dc,#5c91b5,#f2c84b)!important}
+#lock .lockbox h1{font-size:1.7rem!important;color:var(--cd-ink)!important}
+#app .row{border-color:var(--cd-line)!important}
+@media(max-width:1100px){#app #tabs{background:#fff!important;border-radius:12px!important}}
+@media(max-width:650px){#app .command-banner h2{font-size:1.8rem!important}#app .stat strong{font-size:1.25rem!important}}
+
