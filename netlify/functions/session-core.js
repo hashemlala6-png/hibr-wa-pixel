@@ -27,8 +27,8 @@ function isDeployPreview(event) {
   if (!host && rawUrl) {
     try { host = new URL(rawUrl).hostname.toLowerCase(); } catch {}
   }
-  host = host.replace(/:\\d+$/, '');
-  return /^deploy-preview-\\d+--[a-z0-9-]+\\.netlify\\.app$/.test(host);
+  host = host.replace(/:\d+$/, '');
+  return /^deploy-preview-\d+--[a-z0-9-]+\.netlify\.app$/.test(host);
 }
 
 function adminPassword(_event) {
