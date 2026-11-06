@@ -5,7 +5,8 @@ const { getAIContext, contextPrompt, saveAIHistory } = require('./ai-context');
 const crypto = require('crypto');
 const { logActivity } = require('./client-activity');
 const { getStore, connectLambda } = require('@netlify/blobs');
-const dnaStore = () => getStore({ name: 'hbpx-creative-dna', consistency: 'strong' });
+const { blobOptions } = require('./blob-config');
+const dnaStore = () => getStore(blobOptions('hbpx-creative-dna', 'strong'));
 async function saveDNA(clientId, item) {
   const id = `dna-${clientId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
   await dnaStore().setJSON(id, { id, clientId, createdAt: new Date().toISOString(), ...item });
