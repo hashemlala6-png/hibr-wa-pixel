@@ -9,6 +9,8 @@ const EVENT_STORE = 'hbpx-instagram-events';
 const STATUS_STORE = 'hbpx-instagram-webhook-status';
 const CONNECTION_STORE = 'hbpx-instagram-login';
 const CONNECTION_KEY = 'agency-instagram';
+const API_VERSION = env('INSTAGRAM_API_VERSION') || 'v26.0';
+const REQUIRED_WEBHOOK_FIELDS = ['comments', 'messages'];
 const PREFIX = 'event-';
 const clean = (value, max = 4000) => String(value == null ? '' : value).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max);
 
@@ -30,6 +32,58 @@ async function readEvents() {
 }
 async function connection() {
   return store(CONNECTION_STORE).get(CONNECTION_KEY, { type: 'json' });
+}
+function decryptToken(box) {
+  const secret = env('ADMIN_SESSION_SECRET');
+  if (!secret) throw new Error('ADMIN_SESSION_SECRET غير مضبوط في Netlify.');
+  if (!box?.iv || !box?.data || !box?.tag) throw new Error('رمز Instagram المخزن غير صالح.');
+  const key = crypto.createHash('sha256').update(secret).digest();
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(box.iv, 'base64url'));
+  decipher.setAuthTag(Buffer.from(box.tag, 'base64url'));
+  return Buffer.concat([
+    decipher.update(Buffer.from(box.data, 'base64url')),
+    decipher.final()
+  ]).toString('utf8');
+}
+async function instagramGraph(path, token, method = 'GET', params = {}) {
+  const url = new URL('https://graph.instagram.com/' + API_VERSION + '/' + String(path).replace(/^\\/+/, ''));
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+  }
+  const response = await fetch(url, {
+    method,
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.error) {
+    const message = data.error?.message || data.error_description || 'Instagram API HTTP ' + response.status;
+    throw new Error(clean(message, 500));
+  }
+  return data;
+}
+function normalizeSubscribedFields(data) {
+  const rows = Array.isArray(data?.data) ? data.data : [];
+  return [...new Set(rows.flatMap(row => Array.isArray(row?.subscribed_fields) ? row.subscribed_fields : []))]
+    .map(value => clean(value, 80))
+    .filter(Boolean)
+    .sort();
+}
+async function readAccountWebhookSubscription(linked) {
+  if (!linked?.token || !linked?.profile?.userId) {
+    return json(409, { error: 'لا يوجد حساب Instagram مربوط. اربطي الحساب أولاً.' });
+  }
+  const token = decryptToken(linked.token);
+  const data = await instagramGraph('me/subscribed_apps', token);
+  const subscribedFields = normalizeSubscribedFields(data);
+  const missingFields = REQUIRED_WEBHOOK_FIELDS.filter(field => !subscribedFields.includes(field));
+  return {
+    connected: true,
+    username: clean(linked.profile.username, 100),
+    subscribedFields,
+    requiredFields: REQUIRED_WEBHOOK_FIELDS,
+    missingFields,
+    subscribed: missingFields.length === 0
+  };
 }
 function configFingerprint(value) {
   return value ? crypto.createHash('sha256').update(String(value)).digest('hex') : '';
@@ -63,6 +117,20 @@ exports.handler = async event => {
 
   try {
     if (event.httpMethod === 'GET') {
+      const query = event.queryStringParameters || {};
+      if (clean(query.action, 50) === 'webhook_subscription') {
+        const linked = await connection();
+        const result = await readAccountWebhookSubscription(linked);
+        if (result?.statusCode) return result;
+        const verification = await webhookStatus();
+        return json(200, {
+          ...result,
+          callbackVerified: verification.verifiedForCurrentConfig,
+          note: result.subscribed
+            ? 'حساب Instagram مشترك في حقول الرسائل والتعليقات.'
+            : 'الحساب غير مشترك في كل الحقول المطلوبة؛ يلزم إكمال التفعيل من حساب المالكة.'
+        });
+      }
       const [linked, verification] = await Promise.all([connection(), webhookStatus()]);
       const accountId = String(linked?.profile?.userId || '');
       const items = accountId ? (await readEvents()).filter(item => item.accountId === accountId) : [];
@@ -92,7 +160,42 @@ exports.handler = async event => {
     let body = {};
     try { body = JSON.parse(event.body || '{}'); }
     catch { return json(400, { error: 'بيانات الطلب غير صالحة.' }); }
-    if (clean(body.action, 40) !== 'save_reply_draft') return json(400, { error: 'الإجراء غير معروف.' });
+    const action = clean(body.action, 40);
+    if (action === 'subscribe_webhooks') {
+      const linked = await connection();
+      if (!linked?.token || !linked?.profile?.userId) {
+        return json(409, { error: 'لا يوجد حساب Instagram مربوط. اربطي الحساب أولاً.' });
+      }
+      const verification = await webhookStatus();
+      if (!verification.verifiedForCurrentConfig) {
+        return json(409, {
+          error: 'يجب أولاً توثيق Callback URL في لوحة Meta باستخدام Verify Token الحالي. لم نغيّر اشتراك الحساب.'
+        });
+      }
+      const token = decryptToken(linked.token);
+      await instagramGraph('me/subscribed_apps', token, 'POST', {
+        subscribed_fields: REQUIRED_WEBHOOK_FIELDS.join(',')
+      });
+      const checked = await readAccountWebhookSubscription(linked);
+      if (checked?.statusCode) return checked;
+      if (!checked.subscribed) {
+        return json(409, {
+          ok: false,
+          subscribed: false,
+          subscribedFields: checked.subscribedFields,
+          missingFields: checked.missingFields,
+          error: 'استجاب Instagram لطلب التفعيل، لكن فحص الاشتراك لم يؤكد كل الحقول المطلوبة. راجعي إعدادات Webhooks وصلاحيات Meta.'
+        });
+      }
+      return json(200, {
+        ok: true,
+        subscribed: true,
+        subscribedFields: checked.subscribedFields,
+        externalMessageSent: false,
+        message: 'تم تفعيل اشتراك حساب Instagram في استقبال الرسائل والتعليقات والتحقق منه. لم نرسل أي رسالة أو تعليق.'
+      });
+    }
+    if (action !== 'save_reply_draft') return json(400, { error: 'الإجراء غير معروف.' });
     const id = clean(body.id, 180), reply = clean(body.reply, 2000);
     if (!id || !id.startsWith(PREFIX)) return json(400, { error: 'معرّف الإشعار غير صالح.' });
     if (!reply) return json(400, { error: 'اكتبي مسودة رد أولاً.' });
