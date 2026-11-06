@@ -191,24 +191,26 @@ function leadNotificationCell(x,audience='customer'){
  return '<div class="meta">البريد: '+notificationLabel(n.email)+'<br>واتساب: '+notificationLabel(n.whatsapp)+'</div>'+(retry?'<button class="ghost" style="margin-top:6px" '+action+'="'+esc(x.id)+'">'+caption+'</button>':'');
 }
 async function retryOwnerNotifications(id){
+ const lead=LEADS.find(x=>x.id===id);
+ if(!lead){alert('الطلب غير موجود في القائمة الحالية. حدّث الطلبات ثم أعد المحاولة.');return;}
+ let d;
  try{
-  const lead=LEADS.find(x=>x.id===id);
-  if(!lead)throw Error('الطلب غير موجود في القائمة الحالية. حدّث الطلبات ثم أعد المحاولة.');
-  const d=await api('/.netlify/functions/leads',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status:lead.status||'new',retryOwnerNotifications:true})});
-  await loadIncomingLeads();
-  const n=d.ownerNotifications||{};
-  const el=$('#leadsStatus');
-  if(el)el.textContent='نتيجة إشعار المالك — البريد: '+notificationLabel(n.email)+' | واتساب: '+notificationLabel(n.whatsapp)+'.';
- }catch(e){alert(e.message)}
+  d=await api('/.netlify/functions/leads',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status:lead.status||'new',retryOwnerNotifications:true})});
+ }catch(e){alert('تعذر تنفيذ إعادة إرسال إشعار المالك: '+e.message);return;}
+ const el=$('#leadsStatus'),n=d.ownerNotifications||{};
+ try{await loadIncomingLeads({propagate:true});}
+ catch(e){if(el){el.textContent='تم تنفيذ طلب إعادة الإرسال، لكن تعذر تحديث قائمة الطلبات: '+e.message;el.style.color='#a94b4b';}return;}
+ if(el){el.textContent='نتيجة إشعار المالك — البريد: '+notificationLabel(n.email)+' | واتساب: '+notificationLabel(n.whatsapp)+'.';el.style.color='#866517';}
 }
 async function retryLeadNotifications(id){
+ let d;
  try{
-  const d=await api('/.netlify/functions/leads',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status:'approved',retryCustomerNotifications:true})});
-  await loadIncomingLeads();
-  const n=d.customerNotifications||{};
-  const el=$('#leadsStatus');
-  if(el)el.textContent='نتيجة إعادة المحاولة — البريد: '+notificationLabel(n.email)+' | واتساب: '+notificationLabel(n.whatsapp)+'.';
- }catch(e){alert(e.message)}
+  d=await api('/.netlify/functions/leads',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status:'approved',retryCustomerNotifications:true})});
+ }catch(e){alert('تعذر تنفيذ إعادة إرسال إشعار العميل: '+e.message);return;}
+ const el=$('#leadsStatus'),n=d.customerNotifications||{};
+ try{await loadIncomingLeads({propagate:true});}
+ catch(e){if(el){el.textContent='تم تنفيذ طلب إعادة الإرسال، لكن تعذر تحديث قائمة الطلبات: '+e.message;el.style.color='#a94b4b';}return;}
+ if(el){el.textContent='نتيجة إعادة المحاولة — البريد: '+notificationLabel(n.email)+' | واتساب: '+notificationLabel(n.whatsapp)+'.';el.style.color='#866517';}
 }
 
 async function loadIncomingLeads({propagate=false}={}){

@@ -298,3 +298,55 @@ test('project status save is kept distinct from dashboard refresh failure', asyn
   assert.equal(calls.some(item => item.alert), false);
   assert.match(status.textContent, /تم حفظ حالة المشروع، لكن تعذر تحديث لوحة الإدارة/);
 });
+
+
+test('owner notification retry reports provider result even if inbox refresh fails', async () => {
+  const calls = [];
+  const status = { textContent: '', style: {} };
+  const context = {
+    LEADS: [{ id: 'lead-1', status: 'contacted' }],
+    api: async (url, options) => {
+      calls.push({ method: options.method, body: JSON.parse(options.body) });
+      return { ownerNotifications: { email: 'accepted', whatsapp: 'failed' } };
+    },
+    loadIncomingLeads: async options => {
+      calls.push({ refresh: options.propagate });
+      throw new Error('inbox unavailable');
+    },
+    notificationLabel: value => value,
+    $: selector => selector === '#leadsStatus' ? status : null,
+    alert: message => calls.push({ alert: message })
+  };
+  const retry = vm.runInNewContext(functionSource('retryOwnerNotifications') + '\nretryOwnerNotifications', context);
+  await retry('lead-1');
+
+  assert.deepEqual(calls[0].body, { id: 'lead-1', status: 'contacted', retryOwnerNotifications: true });
+  assert.deepEqual(calls[1], { refresh: true });
+  assert.equal(calls.some(item => item.alert), false);
+  assert.match(status.textContent, /تم تنفيذ طلب إعادة الإرسال، لكن تعذر تحديث قائمة الطلبات/);
+});
+
+test('customer notification retry does not conflate accepted retry with failed inbox refresh', async () => {
+  const calls = [];
+  const status = { textContent: '', style: {} };
+  const context = {
+    api: async (url, options) => {
+      calls.push({ method: options.method, body: JSON.parse(options.body) });
+      return { customerNotifications: { email: 'accepted', whatsapp: 'not_configured' } };
+    },
+    loadIncomingLeads: async options => {
+      calls.push({ refresh: options.propagate });
+      throw new Error('inbox unavailable');
+    },
+    notificationLabel: value => value,
+    $: selector => selector === '#leadsStatus' ? status : null,
+    alert: message => calls.push({ alert: message })
+  };
+  const retry = vm.runInNewContext(functionSource('retryLeadNotifications') + '\nretryLeadNotifications', context);
+  await retry('lead-2');
+
+  assert.deepEqual(calls[0].body, { id: 'lead-2', status: 'approved', retryCustomerNotifications: true });
+  assert.deepEqual(calls[1], { refresh: true });
+  assert.equal(calls.some(item => item.alert), false);
+  assert.match(status.textContent, /تم تنفيذ طلب إعادة الإرسال، لكن تعذر تحديث قائمة الطلبات/);
+});
