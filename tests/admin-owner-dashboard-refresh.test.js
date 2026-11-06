@@ -15,7 +15,7 @@ function functionSource(name) {
   const match = [...script.matchAll(matcher)].find(entry => entry[1] === name);
   assert.ok(match, 'Missing function: ' + name);
 
-  const open = script.indexOf('{', match.index);
+  const open = match.index + match[0].lastIndexOf('{');
   let depth = 0;
   let quote = '';
   let escaped = false;
