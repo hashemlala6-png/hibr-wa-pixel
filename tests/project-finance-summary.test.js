@@ -80,7 +80,7 @@ test('project financial summary distinguishes final files ready from actual hand
     project: { id: 'project-a' },
     financialOverride: financial,
     deliveries: [
-      { id: 'preview', projectId: 'project-a', stage: 'preview', createdAt: '2026-11-03T10:00:00.000Z', clientApproval: { decision: 'approved' } },
+      { id: 'delivery-preview', projectId: 'project-a', stage: 'preview', createdAt: '2026-11-03T10:00:00.000Z', clientApproval: { decision: 'approved' } },
       { id: 'delivery-final-ready', projectId: 'project-a', stage: 'final', status: 'ready', fullQuality: true, watermarked: false, rightsTransferred: true, createdAt: '2026-11-04T10:00:00.000Z' }
     ]
   });
@@ -92,7 +92,7 @@ test('project financial summary distinguishes final files ready from actual hand
     project: { id: 'project-a' },
     financialOverride: financial,
     deliveries: [
-      { id: 'preview', projectId: 'project-a', stage: 'preview', createdAt: '2026-11-03T10:00:00.000Z', clientApproval: { decision: 'approved' } },
+      { id: 'delivery-preview', projectId: 'project-a', stage: 'preview', createdAt: '2026-11-03T10:00:00.000Z', clientApproval: { decision: 'approved' } },
       { id: 'delivery-final-delivered', projectId: 'project-a', stage: 'final', status: 'delivered', fullQuality: true, watermarked: false, rightsTransferred: true, createdAt: '2026-11-04T10:00:00.000Z' }
     ]
   });
