@@ -8,12 +8,12 @@ const projectStore=()=>getStore({name:'hbpx-projects',consistency:'strong'});
 const qualityStore=()=>getStore({name:'hbpx-quality-gates',consistency:'strong'});
 const vqaStore=()=>getStore({name:'hbpx-visual-qa',consistency:'strong'});
 async function approvedGate(projectId){
- const r=await qualityStore().list({prefix:'gate-'});
  let best=null;
- for(const b of r.blobs||[]){try{const x=await qualityStore().get(b.key,{type:'json'});if(x?.projectId===projectId&&x.status==='approved'&&x.kind==='final'&&(!best||new Date(x.approvedAt||x.updatedAt)>new Date(best.approvedAt||best.updatedAt)))best=x}catch{}}
+ const rows=await readStoreAll(qualityStore(),'gate-');
+ for(const x of rows){if(x?.projectId===projectId&&x.status==='approved'&&x.kind==='final'&&(!best||new Date(x.approvedAt||x.updatedAt)>new Date(best.approvedAt||best.updatedAt)))best=x;}
  return best;
 }
-async function newestVQA(projectId){const r=await vqaStore().list({prefix:'vqa-'});let latest=null;for(const b of r.blobs||[]){try{const x=await vqaStore().get(b.key,{type:'json'});if(x?.projectId===projectId&&(!latest||new Date(x.createdAt)>new Date(latest.createdAt)))latest=x}catch{}}return latest;}
+async function newestVQA(projectId){const rows=await readStoreAll(vqaStore(),'vqa-');let latest=null;for(const x of rows){if(x?.projectId===projectId&&(!latest||new Date(x.createdAt)>new Date(latest.createdAt)))latest=x;}return latest;}
 const stores={
  invoices:()=>getStore({name:'hbpx-invoices',consistency:'strong'}),
  contracts:()=>getStore({name:'hbpx-contracts',consistency:'strong'}),
@@ -22,7 +22,8 @@ const stores={
 };
 const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
 const amount=v=>{const n=Number(String(v??'').replace(/[^0-9.]/g,''));return Number.isFinite(n)&&n>=0?n:0};
-async function all(name,prefix){const st=stores[name](),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));}
+async function readStoreAll(st,prefix){const out=[];let cursor;do{const page=await st.list({prefix,limit:100,cursor});for(const blob of page.blobs||[]){const x=await st.get(blob.key,{type:'json'}).catch(()=>null);if(x)out.push(x);}cursor=page.cursor;}while(cursor);return out;}
+async function all(name,prefix){const rows=await readStoreAll(stores[name](),prefix);return rows.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));}
 function renewalDate(start,cycle){const d=new Date(start+'T12:00:00');if(cycle==='yearly')d.setFullYear(d.getFullYear()+1);else if(cycle==='quarterly')d.setMonth(d.getMonth()+3);else d.setMonth(d.getMonth()+1);return d.toISOString().slice(0,10)}
 function num(prefix){return `${prefix}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`}
 exports.handler=async e=>{

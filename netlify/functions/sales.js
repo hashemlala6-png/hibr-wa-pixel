@@ -19,6 +19,15 @@ const allowed = {
 };
 const clean=(v,n=500)=>String(v??'').trim().slice(0,n);
 const amount=v=>{const n=Number(String(v??'').replace(/[^0-9]/g,''));return Number.isFinite(n)&&n>0?n:0};
+async function readStoreAll(store,prefix){
+  const out=[];let cursor;
+  do{
+    const page=await store.list({prefix,limit:100,cursor});
+    for(const blob of page.blobs||[]){const item=await store.get(blob.key,{type:'json'}).catch(()=>null);if(item)out.push(item);}
+    cursor=page.cursor;
+  }while(cursor);
+  return out;
+}
 
 async function all(name){
   const st=stores[name]();
@@ -159,8 +168,7 @@ exports.handler=async event=>{
     if(!financial.contractSigned)return json(409,{error:'لا يمكن تسجيل دفعة قبل توقيع العقد من العميل.',financial});
     const nextPaid=financial.paid+amount(b.amount);
     if(nextPaid>financial.total)return json(409,{error:'مجموع الدفعات سيتجاوز قيمة العقد. راجعي المبلغ المسجل قبل المتابعة.',financial});
-    const deliveries=stores.deliveries();const deliveryPage=await deliveries.list({prefix:'delivery-',limit:1000});const previews=[];
-    for(const blob of deliveryPage.blobs||[]){const item=await deliveries.get(blob.key,{type:'json'}).catch(()=>null);if(item?.projectId===project.id&&item.stage==='preview')previews.push(item);}
+    const previewRecords=await readStoreAll(stores.deliveries(),'delivery-');const previews=previewRecords.filter(item=>item.projectId===project.id&&item.stage==='preview');
     previews.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
     const contentApproved=previews[0]?.clientApproval?.decision==='approved';
     if(nextPaid>financial.depositRequired&&!contentApproved)return json(409,{error:'الدفعة قبل اعتماد المحتوى لا يجوز أن تتجاوز عربون 10%. انتظري موافقة العميل على آخر معاينة لتسجيل الـ90% المتبقية.',financial});
@@ -186,8 +194,7 @@ exports.handler=async event=>{
    if(collection==='projects'&&status==='completed'){
     const financial=await getProjectFinancials(x.id,x.amount);
     if(!financial.fullyPaid)return json(409,{error:'لا يمكن إغلاق المشروع قبل اكتمال سداد 100% من قيمة العقد.',financial});
-    const deliveries=stores.deliveries();const page=await deliveries.list({prefix:'delivery-',limit:1000});const finalDelivered=[];
-    for(const blob of page.blobs||[]){const item=await deliveries.get(blob.key,{type:'json'}).catch(()=>null);if(item?.projectId===x.id&&item.stage==='final'&&item.status==='delivered'&&item.fullQuality===true&&item.rightsTransferred===true)finalDelivered.push(item);}
+    const deliveryRecords=await readStoreAll(stores.deliveries(),'delivery-');const finalDelivered=deliveryRecords.filter(item=>item.projectId===x.id&&item.stage==='final'&&item.status==='delivered'&&item.fullQuality===true&&item.rightsTransferred===true);
     if(!finalDelivered.length)return json(409,{error:'لا يمكن إغلاق المشروع قبل تسجيل تسليم الملفات النهائية للعميل ونقل الحقوق بعد الدفع.'});
    }
    const previousStatus=x.status;x.status=status;x.updatedAt=new Date().toISOString();await stores[collection]().setJSON(id,x);
