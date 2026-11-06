@@ -47,3 +47,25 @@ test('Blobs does not pass explicit credentials when no server token exists', () 
     assert.deepEqual(options, { name: 'hbpx-leads', consistency: 'eventual' });
   });
 });
+
+test('every direct Netlify Blobs consumer uses the shared credential configuration', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const functionsDir = path.join(__dirname, '..', 'netlify', 'functions');
+  const files = fs.readdirSync(functionsDir).filter(file => file.endsWith('.js'));
+  const missing = [];
+
+  for (const file of files) {
+    const source = fs.readFileSync(path.join(functionsDir, file), 'utf8');
+    const importsBlobs = /require\(['"]@netlify\/blobs['"]\)/.test(source);
+    const createsStore = /\b(?:getStore|getBlobStore)\s*\(/.test(source);
+    const usesSharedConfig = /require\(['"]\.\/blob-config['"]\)/.test(source);
+    if (importsBlobs && createsStore && !usesSharedConfig) missing.push(file);
+  }
+
+  assert.deepEqual(
+    missing,
+    [],
+    'All direct Netlify Blobs consumers must use the shared blob-config helper.'
+  );
+});
