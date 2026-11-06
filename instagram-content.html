@@ -19,6 +19,19 @@ textarea.field{resize:vertical;min-height:130px;line-height:1.7}.actions{display
 .caption{white-space:pre-wrap;line-height:1.7;overflow-wrap:anywhere;margin:10px 0;max-height:160px;overflow:auto}.counts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.count{background:#fafaf7;border:1px solid var(--line);border-radius:11px;padding:10px}.count b{display:block;font-size:21px}
 .hidden{display:none!important}.back{display:inline-block;padding:10px 13px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);text-decoration:none}
 @media(max-width:850px){.grid{grid-template-columns:1fr}}@media(max-width:560px){.wrap{padding:12px}.card{padding:14px}.counts{grid-template-columns:repeat(2,1fr)}}
+
+/* H&P shared dashboard palette */
+:root{--bg:#f4f9fd;--card:#fff;--ink:#20394d;--muted:#647b8c;--line:#dce9f1;--blue:#168fbe;--green:#168fbe;--red:#a44848;--gold:#f2c84b}
+body{font-family:'IBM Plex Sans Arabic',Arial,sans-serif!important;background:linear-gradient(145deg,#f7fbff,#eef7fc)!important;color:#20394d!important}
+h1{font-family:Cairo,'IBM Plex Sans Arabic',sans-serif!important;font-size:clamp(1.55rem,3.2vw,2.15rem)!important;line-height:1.35!important;letter-spacing:-.025em}
+.card{border-color:#dce9f1!important;border-radius:14px!important;box-shadow:0 8px 24px rgba(35,103,139,.055)!important}
+button,.back,.field{border-radius:9px!important}
+.primary{background:linear-gradient(110deg,#159fd1,#32b9e5)!important;border-color:#159fd1!important}
+.eyebrow{color:#168fbe!important}
+.status,.ok{background:#eaf5fb!important;color:#28698e!important}
+.warn{background:#fff8df!important;color:#99721a!important}
+@media(max-width:650px){.wrap{padding:14px!important}h1{font-size:1.55rem!important}.card{padding:15px!important}}
+
 </style>
 </head>
 <body>
