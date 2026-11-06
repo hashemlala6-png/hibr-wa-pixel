@@ -107,3 +107,25 @@ test('new projects cannot bypass contract and deposit gates by requesting active
   assert.equal(response.statusCode, 201);
   assert.equal(body(response).item.status, 'planned');
 });
+
+
+test('payment amounts reject negative values instead of turning them positive', async () => {
+  const service = loadSales(fixture({ contract: {} }));
+  const response = await service.handler({
+    httpMethod: 'POST',
+    body: JSON.stringify({ type: 'payment', projectId: 'project-a', amount: '-10000', method: 'transfer' })
+  });
+  assert.equal(response.statusCode, 400);
+  assert.equal(Object.keys(service.stores['hbpx-payments']).length, 0);
+});
+
+test('payment amount keeps decimal precision and binds the payment to the active signed contract', async () => {
+  const service = loadSales(fixture({ contract: {} }));
+  const response = await service.handler({
+    httpMethod: 'POST',
+    body: JSON.stringify({ type: 'payment', projectId: 'project-a', amount: '1,000.50', method: 'transfer' })
+  });
+  assert.equal(response.statusCode, 201);
+  assert.equal(body(response).item.amount, 1000.5);
+  assert.equal(body(response).item.contractId, 'contract-a');
+});

@@ -3,10 +3,7 @@
 const { getStore } = require('@netlify/blobs');
 const { blobOptions } = require('./blob-config');
 
-const amount = value => {
-  const parsed = Number(String(value == null ? '' : value).replace(/[^0-9.]/g, ''));
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-};
+const amount = require('./money');
 
 async function readAll(name, prefix) {
   const store = getStore(blobOptions(name, 'strong'));
@@ -27,13 +24,27 @@ async function getProjectFinancials(projectId, fallbackAmount = 0) {
     readAll('hbpx-payments', 'payment-'),
     readAll('hbpx-contracts', 'contract-')
   ]);
-  const matchingPayments = payments.filter(payment => payment.projectId === id);
-  const matchingContracts = contracts
+  const projectPayments = payments.filter(payment => payment.projectId === id);
+  const signedContracts = contracts
     .filter(contract => contract.projectId === id && contract.status === 'signed' && contract.signedAt)
     .sort((a, b) => new Date(b.signedAt).getTime() - new Date(a.signedAt).getTime());
-  const signedContract = matchingContracts[0] || null;
+  const signedContract = signedContracts[0] || null;
+  // Contract-bound payments cannot migrate to a later signed agreement.
+  // Legacy rows without contractId remain credited only while one signed agreement exists.
+  const matchingPayments = signedContract
+    ? projectPayments.filter(payment => {
+      const paymentContractId = String(payment.contractId || '').trim();
+      return paymentContractId
+        ? paymentContractId === String(signedContract.id || '')
+        : signedContracts.length === 1;
+    })
+    : projectPayments;
+  const unallocatedPayments = signedContract
+    ? projectPayments.filter(payment => !matchingPayments.includes(payment))
+    : [];
   const total = amount(signedContract?.amount) || amount(fallbackAmount);
   const paid = matchingPayments.reduce((sum, payment) => sum + amount(payment.amount), 0);
+  const unallocatedPaid = unallocatedPayments.reduce((sum, payment) => sum + amount(payment.amount), 0);
   const depositRequired = total > 0 ? Math.ceil(total * 0.10) : 0;
   const remaining = Math.max(total - paid, 0);
 
@@ -50,6 +61,8 @@ async function getProjectFinancials(projectId, fallbackAmount = 0) {
     depositMet: Boolean(signedContract && total > 0 && paid >= depositRequired),
     fullyPaid: Boolean(signedContract && total > 0 && paid >= total),
     paymentCount: matchingPayments.length,
+    unallocatedPaid,
+    unallocatedPaymentCount: unallocatedPayments.length,
     policySource: signedContract?.paymentPolicy ? 'signed-contract' : 'default-10-90'
   };
 }

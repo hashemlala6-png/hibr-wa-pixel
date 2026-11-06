@@ -17,7 +17,7 @@ const allowed = {
   projects: ['planned','active','review','completed','paused']
 };
 const clean=(v,n=500)=>String(v??'').trim().slice(0,n);
-const amount=v=>{const n=Number(String(v??'').replace(/[^0-9]/g,''));return Number.isFinite(n)&&n>0?n:0};
+const amount=require('./money');
 
 async function all(name){
   const st=stores[name]();
@@ -154,8 +154,9 @@ exports.handler=async event=>{
     const project=await stores.projects().get(clean(b.projectId,120),{type:'json'}).catch(()=>null);
     if(!project)return json(404,{error:'المشروع غير موجود.'});
     const clientId=await clientIdForProject(project);
+    const financial=await getProjectFinancials(project.id,project.amount);
     const id=`payment-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-    const x={id,projectId:clean(b.projectId,120),clientId:clientId||null,amount:amount(b.amount),method:clean(b.method,60),note:clean(b.note,500),createdAt:now};
+    const x={id,projectId:clean(b.projectId,120),contractId:financial.contractId||null,clientId:clientId||null,amount:amount(b.amount),method:clean(b.method,60),note:clean(b.note,500),createdAt:now};
     await stores.payments().setJSON(id,x);
     if(clientId)await logActivity(clientId,'payment','تم تسجيل دفعة',{projectId:x.projectId,amount:x.amount,method:x.method});
     return json(201,{item:x});
