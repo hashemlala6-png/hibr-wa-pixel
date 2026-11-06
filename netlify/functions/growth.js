@@ -2,24 +2,25 @@ const { env } = require('./env');
 
 const crypto=require('crypto');
 const { getStore, connectLambda } = require('@netlify/blobs');
+const { blobOptions } = require('./blob-config');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
 const stores={
- baselines:()=>getStore({name:'hbpx-growth-baselines',consistency:'strong'}),
- snapshots:()=>getStore({name:'hbpx-growth-snapshots',consistency:'strong'}),
- reports:()=>getStore({name:'hbpx-growth-reports',consistency:'strong'}),
- leads:()=>getStore({name:'hbpx-leads',consistency:'strong'}),
- projects:()=>getStore({name:'hbpx-projects',consistency:'strong'}),
- payments:()=>getStore({name:'hbpx-payments',consistency:'strong'}),
- expenses:()=>getStore({name:'hbpx-expenses',consistency:'strong'}),
- quotes:()=>getStore({name:'hbpx-quotes',consistency:'strong'}),
- subscriptions:()=>getStore({name:'hbpx-subscriptions',consistency:'strong'})
+ baselines:()=>getStore(blobOptions('hbpx-growth-baselines', 'strong')),
+ snapshots:()=>getStore(blobOptions('hbpx-growth-snapshots', 'strong')),
+ reports:()=>getStore(blobOptions('hbpx-growth-reports', 'strong')),
+ leads:()=>getStore(blobOptions('hbpx-leads', 'strong')),
+ projects:()=>getStore(blobOptions('hbpx-projects', 'strong')),
+ payments:()=>getStore(blobOptions('hbpx-payments', 'strong')),
+ expenses:()=>getStore(blobOptions('hbpx-expenses', 'strong')),
+ quotes:()=>getStore(blobOptions('hbpx-quotes', 'strong')),
+ subscriptions:()=>getStore(blobOptions('hbpx-subscriptions', 'strong'))
 };
 const clean=(v,n=3000)=>String(v??'').trim().slice(0,n);
 const num=v=>{const n=Number(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(n)?n:0};
 async function all(name,prefix){const st=stores[name](),r=await st.list({prefix}),o=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)o.push(x)}catch{}}return o.sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt))}
 async function byClient(name,prefix,clientId,field='clientId'){return (await all(name,prefix)).filter(x=>x[field]===clientId)}
-async function allActivity(){const st=getStore({name:'hbpx-client-activity',consistency:'strong'});const r=await st.list({prefix:'activity-'});const o=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)o.push(x)}catch{}}return o.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))}
+async function allActivity(){const st=getStore(blobOptions('hbpx-client-activity', 'strong'));const r=await st.list({prefix:'activity-'});const o=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)o.push(x)}catch{}}return o.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))}
 
 exports.handler=async e=>{
   connectLambda(e);
