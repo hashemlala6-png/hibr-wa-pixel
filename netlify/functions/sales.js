@@ -1,5 +1,5 @@
 const { env } = require('./env');
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
 const { resolveClientIdentity } = require('./client-ownership');
@@ -115,6 +115,7 @@ async function ownershipReview(projects){
 }
 
 exports.handler=async event=>{
+  connectLambda(event);
  if(event.httpMethod==='OPTIONS')return json(204,{});
  const auth=requireAdmin(event);if(auth)return auth;
  try{

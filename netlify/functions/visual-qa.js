@@ -1,6 +1,6 @@
 const { env } = require('./env');
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {getAIContext,contextPrompt,saveAIHistory}=require('./ai-context');
 const {logActivity}=require('./client-activity');
@@ -9,6 +9,7 @@ const clean=(v,n=5000)=>String(v??'').trim().slice(0,n);
 const extract=t=>{const s=String(t||'').replace(/```json|```/g,'').trim();try{return JSON.parse(s)}catch{}const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)return JSON.parse(s.slice(a,b+1));throw Error('تعذر قراءة نتيجة الفحص البصري.');};
 const dataUrlOk=x=>/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(String(x||''));
 exports.handler=async e=>{
+  connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});
  const auth=requireAdmin(e);if(auth)return auth;
  if(e.httpMethod!=='POST')return json(405,{error:'Method not allowed'});

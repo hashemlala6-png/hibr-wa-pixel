@@ -1,4 +1,4 @@
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { env } = require('./env');
 
 const CONTENT_STORE = 'hbpx-instagram-content';
@@ -30,6 +30,7 @@ async function listDue(now) {
 }
 
 exports.handler = async () => {
+  connectLambda(event);
   const now = Date.now();
   const content = store(CONTENT_STORE);
   const notifications = store(NOTIFICATION_STORE);

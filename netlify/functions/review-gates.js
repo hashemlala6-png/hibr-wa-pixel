@@ -1,10 +1,11 @@
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const store=()=>getStore({name:'hbpx-review-gates',consistency:'strong'});
 const clean=(v,n=3000)=>String(v??'').trim().slice(0,n);
 async function all(){const s=store(),out=[];let cursor;do{const r=await s.list({prefix:'gate-',limit:100,cursor});for(const b of r.blobs||[]){try{const x=await s.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}cursor=r.cursor}while(cursor);return out.sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt))}
-exports.handler=async e=>{if(e.httpMethod==='OPTIONS')return json(204,{});const denied=requireAdmin(e);if(denied)return denied;try{
+exports.handler=async e=>{
+  connectLambda(e);if(e.httpMethod==='OPTIONS')return json(204,{});const denied=requireAdmin(e);if(denied)return denied;try{
 if(e.httpMethod==='GET')return json(200,{items:await all(),policy:{approvalIsReviewOnly:true,externalActionsExecuted:false}});
 let b={};try{b=JSON.parse(e.body||'{}')}catch{return json(400,{error:'بيانات غير صالحة.'})}
 if(e.httpMethod==='POST'){const phase=clean(b.phase,80),title=clean(b.title,180),deliverable=clean(b.deliverable,3000),criteria=clean(b.criteria,2000),dependsOnId=clean(b.dependsOnId,180);if(!phase||!title||!deliverable)return json(400,{error:'المرحلة والعنوان والمخرجات المطلوبة حقول إلزامية.'});const s=store();if(dependsOnId){const dependency=await s.get(dependsOnId,{type:'json'});if(!dependency)return json(400,{error:'المرحلة السابقة المحددة غير موجودة.'});if(dependency.status!=='approved')return json(409,{error:'لا يمكن ربط المرحلة إلا بمرحلة سابقة معتمدة.'});}const now=new Date().toISOString(),id='gate-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex');const item={id,phase,title,deliverable,criteria,dependsOnId:dependsOnId||null,status:'pending_review',createdAt:now,updatedAt:now,decision:null,decisionNote:'',externalAction:false};await s.setJSON(id,item);return json(201,{item})}

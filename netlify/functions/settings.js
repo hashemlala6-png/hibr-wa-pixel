@@ -1,10 +1,11 @@
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const store = () => getStore({ name: 'hbpx-settings', consistency: 'strong' });
 const DEFAULTS = {
   single: '19,000', basic: '142,000', comprehensive: '252,000', extended: '372,000'
 };
 exports.handler = async (event) => {
+  connectLambda(event);
   if (event.httpMethod === 'GET') {
     const saved = await store().get('pricing', { type: 'json' });
     return json(200, { pricing: { ...DEFAULTS, ...(saved || {}) } });

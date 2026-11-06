@@ -1,5 +1,5 @@
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 
 const defs={
@@ -20,6 +20,7 @@ async function all(name,prefix){
 function pct(a,b){return b?Math.round(((a-b)/b)*100):a?100:0}
 function hash(v){return crypto.createHash('sha256').update(String(v||'')).digest('hex').slice(0,24)}
 exports.handler=async event=>{
+  connectLambda(event);
   if(event.httpMethod==='OPTIONS')return json(204,{});
   const auth=requireAdmin(event);if(auth)return auth;
   if(event.httpMethod!=='GET')return json(405,{error:'Method not allowed'});

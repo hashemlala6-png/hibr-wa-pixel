@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const { env } = require('./env');
 const { requireAdmin, json, COOKIE_NAME } = require('./auth-utils');
 const { logActivity } = require('./client-activity');
@@ -233,6 +233,7 @@ async function refreshToken() {
   }
 }
 exports.handler = async event => {
+  connectLambda(event);
   if (event.httpMethod === 'OPTIONS') return json(204, {});
   const denied = requireAdmin(event);
   if (denied) return denied;

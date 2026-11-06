@@ -18,6 +18,7 @@ function loadSales(data) {
   const activity = [];
   const writes = [];
   const blobModule = {
+    connectLambda() {},
     getStore({name}) {
       if (!data[name]) data[name] = {};
       const store = data[name];

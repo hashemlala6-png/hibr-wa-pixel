@@ -1,5 +1,5 @@
 const crypto=require('crypto');
-const {getStore}=require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const {logActivity}=require('./client-activity');
 const {getAIContext,saveAIHistory}=require('./ai-context');
@@ -13,6 +13,7 @@ const clean=(v,n=3000)=>String(v??'').trim().slice(0,n);
 const list=async(name,prefix)=>{const st=stores[name](),r=await st.list({prefix}),out=[];for(const b of r.blobs||[]){try{const x=await st.get(b.key,{type:'json'});if(x)out.push(x)}catch{}}return out.sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt));};
 const uid=(p)=>p+'-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex');
 exports.handler=async e=>{
+  connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{});
  const auth=requireAdmin(e);if(auth)return auth;
  try{

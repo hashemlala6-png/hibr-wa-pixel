@@ -1,4 +1,4 @@
-const {getStore}=require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 const {requireAdmin,json}=require('./auth-utils');
 const stores={
  leads:()=>getStore({name:'hbpx-leads',consistency:'strong'}),
@@ -10,6 +10,7 @@ const num=v=>Number(v||0)||0;
 const pct=(a,b)=>b?Math.round(((a-b)/b)*100):a?100:0;
 function range(days,offset=0){const end=Date.now()-offset*86400000;return {from:end-days*86400000,to:end};}
 exports.handler=async e=>{
+  connectLambda(e);
  if(e.httpMethod==='OPTIONS')return json(204,{}); const auth=requireAdmin(e);if(auth)return auth;
  if(e.httpMethod!=='GET')return json(405,{error:'Method not allowed'});
  try{
