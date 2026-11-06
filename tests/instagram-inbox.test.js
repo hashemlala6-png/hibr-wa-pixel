@@ -4,13 +4,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
 
-function loadInbox({ events = {}, connection = null, denied = false } = {}) {
+function loadInbox({ events = {}, connection = null, denied = false, status = null } = {}) {
   const resolved = require.resolve('../netlify/functions/instagram-inbox');
   delete require.cache[resolved];
   const originalLoad = Module._load;
   const stores = {
     'hbpx-instagram-events': events,
-    'hbpx-instagram-login': { 'agency-instagram': connection }
+    'hbpx-instagram-login': { 'agency-instagram': connection },
+    'hbpx-instagram-webhook-status': status ? { status } : {}
   };
   const writes = [];
   const blobs = {
@@ -58,6 +59,32 @@ test('owner inbox filters webhook events to the currently connected Instagram ac
   assert.equal(data.policy.automaticRepliesEnabled, false);
   assert.equal(data.webhookConfigured, true);
   assert.equal(data.callbackUrl, 'https://fabulous-bublanina-8d5626.netlify.app/.netlify/functions/instagram-webhook');
+  assert.equal(data.verification.verifiedForCurrentConfig, false);
+  assert.equal(data.verification.lastReceivedAt, null);
+});
+
+
+test('owner inbox verifies stored Meta handshake against current secrets and shows latest signed event', async () => {
+  const crypto = require('node:crypto');
+  const hash = value => crypto.createHash('sha256').update(value).digest('hex');
+  const service = loadInbox({
+    connection: { token: { iv: 'iv', data: 'cipher', tag: 'tag' }, profile: { userId: 'ig-123', username: 'hibr_pixels' } },
+    events: {},
+    status: {
+      verifiedAt: '2026-11-06T13:00:00.000Z',
+      verifyTokenFingerprint: hash('private-verify-token'),
+      appSecretFingerprint: hash('private-app-secret'),
+      lastReceivedAt: '2026-11-06T13:05:00.000Z',
+      lastSignatureVerifiedAt: '2026-11-06T13:05:00.000Z',
+      lastEventCount: 2,
+      lastEventTypes: ['message','comment']
+    }
+  });
+  const data = body(await service.handler({ httpMethod: 'GET', headers: {} }));
+  assert.equal(data.verification.verifiedForCurrentConfig, true);
+  assert.equal(data.verification.verifiedAt, '2026-11-06T13:00:00.000Z');
+  assert.equal(data.verification.lastReceivedAt, '2026-11-06T13:05:00.000Z');
+  assert.deepEqual(data.verification.lastEventTypes, ['message','comment']);
 });
 
 test('owner can save an internal reply draft without sending a message', async () => {

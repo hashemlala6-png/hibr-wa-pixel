@@ -59,7 +59,10 @@ textarea{width:100%;min-height:90px;border:1px solid #cfe1ec;border-radius:10px;
   try{
    const data=await api();ITEMS=data.items||[];
    $('status').className='status'+(data.webhookConfigured&&data.connected?'':' warn');
-   $('status').textContent=(data.account?'الحساب المرتبط: @'+data.account.username+' · ':'')+(data.webhookConfigured?'متغيرات Webhook موجودة.':'أضيفي INSTAGRAM_WEBHOOK_VERIFY_TOKEN وINSTAGRAM_APP_SECRET في Netlify.')+(data.connected?' · إشعارات هذا الحساب فقط.':' · اربطي حساب Instagram أولاً.')+' استقبال الإشعار لا يعني تشغيل رد تلقائي.';
+   const verification=data.verification||{};
+   const webhookState=!data.webhookConfigured?'أضيفي INSTAGRAM_WEBHOOK_VERIFY_TOKEN وINSTAGRAM_APP_SECRET في Netlify.':verification.verifiedForCurrentConfig?'تحقق Meta من Callback ناجح على الإعدادات الحالية.':'المتغيرات موجودة، لكن لم يُسجل تحقق Meta لهذه القيم بعد.';
+   const eventState=verification.lastReceivedAt?' · آخر إشعار موقّع: '+esc(verification.lastReceivedAt)+' · الأنواع: '+esc((verification.lastEventTypes||[]).join('، ')||'غير محددة'):' · لم يصل إشعار اختباري موثق بعد.';
+   $('status').textContent=(data.account?'الحساب المرتبط: @'+data.account.username+' · ':'')+webhookState+(data.connected?' · إشعارات هذا الحساب فقط.':' · اربطي حساب Instagram أولاً.')+eventState+' استقبال الإشعار لا يعني تشغيل رد تلقائي.';
    const setup=$('callbackSetup');
    if(data.callbackUrl){setup.classList.remove('hidden');$('callbackUrl').textContent=data.callbackUrl;}
    else{setup.classList.add('hidden');$('callbackUrl').textContent='';}

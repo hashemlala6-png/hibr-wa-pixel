@@ -6,12 +6,28 @@ const { env } = require('./env');
 const { json } = require('./auth-utils');
 
 const STORE = 'hbpx-instagram-events';
+const STATUS_STORE = 'hbpx-instagram-webhook-status';
 const PREFIX = 'event-';
 const MAX_BODY_BYTES = 1024 * 1024;
 const clean = (value, max = 4000) => String(value == null ? '' : value).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim().slice(0, max);
 
 function eventStore() {
   return getStore({ name: STORE, consistency: 'strong' });
+}
+function webhookStatusStore() {
+  return getStore({ name: STATUS_STORE, consistency: 'strong' });
+}
+function configFingerprint(value) {
+  return value ? crypto.createHash('sha256').update(String(value)).digest('hex') : '';
+}
+async function updateWebhookStatus(patch) {
+  const s = webhookStatusStore();
+  const current = await s.get('status', { type: 'json' }).catch(() => null);
+  await s.setJSON('status', {
+    ...(current || {}),
+    ...patch,
+    updatedAt: new Date().toISOString()
+  });
 }
 function response(statusCode, body, contentType = 'application/json; charset=utf-8') {
   return {
@@ -114,6 +130,12 @@ async function verifyHandshake(event) {
   if (query['hub.mode'] !== 'subscribe' || !query['hub.challenge'] || !safeEqualText(query['hub.verify_token'], verifyToken)) {
     return response(403, JSON.stringify({ error: 'رفض التحقق من Webhook.' }));
   }
+  await updateWebhookStatus({
+    verifiedAt: new Date().toISOString(),
+    verifyTokenFingerprint: configFingerprint(verifyToken),
+    appSecretFingerprint: configFingerprint(env('INSTAGRAM_APP_SECRET')),
+    verificationMethod: 'meta-hub-challenge'
+  });
   return response(200, String(query['hub.challenge']), 'text/plain; charset=utf-8');
 }
 
@@ -141,6 +163,13 @@ async function receive(event) {
     await store.setJSON(item.id, item);
     saved++;
   }
+  const receivedAt = new Date().toISOString();
+  await updateWebhookStatus({
+    lastReceivedAt: receivedAt,
+    lastSignatureVerifiedAt: receivedAt,
+    lastEventCount: events.length,
+    lastEventTypes: [...new Set(events.map(item => item.eventType))].slice(0, 10)
+  });
   return json(200, {
     ok: true,
     received: events.length,

@@ -12,14 +12,15 @@ function loadWebhook({ secret = APP_SECRET, verifyToken = VERIFY_TOKEN } = {}) {
   const resolved = require.resolve('../netlify/functions/instagram-webhook');
   delete require.cache[resolved];
   const originalLoad = Module._load;
-  const records = {};
+  const stores = { 'hbpx-instagram-events': {}, 'hbpx-instagram-webhook-status': {} };
   const writes = [];
   const blobs = {
     connectLambda() {},
-    getStore() {
+    getStore({ name }) {
+      const records = stores[name] ||= {};
       return {
         async get(key) { return records[key] || null; },
-        async setJSON(key, value) { records[key] = value; writes.push({ key, value }); }
+        async setJSON(key, value) { records[key] = value; writes.push({ name, key, value }); }
       };
     }
   };
@@ -37,7 +38,7 @@ function loadWebhook({ secret = APP_SECRET, verifyToken = VERIFY_TOKEN } = {}) {
     }
     return originalLoad.call(this, request, parent, isMain);
   };
-  try { return { handler: require(resolved).handler, records, writes }; }
+  try { return { handler: require(resolved).handler, records: stores['hbpx-instagram-events'], status: stores['hbpx-instagram-webhook-status'], writes }; }
   finally { Module._load = originalLoad; delete require.cache[resolved]; }
 }
 function signature(raw) {
@@ -53,6 +54,9 @@ test('Instagram webhook verification responds with challenge only for the config
   });
   assert.equal(good.statusCode, 200);
   assert.equal(good.body, 'challenge-12345');
+  assert.ok(service.status.status.verifiedAt);
+  assert.ok(service.status.status.verifyTokenFingerprint);
+  assert.equal(JSON.stringify(service.status).includes(VERIFY_TOKEN), false);
   assert.match(good.headers['Content-Type'], /text\/plain/);
   const bad = await service.handler({
     httpMethod: 'GET',
@@ -81,6 +85,9 @@ test('Instagram webhook verifies raw-body HMAC, stores message events, and dedup
   assert.equal(saved.senderId, 'customer-scoped-id');
   assert.equal(saved.text, 'أريد معرفة أسعار التصميم');
   assert.equal(saved.externalAction, false);
+  assert.ok(service.status.status.lastReceivedAt);
+  assert.ok(service.status.status.lastSignatureVerifiedAt);
+  assert.deepEqual(service.status.status.lastEventTypes, ['message']);
   const retry = await service.handler(event);
   assert.equal(retry.statusCode, 200);
   assert.equal(body(retry).duplicates, 1);

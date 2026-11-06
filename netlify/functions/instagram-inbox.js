@@ -3,8 +3,10 @@
 const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const { env } = require('./env');
+const crypto = require('crypto');
 
 const EVENT_STORE = 'hbpx-instagram-events';
+const STATUS_STORE = 'hbpx-instagram-webhook-status';
 const CONNECTION_STORE = 'hbpx-instagram-login';
 const CONNECTION_KEY = 'agency-instagram';
 const PREFIX = 'event-';
@@ -29,6 +31,29 @@ async function readEvents() {
 async function connection() {
   return store(CONNECTION_STORE).get(CONNECTION_KEY, { type: 'json' });
 }
+function configFingerprint(value) {
+  return value ? crypto.createHash('sha256').update(String(value)).digest('hex') : '';
+}
+async function webhookStatus() {
+  const [record, verifyToken, appSecret] = await Promise.all([
+    store(STATUS_STORE).get('status', { type: 'json' }).catch(() => null),
+    Promise.resolve(env('INSTAGRAM_WEBHOOK_VERIFY_TOKEN')),
+    Promise.resolve(env('INSTAGRAM_APP_SECRET'))
+  ]);
+  const configured = Boolean(verifyToken && appSecret);
+  const verifiedForCurrentConfig = Boolean(configured && record?.verifiedAt
+    && record.verifyTokenFingerprint === configFingerprint(verifyToken)
+    && record.appSecretFingerprint === configFingerprint(appSecret));
+  return {
+    configured,
+    verifiedForCurrentConfig,
+    verifiedAt: verifiedForCurrentConfig ? record.verifiedAt : null,
+    lastReceivedAt: record?.lastReceivedAt || null,
+    lastSignatureVerifiedAt: record?.lastSignatureVerifiedAt || null,
+    lastEventCount: Number.isFinite(Number(record?.lastEventCount)) ? Number(record.lastEventCount) : null,
+    lastEventTypes: Array.isArray(record?.lastEventTypes) ? record.lastEventTypes.slice(0, 10) : []
+  };
+}
 
 exports.handler = async event => {
   connectLambda(event);
@@ -38,7 +63,7 @@ exports.handler = async event => {
 
   try {
     if (event.httpMethod === 'GET') {
-      const linked = await connection();
+      const [linked, verification] = await Promise.all([connection(), webhookStatus()]);
       const accountId = String(linked?.profile?.userId || '');
       const items = accountId ? (await readEvents()).filter(item => item.accountId === accountId) : [];
       let callbackUrl = '';
@@ -49,7 +74,8 @@ exports.handler = async event => {
       return json(200, {
         connected: Boolean(accountId && linked?.token),
         account: linked?.profile ? { userId: accountId, username: clean(linked.profile.username, 100) } : null,
-        webhookConfigured: Boolean(env('INSTAGRAM_WEBHOOK_VERIFY_TOKEN') && env('INSTAGRAM_APP_SECRET')),
+        webhookConfigured: verification.configured,
+        verification,
         callbackUrl,
         items,
         policy: {
