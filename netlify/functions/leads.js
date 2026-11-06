@@ -45,7 +45,7 @@ async function rateLimit(ip){
 }
 
 const htmlEscape = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function notifyOwner(lead) {
+async function notifyOwner(lead, channels = ['email', 'whatsapp']) {
   const summary = [
     'طلب جديد — حبر وبكسل',
     'الاسم: ' + lead.name,
@@ -56,53 +56,61 @@ async function notifyOwner(lead) {
     'التفاصيل: ' + (lead.details || '—'),
     'المصدر: ' + lead.source,
     'رقم الطلب: ' + lead.id
-  ].join('\n');
-  const results = { email: 'not_configured', whatsapp: 'not_configured' };
-  const emailKey = process.env.RESEND_API_KEY;
-  const to = process.env.LEADS_NOTIFY_EMAIL;
-  const from = process.env.LEADS_FROM_EMAIL;
-  if (emailKey && to && from) {
-    try {
-      const r = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + emailKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from, to: [to], subject: 'طلب جديد من ' + lead.name + ' — حبر وبكسل',
-          text: summary,
-          html: '<h2>طلب جديد — حبر وبكسل</h2><pre style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.8">' + htmlEscape(summary) + '</pre>'
-        })
-      });
-      results.email = r.ok ? 'accepted' : 'failed';
-      if (!r.ok) console.error('lead email notification failed', r.status, (await r.text()).slice(0,300));
-    } catch (err) { results.email = 'failed'; console.error('lead email notification failed', err?.message || err); }
+  ].join('\\n');
+  const results = {};
+  if (channels.includes('email')) {
+    results.email = 'not_configured';
+    const emailKey = process.env.RESEND_API_KEY;
+    const to = process.env.LEADS_NOTIFY_EMAIL;
+    const from = process.env.LEADS_FROM_EMAIL;
+    if (emailKey && to && from) {
+      try {
+        const r = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + emailKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from, to: [to], subject: 'طلب جديد من ' + lead.name + ' — حبر وبكسل',
+            text: summary,
+            html: '<h2>طلب جديد — حبر وبكسل</h2><pre style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.8">' + htmlEscape(summary) + '</pre>'
+          })
+        });
+        results.email = r.ok ? 'accepted' : 'failed';
+        if (!r.ok) console.error('lead email notification failed', r.status, (await r.text()).slice(0,300));
+      } catch (err) { results.email = 'failed'; console.error('lead email notification failed', err?.message || err); }
+    }
   }
-  const waToken = process.env.WHATSAPP_ACCESS_TOKEN;
-  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const template = process.env.WHATSAPP_TEMPLATE_NAME;
-  const ownerPhone = (process.env.WHATSAPP_OWNER_NUMBER || '9647721971156').replace(/\D/g, '');
-  if (waToken && phoneId && template) {
-    try {
-      const locale = process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'ar';
-      const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + waToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp', recipient_type: 'individual', to: ownerPhone, type: 'template',
-          template: { name: template, language: { code: locale }, components: [{ type: 'body', parameters: [
-            { type: 'text', text: String(lead.name || 'عميل').slice(0, 200) },
-            { type: 'text', text: String(lead.whatsapp || '—').slice(0, 100) },
-            { type: 'text', text: String(lead.service || 'غير محددة').slice(0, 200) },
-            { type: 'text', text: String(lead.budget || 'غير محددة').slice(0, 100) }
-          ] }] }
-        })
-      });
-      results.whatsapp = r.ok ? 'accepted' : 'failed';
-      if (!r.ok) console.error('lead WhatsApp notification failed', r.status, (await r.text()).slice(0,300));
-    } catch (err) { results.whatsapp = 'failed'; console.error('lead WhatsApp notification failed', err?.message || err); }
+  if (channels.includes('whatsapp')) {
+    results.whatsapp = 'not_configured';
+    const waToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const template = process.env.WHATSAPP_TEMPLATE_NAME;
+    const ownerPhone = normalizePhoneForMatch(process.env.WHATSAPP_OWNER_NUMBER || '9647721971156');
+    const validRecipient = /^[1-9]\\d{7,14}$/.test(ownerPhone);
+    if (waToken && phoneId && template && validRecipient) {
+      try {
+        const locale = process.env.WHATSAPP_TEMPLATE_LANGUAGE || 'ar';
+        const r = await fetch('https://graph.facebook.com/v22.0/' + encodeURIComponent(phoneId) + '/messages', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + waToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp', recipient_type: 'individual', to: ownerPhone, type: 'template',
+            template: { name: template, language: { code: locale }, components: [{ type: 'body', parameters: [
+              { type: 'text', text: String(lead.name || 'عميل').slice(0, 200) },
+              { type: 'text', text: String(lead.whatsapp || '—').slice(0, 100) },
+              { type: 'text', text: String(lead.service || 'غير محددة').slice(0, 200) },
+              { type: 'text', text: String(lead.budget || 'غير محددة').slice(0, 100) }
+            ] }] }
+          })
+        });
+        results.whatsapp = r.ok ? 'accepted' : 'failed';
+        if (!r.ok) console.error('lead WhatsApp notification failed', r.status, (await r.text()).slice(0,300));
+      } catch (err) { results.whatsapp = 'failed'; console.error('lead WhatsApp notification failed', err?.message || err); }
+    } else if (waToken && phoneId && template && !validRecipient) {
+      results.whatsapp = 'invalid_recipient';
+    }
   }
   return results;
 }
-
 async function notifyClientApproval(lead, channels = ['email', 'whatsapp']) {
   const result = {};
   const msg = 'مرحباً ' + (lead.name || 'بك') + '، تمت الموافقة على طلبك لدى حبر وبكسل. الخدمة: ' + (lead.service || 'الخدمة المطلوبة') + '. سنتواصل معك لتأكيد الخطوات التالية.';
@@ -233,32 +241,48 @@ exports.handler = async (event) => {
     if (!current) return json(404, { error: 'العميل غير موجود.' });
     const previousStatus = current.status;
     const retryCustomerNotifications = b.retryCustomerNotifications === true;
-    if (retryCustomerNotifications && b.status !== 'approved') return json(400, { error: 'إعادة الإشعار متاحة للطلبات المعتمدة فقط.' });
+    const retryOwnerNotifications = b.retryOwnerNotifications === true;
+    if (retryCustomerNotifications && b.status !== 'approved') return json(400, { error: 'إعادة إشعار العميل متاحة للطلبات المعتمدة فقط.' });
     current.status = b.status;
     if (b.status === 'lost') current.lossReason = clean(b.lossReason, 160);
     else if (b.lossReason !== undefined) current.lossReason = clean(b.lossReason, 160);
     current.updatedAt = new Date().toISOString();
     await store().setJSON(b.id, current);
     const identity = await resolveLeadIdentity(current);
-    await logActivity(identity.clientId,'status','تغيير حالة العميل',{from:previousStatus,to:current.status,retryCustomerNotifications});
+    await logActivity(identity.clientId,'status','تغيير حالة العميل',{from:previousStatus,to:current.status,retryCustomerNotifications,retryOwnerNotifications});
+
+    let ownerNotifications = null;
+    if (retryOwnerNotifications) {
+      const previous = current.ownerNotifications || {};
+      const channels = ['email', 'whatsapp'].filter(channel => !['sent', 'accepted'].includes(previous[channel]));
+      const attempted = channels.length ? await notifyOwner(current, channels) : {};
+      ownerNotifications = { ...previous, ...attempted };
+      current.ownerNotifications = ownerNotifications;
+      current.ownerNotificationAt = new Date().toISOString();
+      current.updatedAt = current.ownerNotificationAt;
+      try { await store().setJSON(b.id, current); }
+      catch (err) { console.error('owner notification status persistence failed', err?.message || err); }
+    } else {
+      ownerNotifications = current.ownerNotifications || null;
+    }
+
     let customerNotifications = null;
     if (current.status === 'approved' && (previousStatus !== 'approved' || retryCustomerNotifications)) {
-      const previousNotifications = current.customerNotifications || {};
+      const previous = current.customerNotifications || {};
       const channels = retryCustomerNotifications
-        ? ['email', 'whatsapp'].filter(channel => !['sent', 'accepted'].includes(previousNotifications[channel]))
+        ? ['email', 'whatsapp'].filter(channel => !['sent', 'accepted'].includes(previous[channel]))
         : ['email', 'whatsapp'];
-      const attemptedNotifications = await notifyClientApproval(current, channels);
-      customerNotifications = { ...previousNotifications, ...attemptedNotifications };
+      const attempted = await notifyClientApproval(current, channels);
+      customerNotifications = { ...previous, ...attempted };
       current.customerNotifications = customerNotifications;
       current.customerNotificationAt = new Date().toISOString();
       current.updatedAt = current.customerNotificationAt;
-      // Notification state is durable so the owner can see it after refresh.
       try { await store().setJSON(b.id, current); }
       catch (err) { console.error('client notification status persistence failed', err?.message || err); }
     } else if (current.status === 'approved') {
       customerNotifications = current.customerNotifications || null;
     }
-    return json(200, { lead: current, customerNotifications });
+    return json(200, { lead: current, ownerNotifications, customerNotifications });
   }
 
   return json(405, { error: 'Method not allowed' });

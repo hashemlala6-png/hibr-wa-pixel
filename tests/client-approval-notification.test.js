@@ -308,3 +308,54 @@ test('public lead intake rejects a populated anti-bot honeypot field', async () 
     assert.equal(Object.keys(service.stores['hbpx-leads']).length, 1);
   });
 });
+
+
+test('owner retry sends only the channel that has not already been accepted', async () => {
+  await withEnv({
+    RESEND_API_KEY: 'test-resend',
+    LEADS_NOTIFY_EMAIL: 'owner@example.com',
+    LEADS_FROM_EMAIL: 'studio@example.com',
+    WHATSAPP_ACCESS_TOKEN: 'test-token',
+    WHATSAPP_PHONE_NUMBER_ID: 'test-phone-id',
+    WHATSAPP_TEMPLATE_NAME: 'new_lead',
+    WHATSAPP_OWNER_NUMBER: '07721971156'
+  }, async () => {
+    const initial = baseData('07712345678');
+    initial['hbpx-leads']['lead-test'].ownerNotifications = { email: 'accepted', whatsapp: 'failed' };
+    const service = loadLeads(initial);
+    const calls = [];
+    global.fetch = async (url, init) => {
+      calls.push({ url: String(url), payload: JSON.parse(init.body) });
+      return { ok: true, status: 200, async text() { return ''; } };
+    };
+    const response = await service.handler({
+      httpMethod: 'PATCH',
+      headers: { host: 'fabulous-bublanina-8d5626.netlify.app' },
+      body: JSON.stringify({ id: 'lead-test', status: 'new', retryOwnerNotifications: true })
+    });
+    const body = JSON.parse(response.body || '{}');
+    assert.equal(response.statusCode, 200);
+    assert.equal(body.ownerNotifications.email, 'accepted');
+    assert.equal(body.ownerNotifications.whatsapp, 'accepted');
+    assert.equal(calls.length, 1);
+    assert.match(calls[0].url, /graph\\.facebook\\.com/);
+    assert.equal(calls[0].payload.to, '9647721971156');
+  });
+});
+
+test('invalid owner WhatsApp recipient is recorded without calling the Cloud API', async () => {
+  await withEnv({
+    WHATSAPP_ACCESS_TOKEN: 'test-token',
+    WHATSAPP_PHONE_NUMBER_ID: 'test-phone-id',
+    WHATSAPP_TEMPLATE_NAME: 'new_lead',
+    WHATSAPP_OWNER_NUMBER: '12'
+  }, async () => {
+    const service = loadLeads(baseData('07712345678'));
+    let calls = 0;
+    global.fetch = async () => { calls++; throw new Error('External fetch must not be called'); };
+    const { response, body } = await submitLead(service.handler, validLeadPayload(), '192.0.2.15');
+    assert.equal(response.statusCode, 201);
+    assert.equal(body.notifications.whatsapp, 'invalid_recipient');
+    assert.equal(calls, 0);
+  });
+});
