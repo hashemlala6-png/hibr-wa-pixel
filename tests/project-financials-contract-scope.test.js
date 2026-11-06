@@ -17,7 +17,7 @@ test('money parser rejects negative, malformed, excessive precision, and non-fin
   }
 });
 
-function loadFinancials(data) {
+function loadFinancials(data, { pageSize = 1000 } = {}) {
   const resolved = require.resolve('../netlify/functions/project-financials');
   delete require.cache[resolved];
   const originalLoad = Module._load;
@@ -25,8 +25,11 @@ function loadFinancials(data) {
     getStore({ name }) {
       const rows = data[name] || {};
       return {
-        async list({ prefix = '' } = {}) {
-          return { blobs: Object.keys(rows).filter(key => key.startsWith(prefix)).map(key => ({ key })) };
+        async list({ prefix = '', cursor } = {}) {
+          const keys = Object.keys(rows).filter(key => key.startsWith(prefix));
+          const offset = cursor ? Number(cursor) : 0;
+          const blobs = keys.slice(offset, offset + pageSize).map(key => ({ key }));
+          return { blobs, cursor: offset + pageSize < keys.length ? String(offset + pageSize) : undefined };
         },
         async get(key) { return rows[key] || null; }
       };
@@ -36,8 +39,12 @@ function loadFinancials(data) {
     if (request === '@netlify/blobs' && parent && parent.filename === resolved) return blobs;
     return originalLoad.call(this, request, parent, isMain);
   };
-  try { return require(resolved).getProjectFinancials; }
-  finally { Module._load = originalLoad; delete require.cache[resolved]; }
+  try {
+    const financials = require(resolved);
+    const getProjectFinancials = financials.getProjectFinancials;
+    getProjectFinancials.readProjectFinancialData = financials.readProjectFinancialData;
+    return getProjectFinancials;
+  } finally { Module._load = originalLoad; delete require.cache[resolved]; }
 }
 
 test('payments from an older signed agreement cannot satisfy the latest contract balance', async () => {
@@ -127,4 +134,28 @@ test('unallocated payment details expose only the fields needed for owner reconc
   assert.deepEqual(result.unallocatedPayments,[{
     id:'payment-orphan',amount:10000,method:'cash',note:'إيصال 123',contractId:null,createdAt:'2026-11-06T10:00:00.000Z',receivedConfirmedAt:null
   }]);
+});
+
+
+test('financial records paginate beyond the first Blobs page', async () => {
+  const payments = {};
+  const contracts = {};
+  for (let index = 0; index < 7; index += 1) {
+    payments['payment-' + index] = { id:'payment-' + index, projectId:'project-a', amount:1000 + index };
+  }
+  for (let index = 0; index < 5; index += 1) {
+    contracts['contract-' + index] = {
+      id:'contract-' + index, projectId:'project-a', amount:100000,
+      status:'signed', signedAt:new Date(Date.UTC(2026, 0, index + 1)).toISOString()
+    };
+  }
+  const financials = loadFinancials({ 'hbpx-payments':payments,'hbpx-contracts':contracts }, { pageSize:2 });
+  const data = await financials.readProjectFinancialData();
+  assert.equal(data.payments.length,7);
+  assert.equal(data.contracts.length,5);
+  const summary = await financials('project-a',100000,data);
+  assert.equal(summary.contractId,'contract-4');
+  assert.equal(summary.paid,0);
+  assert.equal(summary.unallocatedPaymentCount,7);
+  assert.equal(summary.unallocatedPaid,7021);
 });

@@ -7,12 +7,16 @@ const amount = require('./money');
 
 async function readAll(name, prefix) {
   const store = getStore(blobOptions(name, 'strong'));
-  const page = await store.list({ prefix, limit: 1000 });
   const rows = [];
-  for (const blob of page.blobs || []) {
-    const record = await store.get(blob.key, { type: 'json' }).catch(() => null);
-    if (record) rows.push(record);
-  }
+  let cursor;
+  do {
+    const page = await store.list({ prefix, limit: 1000, cursor });
+    for (const blob of page.blobs || []) {
+      const record = await store.get(blob.key, { type: 'json' }).catch(() => null);
+      if (record) rows.push(record);
+    }
+    cursor = page.cursor;
+  } while (cursor);
   return rows;
 }
 

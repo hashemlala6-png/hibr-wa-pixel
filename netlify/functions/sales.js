@@ -186,6 +186,9 @@ exports.handler=async event=>{
     if(!contract)return json(404,{error:'العقد المحدد غير موجود.'});
     if(contract.projectId!==payment.projectId)return json(409,{error:'لا يمكن تخصيص دفعة إلى عقد تابع لمشروع آخر.'});
     if(contract.status!=='signed'||!contract.signedAt)return json(409,{error:'التخصيص متاح للعقود الموقّعة فقط.'});
+    if(!amount(payment.amount))return json(409,{error:'قيمة الدفعة غير صالحة، ولا يمكن تخصيصها.'});
+    const financial=await getProjectFinancials(payment.projectId);
+    if(!financial.contractSigned||financial.contractId!==contract.id)return json(409,{error:'يمكن تخصيص الدفعة للعقد الموقّع الأحدث للمشروع فقط. حدّثي الملخص واختاري العقد الحالي.'});
     const now=new Date().toISOString();
     payment.contractId=contract.id;
     payment.allocatedAt=now;
@@ -193,8 +196,12 @@ exports.handler=async event=>{
     payment.allocationSource='owner-manual';
     await stores.payments().setJSON(paymentId,payment);
     const clientId=await clientIdForRecord(payment);
-    if(clientId)await logActivity(clientId,'payment-allocation','تم تخصيص دفعة يدوياً لعقد موقّع',{paymentId,contractId,projectId:payment.projectId,note});
-    return json(200,{item:payment,message:'تم تخصيص الدفعة للعقد الموقّع مع حفظ سبب التخصيص.'});
+    let activityLogged=true;
+    if(clientId){
+      try{await logActivity(clientId,'payment-allocation','تم تخصيص دفعة يدوياً لعقد موقّع',{paymentId,contractId,projectId:payment.projectId,note});}
+      catch(error){activityLogged=false;console.warn('payment allocation activity logging failed',error?.message||error);}
+    }
+    return json(200,{item:payment,activityLogged,message:'تم تخصيص الدفعة للعقد الموقّع مع حفظ سبب التخصيص.'});
    }
    const collection=clean(b.collection,20),id=clean(b.id,120),status=clean(b.status,30);
    if(!stores[collection]||!allowed[collection]?.includes(status))return json(400,{error:'الحالة غير صحيحة.'});

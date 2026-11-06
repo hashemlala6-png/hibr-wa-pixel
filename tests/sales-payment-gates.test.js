@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
 
-function loadSales(data) {
+function loadSales(data, { activityFailure = false } = {}) {
   const financialsResolved = require.resolve('../netlify/functions/project-financials');
   delete require.cache[financialsResolved];
   const resolved = require.resolve('../netlify/functions/sales');
@@ -34,7 +34,7 @@ function loadSales(data) {
       return { requireAdmin() { return null; }, json(statusCode, payload) { return { statusCode, body: JSON.stringify(payload) }; } };
     }
     if (request === './client-activity' && parent && parent.filename === resolved) {
-      return { async logActivity(clientId, type, label, details) { activity.push({ clientId, type, label, details }); } };
+      return { async logActivity(clientId, type, label, details) { if(activityFailure)throw new Error('activity store unavailable'); activity.push({ clientId, type, label, details }); } };
     }
     if (request === './env' && parent && parent.filename === resolved) return { env() { return 'test'; } };
     return originalLoad.call(this, request, parent, isMain);
@@ -195,6 +195,9 @@ test('confirmed payment records include a server timestamp for manual receipt au
 
 test('manual allocation requires confirmation, an audit note, and a signed contract for the same project', async () => {
   const data = fixture({ contract: {} });
+  data['hbpx-contracts']['contract-old'] = {
+    id:'contract-old',projectId:'project-a',amount:50000,status:'signed',signedAt:'2026-10-01T10:00:00.000Z'
+  };
   data['hbpx-contracts']['contract-other-project'] = {
     id:'contract-other-project',projectId:'project-b',amount:50000,status:'signed',signedAt:'2026-11-06T10:00:00.000Z'
   };
@@ -206,6 +209,9 @@ test('manual allocation requires confirmation, an audit note, and a signed contr
   assert.equal(missingConfirmation.statusCode,400);
   const wrongProject=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-legacy',contractId:'contract-other-project',note:'مطابقة إيصال البنك',allocationConfirmed:true},'PATCH'));
   assert.equal(wrongProject.statusCode,409);
+  const olderContract=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-legacy',contractId:'contract-old',note:'مطابقة إيصال البنك',allocationConfirmed:true},'PATCH'));
+  assert.equal(olderContract.statusCode,409);
+  assert.match(body(olderContract).error,/العقد الموقّع الأحدث/);
   assert.equal(data['hbpx-payments']['payment-legacy'].contractId,undefined);
   const success=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-legacy',contractId:'contract-a',note:'مطابقة إيصال البنك',allocationConfirmed:true},'PATCH'));
   assert.equal(success.statusCode,200);
@@ -222,4 +228,19 @@ test('manual allocation cannot overwrite a payment already bound to another sign
   const response=await service.handler(event({type:'payment',action:'allocate',paymentId:'payment-old',contractId:'contract-a',note:'إعادة ربط الإيصال',allocationConfirmed:true},'PATCH'));
   assert.equal(response.statusCode,409);
   assert.equal(data['hbpx-payments']['payment-old'].contractId,'contract-old');
+});
+
+
+test('manual allocation returns the saved result when the optional activity feed write fails', async () => {
+  const data=fixture({contract:{}});
+  data['hbpx-payments']['payment-legacy']={id:'payment-legacy',projectId:'project-a',amount:2000};
+  const service=loadSales(data,{activityFailure:true});
+  const response=await service.handler(event({
+    type:'payment',action:'allocate',paymentId:'payment-legacy',contractId:'contract-a',
+    note:'تمت مطابقة الإيصال',allocationConfirmed:true
+  },'PATCH'));
+  assert.equal(response.statusCode,200);
+  assert.equal(body(response).item.contractId,'contract-a');
+  assert.equal(body(response).activityLogged,false);
+  assert.equal(data['hbpx-payments']['payment-legacy'].allocationNote,'تمت مطابقة الإيصال');
 });
