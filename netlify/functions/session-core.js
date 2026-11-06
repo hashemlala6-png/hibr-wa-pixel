@@ -13,14 +13,26 @@ function env(name) {
   } catch { return ''; }
 }
 
-function adminPassword() {
-  // A Deploy Preview can use its own secret without changing Production.
-  return env('ADMIN_PREVIEW_PASSWORD') || env('ADMIN_PASSWORD');
+function isDeployPreview(event) {
+  const headers = event?.headers || {};
+  const rawHost = headers.host || headers.Host || headers['x-forwarded-host'] || '';
+  const rawUrl = event?.rawUrl || '';
+  let host = String(rawHost).split(',')[0].trim().toLowerCase();
+  if (!host && rawUrl) {
+    try { host = new URL(rawUrl).hostname.toLowerCase(); } catch {}
+  }
+  host = host.replace(/:\d+$/, '');
+  return /^deploy-preview-\d+--[a-z0-9-]+\.netlify\.app$/.test(host);
 }
 
-function secretFor(role) {
+function adminPassword(event) {
+  // Never fall back to the Production password on a public Deploy Preview.
+  return isDeployPreview(event) ? env('ADMIN_PREVIEW_PASSWORD') : env('ADMIN_PASSWORD');
+}
+
+function secretFor(role, event) {
   return role === 'admin'
-    ? (env('ADMIN_SESSION_SECRET') || adminPassword())
+    ? (env('ADMIN_SESSION_SECRET') || adminPassword(event))
     : env('CLIENT_SESSION_SECRET');
 }
 
@@ -44,15 +56,15 @@ function timingSafe(a, b) {
   } catch { return false; }
 }
 
-function createSession(role, subject, maxAge) {
-  const secret = secretFor(role);
+function createSession(role, subject, maxAge, event) {
+  const secret = secretFor(role, event);
   if (!secret) throw new Error(`${role === 'admin' ? 'ADMIN_PASSWORD / ADMIN_SESSION_SECRET' : 'CLIENT_SESSION_SECRET / ADMIN_SESSION_SECRET'} غير مضبوط في Netlify.`);
   const payload = JSON.stringify({ sub: subject || role, role, exp: Date.now() + maxAge * 1000 });
   return `${b64(payload)}.${sign(payload, secret)}`;
 }
 
 function verifySession(event, role, cookieName) {
-  const secret = secretFor(role);
+  const secret = secretFor(role, event);
   if (!secret) return null;
   const cookies = parseCookies(event.headers?.cookie || event.headers?.Cookie || '');
   const token = cookies[cookieName];
@@ -82,4 +94,4 @@ function json(statusCode, body, extraHeaders = {}) {
   };
 }
 
-module.exports = { createSession, verifySession, cookie, clearCookie, parseCookies, json, env, adminPassword };
+module.exports = { createSession, verifySession, cookie, clearCookie, parseCookies, json, env, adminPassword, isDeployPreview };
