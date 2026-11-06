@@ -190,3 +190,41 @@ html,body{background:linear-gradient(145deg,#f7fbff 0%,#eff9f7 54%,#fbfdf3 100%)
 #app .search,#app .select,#app input,#app textarea,#app select{border-color:#dcebf1!important}
 #lock .lockbox:before{background:linear-gradient(90deg,#279bd0,#55bfa7,#f5e78c)!important}
 @media(max-width:1100px){#app #tabs{background:linear-gradient(110deg,#fff,#f2faff)!important}}
+
+
+/* OWNER COLOR FEEL — readable command desk, quiet surfaces, decisive signals */
+:root{
+ --cd-paper:#f3f6f3;--cd-paper2:#fffefa;--cd-ink:#17384d;--cd-green:#167fa0;
+ --cd-orange:#168d83;--cd-gold:#f0c85b;--cd-muted:#536d79;--cd-line:#d8e3df;
+ --cd-white:#fffefa;--cd-shadow:0 12px 32px rgba(23,56,77,.07)
+}
+html,body{background:#f3f6f3!important;color:#17384d!important}
+#app .today.command-banner{background:linear-gradient(112deg,#126d91 0%,#167f88 100%)!important;color:#fff!important}
+#app .command-banner .eyebrow,#app .command-banner .live b{color:#f5d878!important}
+#app .command-banner .command-policy{border-inline-start-color:#f0c85b!important}
+#app #tabs{background:#fffefa!important;border-color:#d8e3df!important}
+#app #tabs button{color:#536d79!important}
+#app #tabs button.active{background:#e4f0ee!important;color:#126d78!important}
+#app #tabs button.active:before,#app #tabs button.active:after{color:#167f83!important;background:#168d83!important}
+#app .desk-brief{background:#fffefa!important;border-inline-start-color:#168d83!important}
+#app .desk-stamp{color:#167fa0!important}
+#app .stat{background:#fffefa!important;border-color:#d8e3df!important}
+#app .stat strong{color:#167fa0!important}
+#app .stat:hover{border-color:#91bdb7!important}
+#app .panel{background:#fffefa!important;border-color:#d8e3df!important}
+#app #overview .columns>.panel:first-child{background:#176f82!important;color:#fff!important;border:0!important}
+#app #overview .columns>.panel:first-child h3{color:#f5d878!important}
+#app #overview .columns>.panel:first-child .meta{color:#e0eeeb!important}
+#app #overview .columns>.panel:first-child .badge{background:#ffffff22!important;color:#f5d878!important}
+#app .badge{background:#e5f0ed!important;color:#176f82!important}
+#app .table th{background:#edf2ee!important;color:#496879!important}
+#app .table td{border-color:#dce5df!important}
+#app .search,#app .select,#app input,#app textarea,#app select{border-color:#cbdad5!important;background:#fffefa!important;color:#17384d!important}
+#app .primary{background:#167fa0!important;border-color:#167fa0!important;color:#fff!important}
+#app .primary:hover{background:#116b88!important}
+#app .kv,#app #aiOutput{background:#edf3ef!important;border-color:#d8e3df!important}
+#app .tool-menu{background:#fffefa!important;border-color:#d8e3df!important}
+#lock .lockbox{background:#fffefa!important;border-color:#d8e3df!important}
+#lock .lockbox:before{background:linear-gradient(90deg,#167fa0,#168d83,#f0c85b)!important}
+#lock .lockbox .eyebrow{color:#167fa0!important}
+@media(max-width:1100px){#app #tabs{background:#fffefa!important}}
