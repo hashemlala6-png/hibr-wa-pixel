@@ -17,8 +17,8 @@ exports.handler=async e=>{
  if(!project)return json(404,{error:'المشروع غير موجود.'});
  if(type==='contract'){
   const title=clean(b.title,180),terms=clean(b.terms,12000),amount=Number(b.amount||0);
-  const hasDepositPolicy=/(?:10\\s*[%٪]|عشرة\\s*بالمئة|10\\s*بالمئة)/i.test(terms);
-  const hasBalancePolicy=/(?:90\\s*[%٪]|تسعين\\s*بالمئة|90\\s*بالمئة)/i.test(terms);
+  const hasDepositPolicy=/(?:10\s*[%٪]|عشرة\s*بالمئة|10\s*بالمئة)/i.test(terms);
+  const hasBalancePolicy=/(?:90\s*[%٪]|تسعين\s*بالمئة|90\s*بالمئة)/i.test(terms);
   if(!title||terms.length<30||!Number.isFinite(amount)||amount<=0)return json(400,{error:'العنوان وبنود العقد الكاملة والقيمة الأكبر من صفر مطلوبة.'});
   if(!hasDepositPolicy||!hasBalancePolicy)return json(400,{error:'أضيفي سياسة الدفع الأساسية إلى بنود العقد: 10% عربون و90% بعد الموافقة وقبل التسليم النهائي.'});
   const id='contract-'+Date.now()+'-'+crypto.randomBytes(4).toString('hex');

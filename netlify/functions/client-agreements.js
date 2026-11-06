@@ -45,7 +45,7 @@ exports.handler=async e=>{
    if(!['pending','pending_signature','sent','awaiting_signature','review'].includes(String(contract.status||'pending')))return json(409,{error:'هذا العقد غير متاح للتوقيع حالياً. تواصل مع الإدارة.'});
    const terms=String(contract.terms||contract.content||contract.body||'').trim();
    if(terms.length<30)return json(409,{error:'العقد لم يتضمن بنود الاتفاق كاملة بعد. يرجى انتظار تحديث الإدارة.'});
-   if(!/(?:10\\s*[%٪]|عشرة\\s*بالمئة|10\\s*بالمئة)/i.test(terms)||!/(?:90\\s*[%٪]|تسعين\\s*بالمئة|90\\s*بالمئة)/i.test(terms))return json(409,{error:'لا يمكن توقيع العقد قبل توضيح 10% عربون و90% قبل التسليم النهائي.'});
+   if(!/(?:10\s*[%٪]|عشرة\s*بالمئة|10\s*بالمئة)/i.test(terms)||!/(?:90\s*[%٪]|تسعين\s*بالمئة|90\s*بالمئة)/i.test(terms))return json(409,{error:'لا يمكن توقيع العقد قبل توضيح 10% عربون و90% قبل التسليم النهائي.'});
    const amount=Number(contract.amount||0);if(!Number.isFinite(amount)||amount<=0)return json(409,{error:'قيمة العقد غير صحيحة؛ تواصلي مع الإدارة لتحديثها.'});
    const paymentPolicy=contract.paymentPolicy||{version:1,depositPercent:10,balancePercent:90,depositAmount:Math.ceil(amount*0.10),finalBalanceAmount:Math.max(amount-Math.ceil(amount*0.10),0),startExecutionRequiresSignedContract:true,startExecutionRequiresDeposit:true,previewDeliveryRequiresWatermark:true,finalDeliveryRequiresFullPayment:true,rightsTransferRequiresFullPayment:true};
    const crypto=require('crypto'),now=new Date().toISOString();
