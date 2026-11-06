@@ -2,7 +2,7 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
 const crypto = require('crypto');
 const { logActivity } = require('./client-activity');
-const { resolveClientIdentity } = require('./client-ownership');
+const { resolveClientIdentity, normalizePhoneForMatch } = require('./client-ownership');
 
 // Explicit credentials are supported for deployments where Netlify does not inject Blobs context.
 // Prefer the platform-injected context; fall back to server-side environment variables only.
