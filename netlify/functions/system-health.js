@@ -4,6 +4,7 @@ const { getStore, connectLambda } = require('@netlify/blobs');
 const { env } = require('./env');
 const { requireAdmin, json } = require('./auth-utils');
 const { configuredProviders, requestText } = require('./ai-provider');
+const { blobOptions } = require('./blob-config');
 
 const clean = (value, max = 180) => String(value == null ? '' : value).replace(/[\r\n\t]+/g, ' ').trim().slice(0, max);
 const has = (...names) => names.filter(name => Boolean(env(name))).length;
@@ -68,7 +69,7 @@ async function checkPersistentState() {
   const checkedAt = new Date().toISOString();
   let storage;
   try {
-    const page = await getStore({ name: 'hbpx-leads', consistency: 'eventual' }).list({ prefix: 'lead-', limit: 1 });
+    const page = await getStore(blobOptions('hbpx-leads', 'eventual')).list({ prefix: 'lead-', limit: 1 });
     storage = { state: 'operational', checkedAt, note: 'نجح اتصال Netlify Blobs وقراءة فهرس الطلبات.' , sampleCount: (page.blobs || []).length };
   } catch (error) {
     storage = { state: 'error', checkedAt, note: 'تعذر الوصول إلى مخزن الطلبات: ' + clean(error.message, 160) };
@@ -76,7 +77,7 @@ async function checkPersistentState() {
 
   let instagram;
   try {
-    const connection = await getStore({ name: 'hbpx-instagram-login', consistency: 'eventual' })
+    const connection = await getStore(blobOptions('hbpx-instagram-login', 'eventual'))
       .get('agency-instagram', { type: 'json' });
     if (connection?.token && connection?.profile) {
       const expires = connection.expiresAt ? new Date(connection.expiresAt) : null;
@@ -97,7 +98,7 @@ async function checkPersistentState() {
 
   let latestAiTest = null;
   try {
-    latestAiTest = await getStore({ name: 'hbpx-system-health', consistency: 'strong' })
+    latestAiTest = await getStore(blobOptions('hbpx-system-health', 'strong'))
       .get('latest-ai-text-test', { type: 'json' });
   } catch {}
 
@@ -156,7 +157,7 @@ exports.handler = async event => {
       };
       let saved = false;
       try {
-        await getStore({ name: 'hbpx-system-health', consistency: 'strong' }).setJSON('latest-ai-text-test', item);
+        await getStore(blobOptions('hbpx-system-health', 'strong')).setJSON('latest-ai-text-test', item);
         saved = true;
       } catch {}
       return json(200, { test: item, saved, output: result.text.slice(0, 60) });
@@ -167,7 +168,7 @@ exports.handler = async event => {
         latencyMs: Date.now() - started,
         note: clean(error.message, 500)
       };
-      try { await getStore({ name: 'hbpx-system-health', consistency: 'strong' }).setJSON('latest-ai-text-test', item); } catch {}
+      try { await getStore(blobOptions('hbpx-system-health', 'strong')).setJSON('latest-ai-text-test', item); } catch {}
       return json(502, { error: item.note, test: item });
     }
   } catch (error) {
