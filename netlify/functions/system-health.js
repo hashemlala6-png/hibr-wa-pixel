@@ -15,7 +15,7 @@ function configuration() {
   const igAppFields = has('INSTAGRAM_APP_ID', 'INSTAGRAM_APP_SECRET', 'INSTAGRAM_REDIRECT_URI');
   const cloudinaryFields = has('CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET');
   const emailFields = has('RESEND_API_KEY', 'LEADS_NOTIFY_EMAIL', 'LEADS_FROM_EMAIL');
-  const ownerWhatsAppFields = has('WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_TEMPLATE_NAME', 'WHATSAPP_OWNER_NUMBER');
+  const ownerWhatsAppFields = has('WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_TEMPLATE_NAME') + 1; // leads.js has a server-side fallback recipient.
   const clientWhatsAppFields = has('WHATSAPP_ACCESS_TOKEN', 'WHATSAPP_PHONE_NUMBER_ID', 'WHATSAPP_CLIENT_APPROVAL_TEMPLATE_NAME');
   return {
     aiText: {
@@ -50,7 +50,8 @@ function configuration() {
       state: stateOf(ownerWhatsAppFields, 4),
       configuredFields: ownerWhatsAppFields,
       requiredFields: 4,
-      note: 'تحتاج قالباً معتمداً ورقماً مستلماً واختبار إرسال فعلي.'
+      recipientSource: env('WHATSAPP_OWNER_NUMBER') ? 'environment' : 'server_default',
+      note: 'رقم الاستقبال إما من متغير البيئة أو القيمة الافتراضية بالخادم؛ يلزم قالب معتمد واختبار استلام فعلي.'
     },
     clientWhatsApp: {
       state: stateOf(clientWhatsAppFields, 3),

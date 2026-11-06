@@ -159,3 +159,18 @@ test('provider failures are surfaced and are not recorded as successful tests', 
   assert.equal(body(response).test.state, 'error');
   assert.equal(service.writes[0].value.state, 'error');
 });
+
+test('owner WhatsApp readiness accounts for the documented server-side recipient fallback', async () => {
+  const service = loadHealth({
+    env: {
+      WHATSAPP_ACCESS_TOKEN: 'private',
+      WHATSAPP_PHONE_NUMBER_ID: '12345',
+      WHATSAPP_TEMPLATE_NAME: 'owner_alert'
+    }
+  });
+  const result = body(await service.handler({ httpMethod: 'GET', headers: {}, authorized: true }));
+  assert.equal(result.configuration.ownerWhatsApp.state, 'configured');
+  assert.equal(result.configuration.ownerWhatsApp.configuredFields, 4);
+  assert.equal(result.configuration.ownerWhatsApp.recipientSource, 'server_default');
+  assert.equal(JSON.stringify(result).includes('9647721971156'), false);
+});

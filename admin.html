@@ -174,7 +174,7 @@ function renderGrowth(){const g=GROWTH?.kpis||{},c=U?.counts||{};$('#growthStats
 function renderIntelligence(){if(!U)return;$('#intelligenceRead').innerHTML=`<div class="row"><span>الزوار 30 يوم</span><b>${fmt(U.counts?.visitors30)}</b></div><div class="row"><span>المسجلون</span><b>${fmt(U.counts?.registered)}</b></div><div class="row"><span>تسجيلات الدخول 30 يوم</span><b>${fmt(U.counts?.loggedIn30)}</b></div><div class="row"><span>الطلبات المفتوحة</span><b>${fmt(U.counts?.openOrders)}</b></div><div class="row"><span>المشاريع النشطة</span><b>${fmt(U.counts?.activeProjects)}</b></div>`;$('#inventory').innerHTML=Object.entries(U.inventory||{}).map(([k,v])=>`<div class="row"><span>${esc(k)}</span><b>${fmt(v)}</b></div>`).join('')}
 function renderActivity(){$('#activityFeed').innerHTML=(U?.activityFeed||[]).map(x=>`<div class="row"><div><b>${esc(x.title)}</b><div class="meta">${esc(x.meta)}</div></div><span class="meta">${dt(x.at)}</span></div>`).join('');$('#notifications').innerHTML=(NOTIFS||[]).slice(0,20).map(x=>`<div class="row"><div><b>${esc(x.label||'حدث')}</b><div class="meta">${esc(x.details?.name||x.clientId||'منصة حبر وبكسل')}</div></div><span class="meta">${dt(x.createdAt)}</span></div>`).join('')||'<p class="note">لا إشعارات.</p>'}
 const healthLabels={configured:'الإعدادات موجودة — لم تُختبر',partial:'إعدادات ناقصة',missing:'غير مهيأ',operational:'اختبار ناجح',linked_unverified:'حساب مربوط — التحقق الحي مطلوب',not_connected:'غير مربوط',expired:'رمز منتهي أو يحتاج تحديث',error:'تعذر الفحص'};
-const healthNames={aiText:'الذكاء الاصطناعي النصي',aiImages:'توليد الصور',instagram:'تطبيق Instagram',cloudinary:'رفع الوسائط',email:'البريد الإلكتروني',ownerWhatsApp:'واتساب المالك',clientWhatsApp:'واتساب موافقة العميل'};
+const healthNames={storage:'تخزين بيانات Netlify',aiText:'الذكاء الاصطناعي النصي',aiImages:'توليد الصور',instagram:'تطبيق Instagram',cloudinary:'رفع الوسائط',email:'البريد الإلكتروني',ownerWhatsApp:'واتساب المالك',clientWhatsApp:'واتساب موافقة العميل'};
 let SYSTEM_HEALTH=null;
 function healthCard(name,item){
  const state=item?.state||'missing';
@@ -191,6 +191,7 @@ async function loadSystemHealth(){
   const d=await api('/.netlify/functions/system-health');
   SYSTEM_HEALTH=d;
   const c=d.configuration||{},p=d.persistent||{};
+  const testButton=$('#testTextAI');if(testButton)testButton.disabled=c.aiText?.state!=='configured';
   const entries=[
    ['aiText',c.aiText],['aiImages',c.aiImages],['instagram',{...c.instagram,...(p.instagram||{})}],
    ['cloudinary',c.cloudinary],['email',c.email],['ownerWhatsApp',c.ownerWhatsApp],['clientWhatsApp',c.clientWhatsApp]
