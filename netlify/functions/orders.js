@@ -4,10 +4,10 @@ const {json,requireAdmin}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const {logActivity}=require('./client-activity');
 const { blobOptions } = require('./blob-config');
-const accounts=()=>getStore(blobOptions('hbpx-client-accounts', 'eventual'));
-const orders=()=>getStore(blobOptions('hbpx-orders', 'eventual'));
-const leads=()=>getStore(blobOptions('hbpx-leads', 'eventual'));
-const leadIndex=()=>getStore(blobOptions('hbpx-lead-index', 'eventual'));
+const accounts=()=>getStore(blobOptions('hbpx-client-accounts', 'strong'));
+const orders=()=>getStore(blobOptions('hbpx-orders', 'strong'));
+const leads=()=>getStore(blobOptions('hbpx-leads', 'strong'));
+const leadIndex=()=>getStore(blobOptions('hbpx-lead-index', 'strong'));
 const clean=(v,n=3000)=>String(v??'').trim().slice(0,n);
 exports.handler=async e=>{
   connectLambda(e);
