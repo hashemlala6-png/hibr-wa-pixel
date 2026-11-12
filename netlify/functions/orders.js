@@ -4,6 +4,7 @@ const {json,requireAdmin}=require('./auth-utils');
 const {getClientSession}=require('./client-auth-utils');
 const {logActivity}=require('./client-activity');
 const { blobOptions } = require('./blob-config');
+const { attachClientOrderIdentity } = require('./client-order-identity');
 const accounts=()=>getStore(blobOptions('hbpx-client-accounts', 'strong'));
 const orders=()=>getStore(blobOptions('hbpx-orders', 'strong'));
 const leads=()=>getStore(blobOptions('hbpx-leads', 'strong'));
@@ -70,13 +71,17 @@ exports.handler=async e=>{
   lead=candidates[0]||null;
   if(lead){
     leadId=lead.id;
-    lead.name=account.name; lead.whatsapp=account.whatsapp; lead.activity=service;
+    lead=attachClientOrderIdentity(lead,account);
+    lead.activity=service;
     lead.message=details; lead.package=budget; lead.timeline=timeline;
     lead.source=lead.source||'authenticated-order'; lead.status='new'; lead.updatedAt=now;
     await leads().setJSON(leadId,lead);
   }else{
     leadId=`lead-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    lead={id:leadId,clientId,name:account.name,whatsapp:account.whatsapp,activity:service,message:details,source:'authenticated-order',package:budget,status:'new',timeline,createdAt:now,updatedAt:now};
+    lead=attachClientOrderIdentity({
+      id:leadId,activity:service,message:details,source:'authenticated-order',
+      package:budget,status:'new',timeline,createdAt:now,updatedAt:now
+    },account);
     await leads().setJSON(leadId,lead);
   }
   await leadIndex().setJSON(`client-${clientId}-${leadId}`,{leadId,clientId,createdAt:lead.createdAt||now,updatedAt:now});
