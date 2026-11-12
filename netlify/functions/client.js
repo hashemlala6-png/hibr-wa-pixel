@@ -5,14 +5,14 @@ const {getClientSession}=require('./client-auth-utils');
 const {ownsProject}=require('./client-ownership');
 const {getProjectFinancials,readProjectFinancialData}=require('./project-financials');
 const s={
-  leads:()=>getStore(blobOptions('hbpx-leads', 'eventual')),
-  projects:()=>getStore(blobOptions('hbpx-projects', 'eventual')),
-  payments:()=>getStore(blobOptions('hbpx-payments', 'eventual')),
-  tasks:()=>getStore(blobOptions('hbpx-tasks', 'eventual')),
-  resultPlans:()=>getStore(blobOptions('hbpx-result-plans', 'eventual')),
-  invoices:()=>getStore(blobOptions('hbpx-invoices', 'eventual')),
-  contracts:()=>getStore(blobOptions('hbpx-contracts', 'eventual')),
-  deliveries:()=>getStore(blobOptions('hbpx-deliveries', 'eventual'))
+  leads:()=>getStore(blobOptions('hbpx-leads', 'strong')),
+  projects:()=>getStore(blobOptions('hbpx-projects', 'strong')),
+  payments:()=>getStore(blobOptions('hbpx-payments', 'strong')),
+  tasks:()=>getStore(blobOptions('hbpx-tasks', 'strong')),
+  resultPlans:()=>getStore(blobOptions('hbpx-result-plans', 'strong')),
+  invoices:()=>getStore(blobOptions('hbpx-invoices', 'strong')),
+  contracts:()=>getStore(blobOptions('hbpx-contracts', 'strong')),
+  deliveries:()=>getStore(blobOptions('hbpx-deliveries', 'strong'))
 };
 async function listByProject(storeName,prefix,projectId,map){
   const st=s[storeName](),out=[];let cursor;
@@ -30,7 +30,7 @@ exports.handler=async e=>{
   try{
     const session=getClientSession(e);
     if(!session)return json(401,{error:'يجب تسجيل الدخول أولاً.',code:'LOGIN_REQUIRED'});
-    const account=await getStore(blobOptions('hbpx-client-accounts', 'eventual')).get(session.sub,{type:'json'});
+    const account=await getStore(blobOptions('hbpx-client-accounts', 'strong')).get(session.sub,{type:'json'});
     if(!account)return json(401,{error:'انتهت جلسة الحساب. سجّل الدخول من جديد.',code:'LOGIN_REQUIRED'});
     const projectsStore=s.projects(),projects=[];
     const financialData=await readProjectFinancialData();
