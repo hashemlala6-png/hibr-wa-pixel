@@ -278,7 +278,7 @@ $('#saveInstagramDraft')?.addEventListener('click',async()=>{
  finally{endAIStudioAction();}
 });
 
-function tab(t){if(t==='ai-team'){Promise.allSettled([loadOps(),loadTeamExecutions()]).then(renderTeamTasks)}$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));$('.view').forEach(v=>v.classList.toggle('active',v.id===t));if(t==='incoming-leads')loadIncomingLeads();if(t==='customers')renderCustomers();if(t==='sales')renderSales();if(t==='projects')renderProjects();if(t==='growth')renderGrowth();if(t==='intelligence')renderIntelligence();if(t==='ai-studio')fillAIClients();if(t==='settings')loadSystemHealth();if(t==='activity')renderActivity();}
+function tab(t){if(t==='ai-team'){Promise.allSettled([loadOps(),loadTeamExecutions()]).then(renderTeamTasks)}$$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));$$('.view').forEach(v=>v.classList.toggle('active',v.id===t));if(t==='incoming-leads')loadIncomingLeads();if(t==='customers')renderCustomers();if(t==='sales')renderSales();if(t==='projects')renderProjects();if(t==='growth')renderGrowth();if(t==='intelligence')renderIntelligence();if(t==='ai-studio')fillAIClients();if(t==='settings')loadSystemHealth();if(t==='activity')renderActivity();}
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(b)tab(b.dataset.tab)});$$('[data-go]').forEach(b=>b.addEventListener('click',()=>tab(b.dataset.go)));
 async function login(e){
  e.preventDefault();
