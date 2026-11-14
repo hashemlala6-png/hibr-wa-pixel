@@ -97,8 +97,24 @@ test('experience stylesheet defines a real hierarchy for the home, owner console
 
 test('owner dashboard and client workspace have separate layout treatments, not just color overrides', () => {
   const css = fs.readFileSync(path.join(root, 'hibr-sky-theme.css'), 'utf8');
-  assert.match(css, /#app>\.shell\{[^}]*grid-template-columns:245px minmax\(0,1fr\)/);
-  assert.match(css, /\.cw-stat-strip\{[^}]*gap:12px/);
-  assert.match(css, /\.hp-home-grid\{[^}]*grid-template-columns:minmax\(0,1\.02fr\)/);
-  assert.match(css, /\.hp-home-page-grid\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.ok(css.includes('#app>.shell{'));
+  assert.ok(css.includes('grid-template-columns:230px minmax(0,1fr)'));
+  assert.ok(css.includes('.cw-stat-strip{'));
+  assert.ok(css.includes('gap:11px!important'));
+  assert.ok(css.includes('grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)'));
+  assert.ok(css.includes('.hp-home-page-grid{'));
+  assert.ok(css.includes('grid-template-columns:repeat(3,minmax(0,1fr))'));
+});
+
+test('homepage hero shows an actual workspace preview with navigation, projects and next-step panels', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  for (const selector of [
+    'hp-workspace-preview',
+    'hp-preview-rail',
+    'hp-preview-kpis',
+    'hp-preview-projects',
+    'hp-preview-side'
+  ]) {
+    assert.ok(html.includes(selector), 'Missing workspace preview component: ' + selector);
+  }
 });
