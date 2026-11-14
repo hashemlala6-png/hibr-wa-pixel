@@ -46,8 +46,11 @@ function deploymentScope() {
   }
 
   return normalizeScope({
-    context: overrideContext || 'local',
-    branch: env('HBPX_BLOBS_BRANCH') || 'local'
+    // In non-Netlify Node/test environments, retain production's historical
+    // store names unless a context is explicitly supplied. A real deployed
+    // Function has SITE_ID and is blocked above when build metadata is absent.
+    context: overrideContext || 'production',
+    branch: env('HBPX_BLOBS_BRANCH') || 'main'
   });
 }
 
