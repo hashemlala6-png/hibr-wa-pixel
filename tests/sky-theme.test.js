@@ -60,7 +60,7 @@ test('shared theme overrides old accents in public, client, owner and showcase i
   const css = fs.readFileSync(path.join(root, 'hibr-sky-theme.css'), 'utf8');
   for (const selector of [
     '.hp-wa,.wa',
-    '.brand-art-card',
+    '.brand-work-art',
     '.brand-pillar',
     '.cw-welcome',
     '.cw-result-note',
