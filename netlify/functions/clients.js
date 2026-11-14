@@ -1,7 +1,7 @@
 const { env } = require('./env');
 const { getStore, connectLambda } = require('@netlify/blobs');
 const { requireAdmin, json } = require('./auth-utils');
-const { clientIdentityKey } = require('./client-ownership');
+const { buildUniqueAccountPairMap, resolveLeadAccountId } = require('./client-account-mapping');
 const { blobOptions } = require('./blob-config');
 
 const stores = {
@@ -38,14 +38,11 @@ async function build(){
  ]);
  const saved=await all('clients','client-'); const savedMap=new Map(saved.map(x=>[x.id,x]));
  const groups=new Map();
- const accountPairMap=new Map();
- for(const account of accounts){
-   const pairKey=clientIdentityKey(account);
-   if(pairKey&&!pairKey.startsWith('lead-'))accountPairMap.set(pairKey,account.id);
- }
+ // Only attach leads to an account when exactly one stored account owns the
+ // same normalized email + WhatsApp pair. Duplicate matches fail closed.
+ const accountPairMap=buildUniqueAccountPairMap(accounts);
  leads.forEach(lead=>{
-   const pairKey=clientIdentityKey(lead);
-   const cid=accountPairMap.get(pairKey)||pairKey;
+   const cid=resolveLeadAccountId(lead,accountPairMap);
    if(!groups.has(cid))groups.set(cid,[]);
    groups.get(cid).push(lead);
  });

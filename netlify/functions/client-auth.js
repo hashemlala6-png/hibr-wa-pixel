@@ -5,9 +5,11 @@ const { blobOptions } = require('./blob-config');
 const {json,requireAdmin}=require('./auth-utils');
 const {createClientSession,getClientSession,sessionCookie,clearCookie}=require('./client-auth-utils');
 const {sameClientContact}=require('./client-ownership');
-const accounts=()=>getStore(blobOptions('hbpx-client-accounts', 'eventual'));
-const leads=()=>getStore(blobOptions('hbpx-leads', 'eventual'));
-const leadIndex=()=>getStore(blobOptions('hbpx-lead-index', 'eventual'));
+// Account and approval records control access. Strong consistency avoids a
+// freshly approved lead or newly created account appearing missing on the next request.
+const accounts=()=>getStore(blobOptions('hbpx-client-accounts', 'strong'));
+const leads=()=>getStore(blobOptions('hbpx-leads', 'strong'));
+const leadIndex=()=>getStore(blobOptions('hbpx-lead-index', 'strong'));
 const rate=()=>getStore(blobOptions('hbpx-client-auth-rate', 'eventual'));
 const memoryRate = new Map();
 function memoryLimited(e,kind){ const k=kind+'-'+crypto.createHash('sha256').update(ip(e)).digest('hex').slice(0,32), now=Date.now(), win=10*60*1000, max=12; const cur=memoryRate.get(k); if(!cur||now-cur.startedAt>win){memoryRate.set(k,{startedAt:now,count:1});return true;} if(Number(cur.count||0)>=max)return false; cur.count=Number(cur.count||0)+1; return true; }
@@ -115,7 +117,14 @@ exports.handler=async e=>{
     if(await accounts().get(id,{type:'json'}).catch(()=>null))return json(409,{error:'هذا البريد مسجل مسبقًا. سجّل الدخول.'});
     const name=clean(b.name,120), whatsapp=normalizePhone(b.whatsapp);
     if(!name||whatsapp.length<10)return json(400,{error:'الاسم ورقم واتساب مطلوبان.'});
-    if(!await hasApprovedLead(email,whatsapp).catch(()=>null))return json(403,{error:'إنشاء الحساب متاح بعد موافقة حبر وبكسل على طلب مشروعك، وباستخدام نفس البريد ورقم واتساب.'});
+    let approvedLead=false;
+    try {
+      approvedLead=await hasApprovedLead(email,whatsapp);
+    } catch(err) {
+      console.error('client registration approval check unavailable',err?.message||err);
+      return json(503,{error:'تعذر التحقق من موافقة طلبك حالياً. حاولي مرة أخرى بعد قليل.',code:'APPROVAL_LOOKUP_UNAVAILABLE'});
+    }
+    if(!approvedLead)return json(403,{error:'إنشاء الحساب متاح بعد موافقة حبر وبكسل على طلب مشروعك، وباستخدام نفس البريد ورقم واتساب.'});
     await linkApprovedLeads(email,whatsapp,id);
     const pw=makePassword(password); const now=new Date().toISOString(); const clientId=id; const account={id,name,email,whatsapp,clientId,passwordHash:pw.hash,salt:pw.salt,createdAt:now,updatedAt:now,lastLoginAt:null};
     await accounts().setJSON(id,account);

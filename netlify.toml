@@ -1,4 +1,5 @@
 [build]
+  command = "HBPX_BLOBS_CONTEXT=production npm test && npm run build"
   functions = "netlify/functions"
   publish = "."
 
