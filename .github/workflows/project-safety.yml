@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 24
       - name: Run regression tests
-        run: npm test
+        run: HBPX_BLOBS_CONTEXT=production npm test
       - name: Verify deploy-context-specific Blobs stores
         shell: bash
         run: |
