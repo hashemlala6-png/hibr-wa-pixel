@@ -2,9 +2,9 @@ name: Project safety checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, release/launch-candidate-security]
   push:
-    branches: [main, feature/instagram-login-no-facebook-page]
+    branches: [main, feature/instagram-login-no-facebook-page, design/saas-product-experience, release/launch-candidate-security]
 
 permissions:
   contents: read
