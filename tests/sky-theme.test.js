@@ -72,3 +72,33 @@ test('shared theme overrides old accents in public, client, owner and showcase i
     assert.ok(css.includes(selector), 'Missing legacy-accent override: ' + selector);
   }
 });
+
+
+test('experience stylesheet defines a real hierarchy for the home, owner console and client workspace', () => {
+  const css = fs.readFileSync(path.join(root, 'hibr-sky-theme.css'), 'utf8');
+  for (const selector of [
+    '.hp-home-hero:before',
+    '.hp-home-art',
+    '.hp-home-page-grid>a:hover',
+    '#app .today.command-banner',
+    '#app #tabs button.active',
+    '#app .desk-brief',
+    '#app .stat:hover',
+    '.cw-welcome',
+    '.cw-project-finance',
+    '.cw-lane',
+    '#lock .lockbox'
+  ]) {
+    assert.ok(css.includes(selector), 'Missing experience treatment: ' + selector);
+  }
+  assert.match(css, /@media\(max-width:700px\)/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
+});
+
+test('owner dashboard and client workspace have separate layout treatments, not just color overrides', () => {
+  const css = fs.readFileSync(path.join(root, 'hibr-sky-theme.css'), 'utf8');
+  assert.match(css, /#app>\.shell\{[^}]*grid-template-columns:245px minmax\(0,1fr\)/);
+  assert.match(css, /\.cw-stat-strip\{[^}]*gap:12px/);
+  assert.match(css, /\.hp-home-grid\{[^}]*grid-template-columns:minmax\(0,1\.02fr\)/);
+  assert.match(css, /\.hp-home-page-grid\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+});
