@@ -61,3 +61,129 @@ table td,table th{border-color:#d9eaf1!important}
 .danger,.danger-btn{background:#fff5f5!important;color:#a33b43!important;border-color:#f0d4d6!important}
 .success,.ok{color:#087ca8!important}
 @media(prefers-reduced-motion:no-preference){button,a,.card,.panel{transition:background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease}}
+
+
+/* Remove remaining hard-coded legacy beige/gold/green accents from the visual system. */
+:root{
+  --hp-paper:#f3fafe;--hp-ink:#111820;--hp-muted:#657681;--hp-line:#d9eaf1;
+  --hp-blue:#27b5df;--hp-yellow:#27b5df;
+  --concept-ink:#111820;--concept-accent:#27b5df;--concept-paper:#eaf8fd;
+}
+.hp44,.hp44 body,.hp-opening,.hp-results,.brand-pillar,.brand-offer,.brand-work-card,
+.brand-path,.brand-case-card,.brand-bundle,.brand-quality-grid,
+.brand-service-section .brand-offer-design,
+.brand-work-art,.brand-pillar .pillar-mark,
+.concept-lab,.concept-selector,.concept-context,.concept-tab,
+.concept-context-copy,.concept-artwork,.concept-context-rule{
+  border-color:#d9eaf1!important;
+}
+.hp-nav,.hp44 .hp-nav,.hp-contact-footer,.brand-footer{
+  background:rgba(255,255,255,.96)!important;color:#111820!important;
+}
+.hp-contact{
+  background:#111820!important;color:#fff!important;
+}
+.hp-contact .hp-label,.hp-contact .hp-wa,.hp-wa,.wa{
+  background:#27b5df!important;color:#fff!important;border-color:#27b5df!important;
+}
+.hp-contact .hp-label{color:#27b5df!important}
+.hp-contact p{color:#e2edf2!important}
+.hp-small,.hp-contact .hp-small{color:#dceaf0!important;border-color:#657681!important}
+.hp-mark-axis{background:linear-gradient(#27b5df,#159bc9,transparent)!important}
+.hp-mark-pixels i:nth-child(3n),.hp-mark-pixels i{background:#27b5df!important}
+.hp-case-b{background:#111820!important}
+.hp-case-b .case-art{background:#18232c!important}
+.hp-case-b .case-art span{color:#27b5df!important}
+.brand-art-card{background:#111820!important;color:#fff!important}
+.brand-art-card:after,.brand-art-stamp,.brand-stamp{background:#27b5df!important}
+.brand-art-title span,.brand-art-grid i:nth-child(3n),.brand-pillar .pillar-no,
+.brand-pillar:nth-child(3) .pillar-mark,.brand-pillar .pillar-mark,
+.brand-offer h2 em,.brand-bundle h2 em,.brand-offer li:before,
+.brand-offer-link span,.brand-stage-note{color:#087ca8!important}
+.brand-art-grid i,.brand-art-grid i:nth-child(3n){background:#27b5df!important}
+.brand-pillar .pillar-mark,.brand-pillar:nth-child(2) .pillar-mark,
+.brand-pillar:nth-child(3) .pillar-mark,.brand-path span,.brand-offer-design,
+.brand-work-art,.brand-work-card:nth-child(2) .brand-work-art,
+.brand-quality-grid article,.brand-case-card{
+  background:#eaf8fd!important;color:#087ca8!important;
+}
+.brand-work-art:after,.brand-stamp,.brand-service-section .brand-offer:before{
+  background:#27b5df!important;
+}
+.brand-offer,.brand-pillar,.brand-work-card,.brand-case-card{background:#fff!important}
+.brand-offer li,.brand-offer>p,.brand-offer-top,.brand-service-section .brand-offer>p,
+.brand-service-section .brand-offer ul{color:#526774!important}
+.brand-bundle,.brand-service-section .brand-bundle{
+  background:#111820!important;color:#fff!important;border-color:#111820!important;
+}
+.brand-bundle h2,.brand-bundle p,.brand-bundle h2 em{color:#fff!important}
+.brand-bundle .solid-btn,.brand-service-section .brand-bundle .solid-btn{
+  background:#27b5df!important;border-color:#27b5df!important;color:#fff!important;
+}
+.brand-quality-grid{border-color:#d9eaf1!important}
+.brand-quality-grid article{border-color:#d9eaf1!important}
+.brand-quality-grid article>b{color:#087ca8!important}
+.brand-footer,.hp-contact-footer{background:#fff!important;color:#111820!important}
+.brand-footer a,.hp-contact-footer a{color:#087ca8!important}
+.cw-welcome{background:linear-gradient(120deg,#111820,#18232c 58%,#087ca8)!important;color:#fff!important}
+.cw-welcome h1,.cw-art-word{color:#fff!important}
+.cw-welcome-kicker,.cw-welcome-meta,.cw-welcome-intro{color:#e1eff4!important}
+.cw-live-dot{background:#27b5df!important;box-shadow:0 0 0 5px rgba(39,181,223,.18)!important}
+.cw-stat-strip,.cw-project-finance{background:#eaf8fd!important;border-color:#d9eaf1!important}
+.cw-stage,.cw-tag,.cw-payments-note,.cw-contract-terms{
+  background:#eaf8fd!important;color:#087ca8!important;border-color:#d9eaf1!important;
+}
+.cw-stage.is-review,.cw-stage.is-paused,.cw-stage.is-done,
+.cw-tag.is-good,.cw-tag.is-wait{
+  background:#eaf8fd!important;color:#087ca8!important;
+}
+.cw-result-note,.cw-invoice,.cw-signed-note,.cw-empty,
+.cw-card dl div,.cw-stat-strip,.cw-finance-cell{
+  background:#f4fbfe!important;border-color:#d9eaf1!important;color:#526774!important;
+}
+.cw-result-note strong,.cw-payments-note b,.cw-invoice-meta>b,
+.cw-stat strong,.cw-finance-cell strong,.cw-order-count strong{
+  color:#087ca8!important;
+}
+.cw-contract-terms{color:#354b58!important}
+.concept-lab{--concept-ink:#111820!important;--concept-accent:#27b5df!important;--concept-paper:#eaf8fd!important;background:#fff!important;border-color:#d9eaf1!important}
+.concept-lab[data-concept="care"],.concept-lab[data-concept="retail"]{
+  --concept-ink:#111820!important;--concept-accent:#27b5df!important;--concept-paper:#eaf8fd!important;
+}
+.concept-lab-heading h2,.concept-tab,.concept-context,.concept-context-bottom strong{color:#111820!important}
+.concept-lab-heading h2 em,.concept-tab small,.concept-tab b,
+.concept-context-copy small,.concept-context-copy h3,.concept-disclosure b,
+.concept-context-copy h3{color:#087ca8!important}
+.concept-tabs,.concept-tab,.concept-context-rule,.brand-service-section .brand-quality-grid,
+.brand-service-section .brand-quality-grid article{border-color:#d9eaf1!important}
+.concept-tab:hover,.concept-tab[aria-pressed="true"],.concept-tab.active,
+.concept-context,.concept-selector,.concept-lab .concept-context{
+  background:#eaf8fd!important;color:#087ca8!important;
+}
+.concept-context-copy p,.concept-context-top,.concept-context-bottom,
+.concept-lab-heading>p,.concept-disclosure,.brand-service-section .brand-offer-top,
+.brand-service-section .brand-offer>p,.brand-service-section .brand-offer ul,
+.brand-service-section .brand-quality-grid p{color:#526774!important}
+.concept-artwork,.concept-lab .concept-artwork{
+  background:#111820!important;color:#fff!important;border-radius:14px!important;
+}
+.concept-art-sticker,.brand-service-section .brand-bundle .solid-btn{
+  background:#27b5df!important;color:#fff!important;
+}
+.concept-art-sticker{border-color:#27b5df!important}
+.brand-service-section .brand-bundle{
+  background:#111820!important;color:#fff!important;border-color:#111820!important;
+}
+.brand-service-section .brand-bundle h2,.brand-service-section .brand-bundle h2 em,
+.brand-service-section .brand-bundle p{color:#fff!important}
+#app .command-policy{background:#eaf8fd!important;color:#526774!important;border-color:#27b5df!important}
+#app .command-banner{background:linear-gradient(120deg,#111820,#18232c 65%,#087ca8)!important;color:#fff!important}
+#app .command-banner h2,#app .command-banner p{color:#fff!important}
+#app #overview .columns>.panel:first-child{background:#111820!important;color:#fff!important}
+#app #overview .columns>.panel:first-child h3{color:#fff!important}
+#app #overview .columns>.panel:first-child .meta{color:#e1eff4!important}
+#app #tabs button.active{background:#eaf8fd!important;color:#087ca8!important}
+#app #tabs button.active:before{background:#27b5df!important}
+#app .badge,#app .tag,#app .pill{background:#eaf8fd!important;color:#087ca8!important}
+#app .table th,#app .kv,#app #aiOutput{background:#f4fbfe!important}
+.lockbox:before{background:#27b5df!important}
