@@ -25,7 +25,7 @@ const roleGuides = {
 };
 
 function parseJsonObject(raw) {
-  const source = String(raw || '').replace(/```json|\`\`\`/g, '').trim();
+  const source = String(raw || '').replace(/```(?:json)?/gi, '').trim();
   try {
     const parsed = JSON.parse(source);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
@@ -152,6 +152,7 @@ exports.handler = async event => {
   if (!lock) return json(409, { error: 'هذه المهمة قيد التنفيذ بالفعل. حدّثي القائمة قبل إعادة المحاولة.' });
 
   const previousStatus = task.status;
+  const previousLatestExecutionId = task.latestExecutionId;
   const now = new Date().toISOString();
   try {
     task.status = 'doing';
@@ -210,7 +211,8 @@ exports.handler = async event => {
     try {
       task.status = previousStatus || 'todo';
       task.updatedAt = new Date().toISOString();
-      delete task.latestExecutionId;
+      if (previousLatestExecutionId) task.latestExecutionId = previousLatestExecutionId;
+      else delete task.latestExecutionId;
       await tasksStore().setJSON(task.id, task);
     } catch (restoreError) {
       console.error('ai-team task restore failed:', restoreError?.message || restoreError);
