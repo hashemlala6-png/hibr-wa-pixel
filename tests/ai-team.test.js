@@ -3,6 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
+const fs = require('node:fs');
+const path = require('node:path');
 
 function loadService({ tasks = {}, initialExecutions = {}, generated = null, generationError = null, authorized = true } = {}) {
   const resolved = require.resolve('../netlify/functions/ai-team');
@@ -178,4 +180,40 @@ test('AI team rejects malformed model output without recording a successful exec
   assert.equal(response.statusCode, 502);
   assert.equal(service.stores['hbpx-ai-team-executions'].size, 0);
   assert.equal(service.stores['hbpx-ai-team-locks'].size, 0);
+});
+
+
+test('owner console exposes all nine internal AI roles and a complete team task view', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'admin.html'), 'utf8');
+  const sectionStart = html.indexOf('<section id="ai-team"');
+  const sectionEnd = html.indexOf('<section id="growth"', sectionStart);
+  assert.ok(sectionStart >= 0, 'AI team view must exist');
+  assert.ok(sectionEnd > sectionStart, 'AI team view must end before the growth view');
+  const section = html.slice(sectionStart, sectionEnd);
+  assert.match(section, /<\/section>\s*$/);
+  for (const role of [
+    'مدير العمليات',
+    'استراتيجي التسويق',
+    'مخطط المحتوى',
+    'كاتب المحتوى',
+    'المصمم',
+    'مسؤول الجودة',
+    'مسؤول العملاء',
+    'مسؤول النشر',
+    'محلل الأداء'
+  ]) {
+    assert.ok(section.includes(role), 'Missing AI team role: ' + role);
+  }
+  for (const id of ['teamTaskTitle', 'teamTaskAssignee', 'teamTaskDue', 'teamTaskAdd', 'teamTaskRefresh', 'teamTaskList']) {
+    assert.ok(section.includes('id="' + id + '"'), 'Missing AI team control: ' + id);
+  }
+});
+
+test('owner console wires team tasks to the operations endpoint and internal AI execution endpoint', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'admin.html'), 'utf8');
+  assert.match(html, /data-tab="ai-team"/);
+  assert.match(html, /api\('\/\.netlify\/functions\/ai-team'/);
+  assert.match(html, /api\('\/\.netlify\/functions\/operations'/);
+  assert.match(html, /مخرج للمراجعة/);
+  assert.match(html, /لم يُنفذ أي إجراء خارجي/);
 });
