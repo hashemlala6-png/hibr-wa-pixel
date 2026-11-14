@@ -1,0 +1,123 @@
+/* H&P Product Experience — a deliberate SaaS product system, not a generic agency template.
+   Loaded after legacy styles to replace their visual grammar without touching application logic. */
+:root{
+ --px-ink:#101820;--px-ink-2:#192b36;--px-sky:#36b9e6;--px-sky-2:#8edcf4;
+ --px-paper:#fff;--px-cloud:#f2f9fc;--px-muted:#657985;--px-line:#dce8ee;
+ --px-radius:18px;--px-shadow:0 22px 60px rgba(16,42,56,.12);
+}
+html{scroll-behavior:smooth}
+body{background:#fff!important;color:var(--px-ink)!important;font-family:Arial,"Noto Sans Arabic",sans-serif!important}
+.site{width:min(1320px,calc(100% - 56px))!important}
+.nav,.hp-tabs-nav,.cw-nav{min-height:78px!important;padding-inline:max(28px,calc((100vw - 1320px)/2))!important;background:rgba(255,255,255,.94)!important;box-shadow:none!important;border-bottom:1px solid #e9eff2!important}
+.logo{font-weight:900!important;letter-spacing:-.06em!important}
+.logo span{color:var(--px-sky)!important}
+.navlinks a{font-size:.82rem!important}
+.solid-btn,.hp-start-tab,.hp-home-primary,.cw-primary,[type=submit]{background:var(--px-ink)!important;border:1px solid var(--px-ink)!important;border-radius:8px!important;box-shadow:none!important;transition:background .2s,color .2s,transform .2s!important}
+.solid-btn:hover,.hp-start-tab:hover,.hp-home-primary:hover,.cw-primary:hover,[type=submit]:hover{background:var(--px-sky)!important;border-color:var(--px-sky)!important;color:var(--px-ink)!important;transform:translateY(-2px)}
+.outline-btn,.hp-home-secondary{border:1px solid #cbdce4!important;border-radius:8px!important;background:#fff!important;color:var(--px-ink)!important}
+.panel,.card,.account-box,.intake-form,.cw-card,.cw-project-card,.cw-profile-block,.settings-card,.project-card,.task-card{border:1px solid var(--px-line)!important;border-radius:14px!important;box-shadow:0 5px 20px rgba(16,42,56,.045)!important}
+input,select,textarea{border-radius:8px!important;border-color:#d6e3e9!important}
+:focus-visible{outline:3px solid rgba(54,185,230,.45)!important;outline-offset:3px}
+
+/* Homepage: cinematic ink stage + a precise product window. Avoid the pastel-card stack. */
+.hp-tabbed-home{background:#fff!important}
+.hp-home-hero{padding:28px 0 72px!important;background:#fff!important;overflow:hidden}
+.hp-home-hero:before{width:780px;height:780px;left:auto;right:-390px;top:-420px;background:radial-gradient(circle,rgba(54,185,230,.17),transparent 67%)}
+.hp-home-hero:after{display:none}
+.hp-home-grid{width:min(1320px,calc(100% - 56px))!important;grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr)!important;gap:clamp(34px,5vw,78px)!important}
+.hp-home-copy{padding:34px 0 34px 10px!important}
+.hp-home-eyebrow{color:#178caf!important;letter-spacing:.18em!important}
+.hp-home-kicker{border:0!important;border-radius:0!important;background:transparent!important;padding:0!important;margin:30px 0 15px!important;color:#138db7!important}
+.hp-home-kicker:before{width:22px;height:2px;border-radius:0;box-shadow:none}
+.hp-home-copy h1{font-size:clamp(3.4rem,6.7vw,6.4rem)!important;line-height:1.04!important;letter-spacing:-.085em!important}
+.hp-home-copy h1 em{background:none!important;-webkit-text-fill-color:var(--px-sky)!important;color:var(--px-sky)!important}
+.hp-home-lead{max-width:470px!important;font-size:1rem!important;line-height:2!important;color:#586b75!important}
+.hp-home-actions{margin-top:32px!important;gap:16px!important}
+.hp-home-primary{min-height:58px!important;padding:14px 21px!important;min-width:190px}
+.hp-home-secondary{border:0!important;padding-inline:4px!important}
+.hp-home-proof{border:0!important;padding-top:0!important;gap:18px!important;margin-top:36px!important}
+.hp-home-proof span{border:0!important;border-radius:0!important;border-top:1px solid #b7e8f6!important;background:transparent!important;padding:9px 0!important;color:#4b626e!important;font-size:.68rem!important}
+.hp-home-art{min-height:530px!important;border:0!important;border-radius:3px!important;box-shadow:none!important;padding:34px!important;background:var(--px-ink)!important;overflow:hidden!important}
+.hp-home-art:before{width:700px;height:700px;right:-350px;top:-410px;border-color:rgba(142,220,244,.24);box-shadow:0 0 0 45px rgba(142,220,244,.035),0 0 0 100px rgba(142,220,244,.025)}
+.hp-home-art:after{width:480px;height:480px;left:-330px;bottom:-350px;border-color:rgba(142,220,244,.2)}
+.hp-workspace-preview{width:100%!important;min-height:390px!important;grid-template-columns:58px minmax(0,1fr)!important;border:1px solid rgba(255,255,255,.35)!important;border-radius:8px!important;box-shadow:0 28px 80px rgba(0,0,0,.35)!important;transform:none!important}
+.hp-home-art:hover .hp-workspace-preview{transform:translateY(-4px)!important}
+.hp-preview-rail{background:#f2f7f9!important}
+.hp-preview-logo{border-radius:6px!important}
+.hp-preview-body{padding:22px!important}
+.hp-preview-kpi,.hp-preview-project,.hp-preview-side-card{border-radius:7px!important}
+.hp-home-formula{padding:92px 0!important;background:#f4f9fb!important}
+.hp-home-formula-inner{display:grid!important;grid-template-columns:1.1fr .9fr!important;gap:48px 9%!important;align-items:start}
+.hp-home-formula-intro h2,.hp-home-pages-head h2{font-size:clamp(2.4rem,4.2vw,4.4rem)!important;line-height:1.16!important;letter-spacing:-.07em!important}
+.hp-home-formula-intro h2 em,.hp-home-pages-head h2 em{color:#159bc9!important}
+.hp-home-formula-equation{display:flex;flex-wrap:wrap;gap:12px!important;align-items:center;margin-top:28px!important}
+.hp-home-formula-equation span{padding:8px 0!important;border:0!important;border-bottom:2px solid var(--px-sky)!important;border-radius:0!important;background:transparent!important}
+.hp-home-formula-steps{display:grid!important;grid-template-columns:1fr!important;gap:0!important}
+.hp-home-formula-steps article{display:grid!important;grid-template-columns:44px 1fr!important;gap:4px 14px!important;padding:18px 0!important;border-bottom:1px solid #dce8ee!important}
+.hp-home-formula-steps article small{grid-column:2}
+.hp-home-formula-steps article b{grid-column:1;grid-row:1/4;color:#24a9d4!important;font-size:1.4rem!important}
+.hp-home-formula-steps article h3,.hp-home-formula-steps article p{grid-column:2;margin:0!important}
+.hp-home-formula-note{grid-column:1/-1!important;border-top:1px solid #d7e5eb!important;padding-top:18px!important}
+.hp-home-pages{padding:94px 0!important}
+.hp-home-page-grid{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:0!important;border-top:1px solid var(--px-line)!important;border-bottom:1px solid var(--px-line)!important}
+.hp-home-page-grid a{position:relative!important;min-height:190px!important;padding:25px 24px!important;border:0!important;border-left:1px solid var(--px-line)!important;border-radius:0!important;background:#fff!important;transition:background .2s!important}
+.hp-home-page-grid a:hover{background:#effaff!important}
+.hp-home-page-grid a strong{font-size:1.5rem!important;letter-spacing:-.05em!important}
+.hp-home-page-grid a b{color:var(--px-sky)!important}
+
+/* Client portal: a private work desk with clear hierarchy, not a marketing landing page. */
+.cw-body{background:#f5f9fb!important}
+.cw-shell{max-width:1320px!important}
+.cw-welcome{background:var(--px-ink)!important;border-radius:4px!important;color:#fff!important;padding:48px!important;min-height:260px!important}
+.cw-welcome h1,.cw-welcome-copy h1{color:#fff!important;font-size:clamp(2.5rem,5vw,4.4rem)!important;letter-spacing:-.075em!important}
+.cw-welcome-intro,.cw-welcome-meta{color:#d0e0e7!important}
+.cw-welcome-art{background:radial-gradient(circle at 50% 50%,rgba(54,185,230,.35),transparent 55%)!important}
+.cw-art-word{color:#8edcf4!important}
+.cw-signal-row{background:#fff!important;border:1px solid var(--px-line)!important;border-radius:4px!important;box-shadow:none!important}
+.cw-stat-strip{background:#fff!important;border:1px solid var(--px-line)!important;border-radius:4px!important;gap:0!important}
+.cw-stat{border-left:1px solid var(--px-line)!important;padding:20px!important}
+.cw-section-heading h2{letter-spacing:-.055em!important}
+.cw-project-card,.cw-block,.cw-orders-block,.cw-profile-block{border-radius:4px!important;box-shadow:none!important}
+
+/* Owner console: dark command masthead, quiet navigation, information-first surfaces. */
+#app>.shell{max-width:1500px!important}
+#app .top{border-bottom:1px solid var(--px-line)!important}
+#app .command-banner{background:var(--px-ink)!important;color:#fff!important;border-radius:4px!important;padding:34px!important}
+#app .command-banner h2,#app .command-banner h3{color:#fff!important}
+#app .command-banner p,#app .command-banner .command-policy{color:#d0e0e7!important}
+#app .command-banner .eyebrow{color:#8edcf4!important}
+#app .nav{background:#fff!important;border:1px solid var(--px-line)!important;border-radius:4px!important;gap:0!important}
+#app .nav button{border-radius:0!important;padding:14px 16px!important}
+#app .nav button.active{color:#087ca8!important;border-bottom:3px solid var(--px-sky)!important;background:#f2faff!important}
+#app .panel{border-radius:4px!important;box-shadow:none!important}
+#app .desk-brief{border-radius:4px!important;border-inline-start:4px solid var(--px-sky)!important}
+#app .stat{border-radius:4px!important;box-shadow:none!important}
+#app .primary{background:var(--px-ink)!important;border-radius:7px!important}
+#app .ghost{border-radius:7px!important}
+#app .table th{background:#f3f8fa!important;color:#526a76!important}
+#app .table td{border-color:#e8eff2!important}
+@media(max-width:900px){
+ .hp-home-grid{grid-template-columns:1fr!important}
+ .hp-home-copy{padding:24px 0 0!important}
+ .hp-home-art{min-height:420px!important}
+ .hp-home-formula-inner{grid-template-columns:1fr!important}
+ .hp-home-page-grid{grid-template-columns:1fr!important}
+ .hp-home-page-grid a{border-left:0!important;border-bottom:1px solid var(--px-line)!important}
+}
+@media(max-width:620px){
+ .site,.hp-home-grid{width:calc(100% - 32px)!important}
+ .hp-home-hero{padding:14px 0 48px!important}
+ .hp-home-copy h1{font-size:clamp(3rem,14vw,4.4rem)!important}
+ .hp-home-art{min-height:350px!important;padding:14px!important}
+ .hp-workspace-preview{width:100%!important;min-height:300px!important;grid-template-columns:42px minmax(0,1fr)!important}
+ .hp-preview-rail{gap:10px!important;padding:10px 4px!important}
+ .hp-preview-body{padding:12px!important}
+ .hp-preview-kpis{gap:4px!important}
+ .hp-preview-kpi{padding:6px!important}
+ .hp-home-formula,.hp-home-pages{padding:58px 0!important}
+ .cw-welcome{padding:26px!important}
+ #app>.shell{padding:12px!important}
+ #app .command-banner{padding:22px!important}
+ #app .nav{overflow-x:auto!important}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
