@@ -20,11 +20,31 @@ jobs:
         with:
           node-version: 24
       - name: Run regression tests
-        run: npm test
+        run: HBPX_BLOBS_CONTEXT=production npm test
+      - name: Verify deploy-context-specific Blobs stores
+        shell: bash
+        run: |
+          CONTEXT=deploy-preview BRANCH=checks-preview npm run build
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const { deploymentScope, scopedStoreName } = require('./netlify/functions/blob-config');
+          assert.deepEqual(deploymentScope(), { context: 'deploy-preview', branch: 'checks-preview' });
+          assert.notEqual(
+            scopedStoreName('hbpx-leads', { context: 'deploy-preview', branch: 'checks-preview' }),
+            scopedStoreName('hbpx-leads', { context: 'deploy-preview', branch: 'another-preview' })
+          );
+          NODE
+          CONTEXT=production BRANCH=main npm run build
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const { deploymentScope, scopedStoreName } = require('./netlify/functions/blob-config');
+          assert.deepEqual(deploymentScope(), { context: 'production', branch: 'main' });
+          assert.equal(scopedStoreName('hbpx-leads'), 'hbpx-leads');
+          NODE
       - name: Check JavaScript syntax
         shell: bash
         run: |
-          find netlify/functions tests -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          find netlify/functions tests scripts -type f -name '*.js' -print0 | xargs -0 -n1 node --check
 
       - name: Check root JavaScript files
         run: |
@@ -38,7 +58,7 @@ jobs:
           let failed = false;
           for (const file of files) {
             const html = fs.readFileSync(file, 'utf8');
-          const scripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)];
+            const scripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)];
             scripts.forEach((match, index) => {
               if (!match[1].trim()) return;
               try { new Function(match[1]); }
