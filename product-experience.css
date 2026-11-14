@@ -194,3 +194,48 @@ hr,.divider{border-color:var(--px-line)!important}
  input,select,textarea,.field{width:100%;min-width:0}
  .grid{gap:10px!important}
 }
+
+
+/* Owner console desktop shell: persistent command navigation beside the work area. */
+@media(min-width:1000px){
+ #app>.shell{
+  display:grid!important;
+  grid-template-columns:232px minmax(0,1fr)!important;
+  grid-template-areas:"head head" "status status" "banner banner" "side work"!important;
+  column-gap:18px!important;row-gap:10px!important;align-items:start!important;
+ }
+ #app>.shell>.top{grid-area:head!important;min-width:0}
+ #app>.shell>#loadStatus{grid-area:status!important}
+ #app>.shell>.command-banner{grid-area:banner!important}
+ #app>.shell>#tabs{
+  grid-area:side!important;display:flex!important;flex-direction:column!important;
+  position:sticky!important;top:16px!important;align-self:start!important;
+  max-height:calc(100vh - 32px)!important;overflow-y:auto!important;
+  padding:8px!important;margin:0!important;border:1px solid var(--px-line)!important;
+  border-radius:9px!important;background:#fff!important;gap:3px!important;
+ }
+ #app>.shell>#tabs button{
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  width:100%!important;min-height:43px!important;text-align:right!important;
+  border:0!important;border-right:3px solid transparent!important;
+  border-radius:6px!important;padding:10px 12px!important;background:transparent!important;
+  color:#526b77!important;font-size:.82rem!important;
+ }
+ #app>.shell>#tabs button:hover{background:#f1f9fc!important;color:#087ca8!important}
+ #app>.shell>#tabs button.active{
+  border-right-color:var(--px-sky)!important;background:#eaf8fd!important;
+  color:#087ca8!important;font-weight:800!important;
+ }
+ #app>.shell>main{grid-area:work!important;min-width:0!important}
+ #app>.shell>main .grid.stats{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ #app>.shell>main .grid.columns{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)!important}
+}
+@media(min-width:1000px) and (max-width:1180px){
+ #app>.shell{grid-template-columns:205px minmax(0,1fr)!important}
+ #app>.shell>#tabs button{font-size:.76rem!important;padding-inline:9px!important}
+}
+@media(max-width:999px){
+ #app>.shell{display:block!important}
+ #app>.shell>#tabs{display:flex!important;flex-direction:row!important;position:relative!important;max-height:none!important;overflow-x:auto!important;white-space:nowrap!important}
+ #app>.shell>#tabs button{width:auto!important;flex:0 0 auto!important}
+}
