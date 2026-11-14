@@ -66,7 +66,7 @@ test('shared theme overrides old accents in public, client, owner and showcase i
     '.cw-result-note',
     '.concept-lab',
     '.concept-art-sticker',
-    '#app .command-banner',
+    '#app .today.command-banner',
     '.lockbox:before'
   ]) {
     assert.ok(css.includes(selector), 'Missing legacy-accent override: ' + selector);
